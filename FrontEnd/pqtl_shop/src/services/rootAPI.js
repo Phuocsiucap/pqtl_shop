@@ -54,4 +54,4 @@ export const apiCall2 = async (method, endpoint, data = null, config = {}) => {
 };
 
 // ⚡ Chọn hàm dựa vào DEBUG
-export const apiCall = DEBUG ? apiCall1 : apiCall1;
+export const rootAPI = DEBUG ? apiCall1 : apiCall1;
