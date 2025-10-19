@@ -1,4 +1,4 @@
-package com.social_network.social_network.dto.response;
+package org.example.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
