@@ -9,9 +9,9 @@ console.log("DEBUG:", DEBUG);
 
 export const apiCall1 = async (method, endpoint, data = null, config = {}) => {
   try {
-    const csrfToken = Cookies.get("csrf_token_fe");
+    const token = Cookies.get("csrf_token_fe");
 ;
-    console.log("csrftoken:", csrfToken);
+    // console.log("csrftoken:", csrfToken);
     
     const response = await axios({
       method,
@@ -19,7 +19,7 @@ export const apiCall1 = async (method, endpoint, data = null, config = {}) => {
       data,
       withCredentials: true,
       headers: {
-        "X-CSRFToken": csrfToken,
+        "Authorization" : `Bearer ${token}`,
         "Content-Type": "application/json",
         ...config.headers,
       },
@@ -53,5 +53,6 @@ export const apiCall2 = async (method, endpoint, data = null, config = {}) => {
   }
 };
 
-// ⚡ Chọn hàm dựa vào DEBUG
-export const rootAPI = DEBUG ? apiCall1 : apiCall1;
+
+
+

@@ -1,9 +1,9 @@
-import { rootAPI } from './rootAPI';
+import { apiCall1 } from './rootAPI';
 
 // US6.1 - Lấy danh sách sản phẩm bán chạy theo thời gian
 export const getBestSellingProducts = async (timeFilter) => {
   try {
-    const response = await rootAPI('get', `/analytics/best-selling/?period=${timeFilter}`);
+    const response = await apiCall1('get', `/analytics/best-selling/?period=${timeFilter}`);
     return response.data;
   } catch (error) {
     console.error("Lỗi khi lấy sản phẩm bán chạy:", error);
@@ -48,7 +48,7 @@ export const getBestSellingProducts = async (timeFilter) => {
   // US6.2 - Lấy số lượng đã bán
 export const getProductSalesQuantity= async () => {
     try {
-        const response = await rootAPI('get', '/analytics/sales-quantity/');
+        const response = await apiCall1('get', '/analytics/sales-quantity/');
         return response.data;
     } catch (error) {
 
@@ -61,7 +61,7 @@ export const getProductSalesQuantity= async () => {
   // US6.3 - Lấy doanh thu theo sản phẩm
 export const  getProductRevenue= async (startDate, endDate) => {
     try {
-        const response = await rootAPI('get', '/analytics/revenue-by-product/', {
+        const response = await apiCall1('get', '/analytics/revenue-by-product/', {
             params: { startDate, endDate }
         });
         return response.data;

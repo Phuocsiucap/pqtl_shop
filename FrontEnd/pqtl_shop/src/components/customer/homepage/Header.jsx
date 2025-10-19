@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, ShoppingCart, Heart, User, Menu, X, Gift } from 'lucide-react';
 
 const Header = ({ user, cartCount, onSearch }) => {
+  const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -77,8 +79,10 @@ const Header = ({ user, cartCount, onSearch }) => {
               <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">3</span>
             </button>
             
-            <button className="relative hover:text-blue-600 transition">
+            <button className="relative hover:text-blue-600 transition"
+            onClick={() => navigate("cart")}>
               <ShoppingCart size={24} />
+
               <span className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{cartCount}</span>
             </button>
           </div>

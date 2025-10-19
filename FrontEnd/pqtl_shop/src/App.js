@@ -5,7 +5,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 //page
 import HomePage from "./page/customer/home";
 import ProductPage from "./page/customer/ProductPage";
-
+import CartPage from './page/customer/cart';
 //admin page
 // import Dashboard from "./page/admin/bestSellingDashboard";
 
@@ -23,30 +23,35 @@ import ProductSalesStatistics from './page/admin/ProductSalesStatisticsPage';
 
 
 //provider
+
 import { BestSellingProvider } from "./context/BestSellingContext";
+import { CartProvider } from './context/CartContext';
 function App() {
   return (
     <BestSellingProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/product/:id" element={<ProductPage />} />
+      <CartProvider>
+        <Router>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/product/:id" element={<ProductPage />} />
+            <Route path="/cart" element={<CartPage/>} />
 
-          <Route path="/admin" element={<AdminLayout/>}>
-            <Route index element={<AdminDashboard />} />
-            <Route path="orders" element={<OrdersPage />} />
-            <Route path="users" element={<UsersPage />} />
-            <Route path="clearance" element={<ClearancePage />} />
-            <Route path="expired" element={<ExpiredProductsPage />} />
-            <Route path="inventory" element={<InventoryPage />} />
-            <Route path="revenue" element={<RevenuePage />} />
-            <Route path="best-sellers" element={<BestSellersPage />} />
-            <Route path="sales-statistics" element={<ProductSalesStatistics/>}/>
-          </Route>
+            <Route path="/admin" element={<AdminLayout/>}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="orders" element={<OrdersPage />} />
+              <Route path="users" element={<UsersPage />} />
+              <Route path="clearance" element={<ClearancePage />} />
+              <Route path="expired" element={<ExpiredProductsPage />} />
+              <Route path="inventory" element={<InventoryPage />} />
+              <Route path="revenue" element={<RevenuePage />} />
+              <Route path="best-sellers" element={<BestSellersPage />} />
+              <Route path="sales-statistics" element={<ProductSalesStatistics/>}/>
+            </Route>
 
-          {/* <Route path="/admin/dashboard" element={<Dashboard />} /> */}
-        </Routes>
-      </Router>
+            {/* <Route path="/admin/dashboard" element={<Dashboard />} /> */}
+          </Routes>
+        </Router>
+      </CartProvider>
     </BestSellingProvider>
   );
 }

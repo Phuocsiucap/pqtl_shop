@@ -1,50 +1,37 @@
 package org.example.controller.login;
 
 import lombok.RequiredArgsConstructor;
+import org.example.dto.request.LoginRequest;
+import org.example.dto.request.RegisterRequest;
+import org.example.dto.response.AuthResponse;
+import org.example.dto.response.UserResponse;
 import org.example.model.login.User;
 import org.example.repository.login.UserRepository;
+import org.example.service.login.AuthService;
+import org.example.service.login.JwtService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final UserRepository userRepository;
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private final AuthService authService;
 
-    // 🔹 Đăng ký
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody User user) {
-        if (userRepository.findByUsername(user.getUsername()).isPresent()) {
-            return ResponseEntity.badRequest().body("Username already exists");
-        }
-
-        // Mã hóa mật khẩu trước khi lưu
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setRole("USER");
-        userRepository.save(user);
-
-        return ResponseEntity.ok("Register success");
+    public ResponseEntity<AuthResponse> register(@RequestBody RegisterRequest request) {
+        return ResponseEntity.ok(authService.register(request));
     }
 
-    // 🔹 Đăng nhập
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody User loginRequest) {
-        var userOpt = userRepository.findByUsername(loginRequest.getUsername());
-        if (userOpt.isEmpty()) {
-            return ResponseEntity.badRequest().body("User not found");
-        }
+    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
+        return ResponseEntity.ok(authService.login(request));
+    }
 
-        var user = userOpt.get();
-
-        // Kiểm tra mật khẩu bằng BCrypt
-        if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
-            return ResponseEntity.badRequest().body("Wrong password");
-        }
-
-        return ResponseEntity.ok("Login success");
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refresh(@RequestParam String refreshToken) {
+        return ResponseEntity.ok(authService.refreshToken(refreshToken));
     }
 }

@@ -1,47 +1,121 @@
 package org.example.service.login;
 
-
+import lombok.RequiredArgsConstructor;
+import org.example.dto.request.LoginRequest;
+import org.example.dto.request.RegisterRequest;
+import org.example.dto.response.AuthResponse;
+import org.example.dto.response.UserResponse;
+import org.example.model.login.Role;
 import org.example.model.login.User;
 import org.example.repository.login.UserRepository;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class AuthService {
-    private final UserRepository userRepository;
-    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-    private final String secretKey = "my-secret-key"; // đặt key mạnh hơn trong thực tế
 
-    public String register(User user) {
-        if (userRepository.existsByEmail(user.getEmail())) {
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
+
+    // ---------------------- REGISTER ----------------------
+    public AuthResponse register(RegisterRequest request) {
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("Email already exists");
         }
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setRole("USER");
+
+        User user = User.builder()
+                .username(request.getUsername())
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .role("CUSTOMER") // mặc định
+                .build();
+
         userRepository.save(user);
-        return "User registered successfully";
+
+        String accessToken = jwtService.generateAccessToken(user.getEmail());
+        String refreshToken = jwtService.generateRefreshToken(user.getEmail());
+
+        return new AuthResponse(accessToken, refreshToken);
     }
 
-    public String login(String email, String password) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        if (!passwordEncoder.matches(password, user.getPassword())) {
+    // ---------------------- LOGIN ----------------------
+    public AuthResponse login(LoginRequest request) {
+        // Cho phép login bằng username hoặc email
+        Optional<User> userOpt = userRepository.findByEmail(request.getUsername());
+        if (userOpt.isEmpty()) {
+            userOpt = userRepository.findByUsername(request.getUsername());
+        }
+
+        if (userOpt.isEmpty()) {
+            throw new RuntimeException("User not found");
+        }
+
+        User user = userOpt.get();
+
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new RuntimeException("Invalid credentials");
         }
 
-        // Tạo JWT token
-        return Jwts.builder()
-                .setSubject(user.getEmail())
-                .claim("role", user.getRole())
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 86400000)) // 1 ngày
-                .signWith(SignatureAlgorithm.HS256, secretKey)
-                .compact();
+        String accessToken = jwtService.generateAccessToken(user.getEmail());
+        String refreshToken = jwtService.generateRefreshToken(user.getEmail());
+
+        return new AuthResponse(accessToken, refreshToken);
+    }
+
+    // ---------------------- REFRESH TOKEN ----------------------
+    public AuthResponse refreshToken(String refreshToken) {
+        // Kiểm tra refresh token hợp lệ
+        String email = jwtService.extractUsername(refreshToken);
+        var user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!jwtService.isTokenValid(refreshToken, user.getEmail())) {
+            throw new RuntimeException("Invalid refresh token");
+        }
+
+        // Tạo access token mới
+        String newAccessToken = jwtService.generateAccessToken(user.getEmail());
+
+        return AuthResponse.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(refreshToken) // Giữ nguyên refresh token cũ
+                .build();
+    }
+
+    // ---------------------- ADMIN CREATE USER ----------------------
+    public UserResponse createUserByAdmin(RegisterRequest request, Role role) {
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new RuntimeException("Email already exists");
+        }
+
+        User user = User.builder()
+                .username(request.getUsername())
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .role(role.name()) // STAFF hoặc ADMIN
+                .build();
+
+        userRepository.save(user);
+
+        return new UserResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getRole()
+        );
+    }
+
+    // ---------------------- ADMIN GET ALL USERS ----------------------
+    public List<UserResponse> getAllUsers() {
+        return userRepository.findAll()
+                .stream()
+                .map(u -> new UserResponse(u.getId(), u.getUsername(), u.getEmail(), u.getRole()))
+                .collect(Collectors.toList());
     }
 }
