@@ -69,14 +69,23 @@ public class AuthService {
     }
 
     // ---------------------- REFRESH TOKEN ----------------------
-    public AuthResponse refresh(String refreshToken) {
+    public AuthResponse refreshToken(String refreshToken) {
+        // Kiểm tra refresh token hợp lệ
         String email = jwtService.extractUsername(refreshToken);
-        if (!jwtService.isTokenValid(refreshToken, email)) {
+        var user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!jwtService.isTokenValid(refreshToken, user.getEmail())) {
             throw new RuntimeException("Invalid refresh token");
         }
 
-        String newAccessToken = jwtService.generateAccessToken(email);
-        return new AuthResponse(newAccessToken, refreshToken);
+        // Tạo access token mới
+        String newAccessToken = jwtService.generateAccessToken(user.getEmail());
+
+        return AuthResponse.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(refreshToken) // Giữ nguyên refresh token cũ
+                .build();
     }
 
     // ---------------------- ADMIN CREATE USER ----------------------
