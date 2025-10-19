@@ -7,11 +7,15 @@ import org.example.dto.response.AuthResponse;
 import org.example.dto.response.UserResponse;
 import org.example.model.login.User;
 import org.example.repository.login.UserRepository;
+import org.example.repository.login.VerificationTokenRepository;
 import org.example.service.login.AuthService;
 import org.example.service.login.JwtService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -33,5 +37,33 @@ public class AuthController {
     @PostMapping("/refresh")
     public ResponseEntity<AuthResponse> refresh(@RequestParam String refreshToken) {
         return ResponseEntity.ok(authService.refreshToken(refreshToken));
+    }
+//
+//    @PostMapping("/oauth2/google")
+//    public ResponseEntity<AuthResponse> loginWithGoogle(@RequestBody Map<String, String> body) {
+//        String idToken = body.get("token");
+//        return ResponseEntity.ok(authService.loginWithGoogle(idToken));
+//    }
+
+    private final UserRepository userRepository;
+    private final VerificationTokenRepository verificationTokenRepository;
+
+    @GetMapping("/verify")
+    public ResponseEntity<String> verifyAccount(@RequestParam String token) {
+        var verificationToken = verificationTokenRepository.findByToken(token)
+                .orElseThrow(() -> new RuntimeException("Token không hợp lệ"));
+
+        if (verificationToken.getExpiryDate().isBefore(LocalDateTime.now())) {
+            return ResponseEntity.badRequest().body("Token đã hết hạn");
+        }
+
+        var user = userRepository.findById(verificationToken.getUserId())
+                .orElseThrow(() -> new RuntimeException("User không tồn tại"));
+
+        user.setVerified(true);
+        userRepository.save(user);
+        verificationTokenRepository.delete(verificationToken);
+
+        return ResponseEntity.ok("Xác minh tài khoản thành công!");
     }
 }

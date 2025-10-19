@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 public class AuthResponse {
     private String accessToken;
     private String refreshToken;
+    private String message;
 
     public static Builder builder() { return new Builder(); }
 
@@ -18,6 +19,7 @@ public class AuthResponse {
         public Builder accessToken(String t) { instance.accessToken = t; return this; }
         public Builder refreshToken(String t) { instance.refreshToken = t; return this; }
         public AuthResponse build() { return instance; }
+        public Builder message(String t) { instance.message = t; return this; }
     }
 
 }
