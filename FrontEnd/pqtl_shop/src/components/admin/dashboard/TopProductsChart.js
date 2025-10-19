@@ -1,13 +1,10 @@
 import React, { useState } from 'react';
-import { 
-  BarChart3, Package, TrendingUp, AlertTriangle, 
-  Users, ShoppingCart, Search, Bell, Menu, X,
-  ChevronRight, DollarSign, ArrowUpRight, ArrowDownRight,
-  Clock, Box, Archive, Leaf, AlertCircle
-} from 'lucide-react';
+import { useNavigate } from 'react-router-dom'
+import { ChevronRight } from 'lucide-react';
 
 
 const TopProductsChart = ({ products }) => {
+  const navigate = useNavigate();
   const maxSales = Math.max(...products.map(p => p.sales));
   
   return (
@@ -17,7 +14,8 @@ const TopProductsChart = ({ products }) => {
           <h3 className="text-lg font-bold text-gray-900">Top sản phẩm bán chạy</h3>
           <p className="text-sm text-gray-500 mt-1">Tuần này</p>
         </div>
-        <button className="text-green-600 text-sm font-semibold hover:text-green-700 flex items-center">
+        <button className="text-green-600 text-sm font-semibold hover:text-green-700 flex items-center"
+        onClick={() => navigate("best-sellers")}>
           Xem tất cả <ChevronRight className="w-4 h-4 ml-1" />
         </button>
       </div>

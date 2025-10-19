@@ -7,7 +7,7 @@ import HomePage from "./page/customer/home";
 import ProductPage from "./page/customer/ProductPage";
 
 //admin page
-import Dashboard from "./page/admin/bestSellingDashboard";
+// import Dashboard from "./page/admin/bestSellingDashboard";
 
 import AdminLayout from './components/admin/layout/Layout';
 import AdminDashboard from './page/admin/DashboardPage';
@@ -18,6 +18,7 @@ import ExpiredProductsPage from './page/admin/ExpiredProductsPage';
 import InventoryPage from './page/admin/InventoryPage';
 import RevenuePage from './page/admin/RevenuePage';
 import BestSellersPage from './page/admin/BestSellersPage';
+import ProductSalesStatistics from './page/admin/ProductSalesStatisticsPage';
 
 
 
@@ -40,9 +41,10 @@ function App() {
             <Route path="inventory" element={<InventoryPage />} />
             <Route path="revenue" element={<RevenuePage />} />
             <Route path="best-sellers" element={<BestSellersPage />} />
+            <Route path="sales-statistics" element={<ProductSalesStatistics/>}/>
           </Route>
 
-          <Route path="/admin/dashboard" element={<Dashboard />} />
+          {/* <Route path="/admin/dashboard" element={<Dashboard />} /> */}
         </Routes>
       </Router>
     </BestSellingProvider>
