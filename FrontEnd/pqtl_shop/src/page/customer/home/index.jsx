@@ -7,9 +7,18 @@ import LoyaltyBanner from '../../../components/customer/homepage/LoyaltyBanner';
 import Footer from '../../../components/customer/homepage/Footer';
 import ProductSection from '../../../common/ProducSection';
 
+const user = (() => {
+  try {
+    const raw = localStorage.getItem("user");
+    return raw ? JSON.parse(raw) : { isLoggedIn: false };
+  } catch (e) {
+    return { isLoggedIn: false };
+  }
+})();
+
 // Mock Data - Thực phẩm sạch
 const mockData = {
-  user: { name: "Trần Thị Bích", points: 420, tier: "Gold", isLoggedIn: true },
+  user1: { name: "Trần Thị Bích", points: 420, tier: "Gold", isLoggedIn: true },
   banners: [
     { title: "Tuần lễ rau củ organic", subtitle: "Giảm đến 30% cho đơn hàng từ 200k", cta: "Mua ngay", color: "from-green-500 to-lime-500" },
     { title: "Trái cây nhập khẩu tươi mỗi ngày", subtitle: "Miễn phí giao hàng nội thành", cta: "Xem ngay", color: "from-yellow-500 to-orange-500" },
@@ -62,7 +71,7 @@ export default function CustomerHomepage() {
 
   return (
     <div className="min-h-screen bg-green-50">
-      <Header user={mockData.user} cartCount={cartCount} />
+      <Header user={user} cartCount={cartCount} />
 
       {notification && (
         <div className="fixed top-20 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-slide-in">
@@ -78,7 +87,7 @@ export default function CustomerHomepage() {
           <CategoryList categories={mockData.categories} />
         </div>
 
-        {mockData.user.isLoggedIn && <LoyaltyBanner user={mockData.user} />}
+        {user.isLoggedIn && <LoyaltyBanner user={user} />}
 
         <ProductSection
           title="Sản phẩm mới"

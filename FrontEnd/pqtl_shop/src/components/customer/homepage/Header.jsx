@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, ShoppingCart, Heart, User, Menu, X, Gift } from 'lucide-react';
 
 const Header = ({ user, cartCount, onSearch }) => {
+  const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -67,7 +69,10 @@ const Header = ({ user, cartCount, onSearch }) => {
                 </div>
               </div>
             ) : (
-              <button className="hidden lg:block text-blue-600 hover:text-blue-700 font-medium">
+              <button
+                className="hidden lg:block text-blue-600 hover:text-blue-700 font-medium"
+                onClick={() => navigate('/login')}
+              >
                 Đăng nhập / Đăng ký
               </button>
             )}
