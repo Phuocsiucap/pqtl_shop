@@ -22,7 +22,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final AuthService authService;
+    private final AuthService authService ;
 
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@RequestBody RegisterRequest request) {
@@ -45,8 +45,8 @@ public class AuthController {
 //        return ResponseEntity.ok(authService.loginWithGoogle(idToken));
 //    }
 
-    private final UserRepository userRepository;
-    private final VerificationTokenRepository verificationTokenRepository;
+    private final UserRepository userRepository = null;
+    private final VerificationTokenRepository verificationTokenRepository = null;
 
     @GetMapping("/verify")
     public ResponseEntity<String> verifyAccount(@RequestParam String token) {

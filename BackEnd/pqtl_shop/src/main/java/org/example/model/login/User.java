@@ -1,6 +1,5 @@
 package org.example.model.login;
 
-
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -17,5 +16,5 @@ public class User {
     private String email;
     private String password;
     private String role;
-    private boolean verified = false;
+    private boolean verified;
 }

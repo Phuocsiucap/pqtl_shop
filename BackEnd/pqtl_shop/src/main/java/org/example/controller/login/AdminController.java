@@ -15,7 +15,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AdminController {
 
-    private final AuthService authService;
+    private final AuthService authService ;
 
     @PostMapping("/create-user")
     public ResponseEntity<UserResponse> createUser(@RequestBody RegisterRequest request,

@@ -28,8 +28,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private final JwtService jwtService;
-    private final UserRepository userRepository;
+    private final JwtService jwtService = new JwtService();
+    private final UserRepository userRepository = null;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
