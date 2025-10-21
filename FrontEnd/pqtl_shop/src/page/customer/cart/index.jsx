@@ -1,54 +1,10 @@
 import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Minus, Trash2, ChevronDown, ChevronUp, Check, X } from 'lucide-react';
+import { useCartContext } from '../../../context/CartContext';
 import Toast from '../../../common/ToastNotification';
 import ConfirmDialog from '../../../common/ConfirmDialog';
 import SuccessModal from '../../../modals/OrderSeccessModal';
-/**
- * MOCK DATA - Replace with API call to GET /api/cart
- * Data structure aligned with Product model from backend
- */
-const MOCK_CART_ITEMS = [
-  {
-    id: '507f1f77bcf86cd799439011',
-    name: 'Rau cải xanh hữu cơ',
-    description: 'Rau cải xanh tươi, trồng theo tiêu chuẩn hữu cơ',
-    image: 'https://images.unsplash.com/photo-1587839882035-86db6c087d87?w=300&h=300&fit=crop',
-    price: 45000,
-    discount: 10000,
-    stockQuantity: 50,
-    soldQuantity: 245,
-    qty: 2
-  },
-  {
-    id: '507f1f77bcf86cd799439012',
-    name: 'Táo Fuji nhập khẩu',
-    description: 'Táo Fuji tươi từ Nhật Bản, giàu vitamin',
-    image: 'https://images.unsplash.com/photo-1560806e614b1c67b1bae90bcab6c1c16b11995c?w=300&h=300&fit=crop',
-    price: 85000,
-    discount: 15000,
-    stockQuantity: 30,
-    soldQuantity: 128,
-    qty: 1
-  },
-  {
-    id: '507f1f77bcf86cd799439013',
-    name: 'Cà chua cherry tươi',
-    description: 'Cà chua cherry nhỏ, ngọt, nước nhiều',
-    image: 'https://images.unsplash.com/photo-1592078615290-033ee584e267?w=300&h=300&fit=crop',
-    price: 55000,
-    discount: 5000,
-    stockQuantity: 100,
-    soldQuantity: 312,
-    qty: 3
-  }
-];
-
-const MOCK_PROMO_CODES = {
-  'SAVE10': { type: 'percent', value: 10, description: 'Giảm 10% tổng hóa đơn' },
-  'SHIPFREE': { type: 'shipping', value: 0, description: 'Miễn phí vận chuyển' },
-  'VND20000': { type: 'fixed', value: 20000, description: 'Giảm 20.000 VND' }
-};
 
 const SHIPPING_OPTIONS = [
   { id: 'express', label: 'Giao hàng nhanh (Express)', fee: 50000, time: '1-2 ngày' },
@@ -57,28 +13,30 @@ const SHIPPING_OPTIONS = [
 ];
 
 /**
- * Toast Notification Component
- */
-
-
-/**
- * Modal Dialog for Confirmation
- */
-
-/**
- * Success Modal after Checkout
- */
-
-/**
- * Main CartPage Component
+ * Main CartPage Component - Integrated with CartContext
  */
 export default function CartPage() {
-  // ==================== State Management ====================
-  const [cartItems, setCartItems] = useState(MOCK_CART_ITEMS);
-  const [shippingOption, setShippingOption] = useState('standard');
+  // ==================== Context Integration ====================
+  const {
+    state,
+    updateQty,
+    removeItems,
+    applyPromo,
+    checkout,
+    toggleSelect,
+    selectAll,
+    clearSelected,
+    setShipping,
+    subtotal,
+    shippingFee,
+    discount,
+    grandTotal
+  } = useCartContext();
+
+  const { items: cartItems, selected: selectedItems, loading, error, appliedPromo, shippingOption } = state;
+
+  // ==================== Local State ====================
   const [promoCode, setPromoCode] = useState('');
-  const [appliedPromo, setAppliedPromo] = useState(null);
-  const [selectedItems, setSelectedItems] = useState(new Set(cartItems.map(i => i.id)));
   const [addressData, setAddressData] = useState({
     recipient: '',
     phone: '',
@@ -97,57 +55,44 @@ export default function CartPage() {
   }, []);
 
   // ==================== Cart Operations ====================
-  const updateQty = useCallback((itemId, newQty) => {
+  const handleUpdateQty = useCallback(async (itemId, newQty) => {
     if (newQty < 1) return;
-    setCartItems(prev =>
-      prev.map(item =>
-        item.id === itemId ? { ...item, qty: newQty } : item
-      )
-    );
-    showToast('Cập nhật số lượng thành công');
-  }, [showToast]);
+    try {
+      await updateQty(itemId, newQty);
+      showToast('Cập nhật số lượng thành công');
+    } catch (err) {
+      showToast(err.message || 'Không thể cập nhật số lượng', 'error');
+    }
+  }, [updateQty, showToast]);
 
   const handleQtyInputChange = useCallback((itemId, value) => {
     const newQty = parseInt(value) || 0;
     if (newQty > 0) {
-      updateQty(itemId, newQty);
+      handleUpdateQty(itemId, newQty);
     }
-  }, [updateQty]);
+  }, [handleUpdateQty]);
 
-  const removeItem = useCallback((itemId) => {
-    const item = cartItems.find(i => i.id === itemId);
-    setCartItems(prev => prev.filter(i => i.id !== itemId));
-    setSelectedItems(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(itemId);
-      return newSet;
-    });
-    setConfirmDelete({ isOpen: false, itemId: null, count: 0 });
-    showToast(`Đã xóa "${item.name}" khỏi giỏ hàng`);
-  }, [cartItems, showToast]);
+  const handleRemoveItem = useCallback(async (itemId) => {
+    const item = cartItems.find(i => i.productId === itemId);
+    try {
+      await removeItems([itemId]);
+      setConfirmDelete({ isOpen: false, itemId: null, count: 0 });
+      showToast(`Đã xóa "${item?.productName || 'sản phẩm'}" khỏi giỏ hàng`);
+    } catch (err) {
+      showToast(err.message || 'Không thể xóa sản phẩm', 'error');
+    }
+  }, [cartItems, removeItems, showToast]);
 
   // ==================== Selection Handlers ====================
-  const toggleItemSelection = useCallback((itemId) => {
-    setSelectedItems(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(itemId)) {
-        newSet.delete(itemId);
-      } else {
-        newSet.add(itemId);
-      }
-      return newSet;
-    });
-  }, []);
-
-  const toggleSelectAll = useCallback(() => {
+  const handleToggleSelectAll = useCallback(() => {
     if (selectedItems.size === cartItems.length) {
-      setSelectedItems(new Set());
+      clearSelected();
     } else {
-      setSelectedItems(new Set(cartItems.map(i => i.id)));
+      selectAll();
     }
-  }, [selectedItems, cartItems]);
+  }, [selectedItems, cartItems, selectAll, clearSelected]);
 
-  const deleteAllSelected = useCallback(() => {
+  const handleDeleteAllSelected = useCallback(() => {
     if (selectedItems.size === 0) {
       showToast('Vui lòng chọn sản phẩm để xóa', 'error');
       return;
@@ -155,73 +100,49 @@ export default function CartPage() {
     setConfirmDelete({ isOpen: true, itemId: 'all', count: selectedItems.size });
   }, [selectedItems, showToast]);
 
-  const handleConfirmDeleteAll = useCallback(() => {
-    const newItems = cartItems.filter(item => !selectedItems.has(item.id));
-    setCartItems(newItems);
-    const deletedCount = selectedItems.size;
-    setSelectedItems(new Set());
-    setConfirmDelete({ isOpen: false, itemId: null, count: 0 });
-    showToast(`Đã xóa ${deletedCount} sản phẩm khỏi giỏ hàng`);
-  }, [cartItems, selectedItems, showToast]);
+  const handleConfirmDeleteAll = useCallback(async () => {
+    try {
+      const ids = Array.from(selectedItems);
+      await removeItems(ids);
+      const deletedCount = ids.length;
+      setConfirmDelete({ isOpen: false, itemId: null, count: 0 });
+      showToast(`Đã xóa ${deletedCount} sản phẩm khỏi giỏ hàng`);
+    } catch (err) {
+      showToast(err.message || 'Không thể xóa sản phẩm', 'error');
+    }
+  }, [selectedItems, removeItems, showToast]);
 
   // ==================== Promo Code Logic ====================
-  const applyPromo = useCallback(() => {
+  const handleApplyPromo = useCallback(async () => {
     if (!promoCode.trim()) {
       showToast('Vui lòng nhập mã khuyến mãi', 'error');
       return;
     }
 
-    const promo = MOCK_PROMO_CODES[promoCode.toUpperCase()];
-    if (!promo) {
-      showToast('Mã khuyến mãi không hợp lệ', 'error');
-      return;
+    try {
+      await applyPromo(promoCode.toUpperCase());
+      setPromoCode('');
+      showToast(`Áp dụng mã "${promoCode.toUpperCase()}" thành công`);
+    } catch (err) {
+      showToast(err.message || 'Mã khuyến mãi không hợp lệ', 'error');
     }
+  }, [promoCode, applyPromo, showToast]);
 
-    setAppliedPromo({ code: promoCode.toUpperCase(), ...promo });
-    setPromoCode('');
-    showToast(`Áp dụng mã "${promoCode.toUpperCase()}" thành công`);
-  }, [promoCode, showToast]);
-
-  const removePromo = useCallback(() => {
-    setAppliedPromo(null);
+  const handleRemovePromo = useCallback(() => {
+    applyPromo(null);
     showToast('Xóa mã khuyến mãi thành công');
-  }, [showToast]);
+  }, [applyPromo, showToast]);
 
   // ==================== Address Form Handlers ====================
   const handleAddressChange = useCallback((field, value) => {
     setAddressData(prev => ({ ...prev, [field]: value }));
   }, []);
 
-  // ==================== Price Calculations ====================
-  // getFinalPrice() logic: price - discount (mapped from Product model)
-  // Only calculate for selected items
-  const subtotal = cartItems.reduce((sum, item) => {
-    if (!selectedItems.has(item.id)) return sum;
-    const finalPrice = item.price - item.discount;
-    return sum + finalPrice * item.qty;
-  }, 0);
-
-  const shippingFee = shippingOption === 'free' ? 0 : 
-    SHIPPING_OPTIONS.find(o => o.id === shippingOption)?.fee || 0;
-  
-  let discount = 0;
-  if (appliedPromo) {
-    if (appliedPromo.type === 'percent') {
-      discount = Math.round(subtotal * (appliedPromo.value / 100));
-    } else if (appliedPromo.type === 'fixed') {
-      discount = appliedPromo.value;
-    } else if (appliedPromo.type === 'shipping') {
-      // Miễn phí vận chuyển được xử lý bởi shippingOption
-    }
-  }
-
-  const grandTotal = Math.max(0, subtotal + shippingFee - discount);
-
   // ==================== Validation & Checkout ====================
   const isAddressValid = addressData.recipient && addressData.phone && addressData.addressLine;
   const isCartEmpty = cartItems.length === 0;
 
-  const handleCheckout = useCallback(() => {
+  const handleCheckout = useCallback(async () => {
     if (selectedItems.size === 0) {
       showToast('Vui lòng chọn sản phẩm để thanh toán', 'error');
       return;
@@ -233,31 +154,68 @@ export default function CartPage() {
       return;
     }
 
-    // TODO: Call POST /api/checkout with checkout payload
-    const checkoutPayload = {
-      items: cartItems.filter(i => selectedItems.has(i.id)),
-      address: addressData,
-      shippingOption,
-      appliedPromo: appliedPromo?.code || null,
-      subtotal,
-      shippingFee,
-      discount,
-      grandTotal,
-      timestamp: new Date().toISOString()
-    };
+    try {
+      const checkoutPayload = {
+        items: cartItems.filter(i => selectedItems.has(i.productId)).map(i => ({
+          productId: i.productId,
+          qty: i.qty
+        })),
+        shippingAddress: {
+          recipient: addressData.recipient,
+          phone: addressData.phone,
+          addressLine: addressData.addressLine,
+          city: addressData.city
+        },
+        shippingOption,
+        promoCode: appliedPromo?.code || null,
+        subtotal,
+        shippingFee,
+        discount,
+        total: grandTotal
+      };
 
-    console.log('Checkout payload:', checkoutPayload);
-
-    // Simulate API response
-    const orderId = `ORD-${Date.now()}`;
-    setSuccessOrder({ isOpen: true, orderId });
-    showToast('Đặt hàng thành công!');
-  }, [selectedItems, isAddressValid, cartItems, addressData, shippingOption, appliedPromo, subtotal, shippingFee, discount, grandTotal, showToast]);
+      const result = await checkout(checkoutPayload);
+      const orderId = result.orderId || `ORD-${Date.now()}`;
+      setSuccessOrder({ isOpen: true, orderId });
+      showToast('Đặt hàng thành công!');
+    } catch (err) {
+      showToast(err.message || 'Không thể đặt hàng', 'error');
+    }
+  }, [selectedItems, isAddressValid, cartItems, addressData, shippingOption, appliedPromo, subtotal, shippingFee, discount, grandTotal, checkout, showToast]);
 
   const handleSuccessClose = () => {
     setSuccessOrder({ isOpen: false, orderId: null });
     // TODO: Redirect to home or order history page
+    // window.location.href = '/orders';
   };
+
+  // ==================== Loading & Error States ====================
+  if (loading && cartItems.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8 px-4 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Đang tải giỏ hàng...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8 px-4">
+        <div className="max-w-2xl mx-auto bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+          >
+            Thử lại
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // ==================== JSX Rendering ====================
   return (
@@ -284,7 +242,7 @@ export default function CartPage() {
                   <input
                     type="checkbox"
                     checked={selectedItems.size === cartItems.length && cartItems.length > 0}
-                    onChange={toggleSelectAll}
+                    onChange={handleToggleSelectAll}
                     className="w-5 h-5 rounded"
                     aria-label="Chọn tất cả sản phẩm"
                   />
@@ -294,7 +252,7 @@ export default function CartPage() {
                 </label>
                 {selectedItems.size > 0 && (
                   <button
-                    onClick={deleteAllSelected}
+                    onClick={handleDeleteAllSelected}
                     className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition font-medium flex items-center gap-2 w-full md:w-auto justify-center"
                   >
                     <Trash2 size={18} />
@@ -306,108 +264,109 @@ export default function CartPage() {
               {/* Product List */}
               <div className="space-y-4">
                 <AnimatePresence mode="popLayout">
-                  {cartItems.map(item => (
-                    <motion.div
-                      key={item.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      className={`bg-white rounded-lg shadow hover:shadow-md transition p-4 ${
-                        selectedItems.has(item.id) ? 'ring-2 ring-green-500' : ''
-                      }`}
-                    >
-                      <div className="flex gap-4">
-                        {/* Checkbox Selection */}
-                        <div className="flex items-start pt-1">
-                          <input
-                            type="checkbox"
-                            checked={selectedItems.has(item.id)}
-                            onChange={() => toggleItemSelection(item.id)}
-                            className="w-5 h-5 rounded cursor-pointer"
-                            aria-label={`Chọn ${item.name}`}
+                  {cartItems.map(item => {
+                    const itemId = item.productId;
+                    const finalPrice = item.price - (item.discount || 0);
+                    
+                    return (
+                      <motion.div
+                        key={itemId}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        className={`bg-white rounded-lg shadow hover:shadow-md transition p-4 ${
+                          selectedItems.has(itemId) ? 'ring-2 ring-green-500' : ''
+                        }`}
+                      >
+                        <div className="flex gap-4">
+                          {/* Checkbox Selection */}
+                          <div className="flex items-start pt-1">
+                            <input
+                              type="checkbox"
+                              checked={selectedItems.has(itemId)}
+                              onChange={() => toggleSelect(itemId)}
+                              className="w-5 h-5 rounded cursor-pointer"
+                              aria-label={`Chọn ${item.productName}`}
+                            />
+                          </div>
+
+                          {/* Product Image */}
+                          <img
+                            src={item.image}
+                            alt={item.productName}
+                            className="w-24 h-24 object-cover rounded-lg"
                           />
-                        </div>
 
-                        {/* Product Image */}
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="w-24 h-24 object-cover rounded-lg"
-                        />
-
-                        {/* Product Info */}
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-gray-900 text-lg">{item.name}</h3>
-                          <p className="text-sm text-gray-600 mb-2">{item.description}</p>
-                          <div className="flex items-center gap-2">
-                            {item.discount > 0 ? (
-                              <>
-                                <span className="text-gray-500 line-through text-sm">
+                          {/* Product Info */}
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-gray-900 text-lg">{item.productName}</h3>
+                            <div className="flex items-center gap-2 mt-2">
+                              {item.discount > 0 ? (
+                                <>
+                                  <span className="text-gray-500 line-through text-sm">
+                                    {item.price.toLocaleString('vi-VN')} VND
+                                  </span>
+                                  <span className="text-green-600 font-bold text-lg">
+                                    {finalPrice.toLocaleString('vi-VN')} VND
+                                  </span>
+                                </>
+                              ) : (
+                                <span className="text-green-600 font-bold text-lg">
                                   {item.price.toLocaleString('vi-VN')} VND
                                 </span>
-                                <span className="text-green-600 font-bold text-lg">
-                                  {(item.price - item.discount).toLocaleString('vi-VN')} VND
-                                </span>
-                              </>
-                            ) : (
-                              <span className="text-green-600 font-bold text-lg">
-                                {item.price.toLocaleString('vi-VN')} VND
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs text-gray-500 mt-1">
-                            Đã bán: {item.soldQuantity} | Còn: {item.stockQuantity}
-                          </p>
-                        </div>
-
-                        {/* Quantity Controls & Delete */}
-                        <div className="flex flex-col items-end justify-between">
-                          {/* Quantity Buttons */}
-                          <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
-                            <button
-                              onClick={() => updateQty(item.id, item.qty - 1)}
-                              aria-label={`Giảm số lượng ${item.name}`}
-                              className="p-1 hover:bg-gray-200 rounded transition"
-                            >
-                              <Minus size={18} className="text-gray-700" />
-                            </button>
-                            <input
-                              type="number"
-                              min="1"
-                              value={item.qty}
-                              onChange={e => handleQtyInputChange(item.id, e.target.value)}
-                              aria-label={`Số lượng ${item.name}`}
-                              className="w-12 text-center bg-transparent font-semibold focus:outline-none"
-                            />
-                            <button
-                              onClick={() => updateQty(item.id, item.qty + 1)}
-                              aria-label={`Tăng số lượng ${item.name}`}
-                              className="p-1 hover:bg-gray-200 rounded transition"
-                            >
-                              <Plus size={18} className="text-gray-700" />
-                            </button>
+                              )}
+                            </div>
                           </div>
 
-                          {/* Delete Button */}
-                          <button
-                            onClick={() => setConfirmDelete({ isOpen: true, itemId: item.id, count: 0 })}
-                            aria-label={`Xóa ${item.name}`}
-                            className="text-red-500 hover:text-red-700 transition mt-2"
-                          >
-                            <Trash2 size={20} />
-                          </button>
-                        </div>
-                      </div>
+                          {/* Quantity Controls & Delete */}
+                          <div className="flex flex-col items-end justify-between">
+                            {/* Quantity Buttons */}
+                            <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                              <button
+                                onClick={() => handleUpdateQty(itemId, item.qty - 1)}
+                                aria-label={`Giảm số lượng ${item.productName}`}
+                                className="p-1 hover:bg-gray-200 rounded transition"
+                              >
+                                <Minus size={18} className="text-gray-700" />
+                              </button>
+                              <input
+                                type="number"
+                                min="1"
+                                value={item.qty}
+                                onChange={e => handleQtyInputChange(itemId, e.target.value)}
+                                aria-label={`Số lượng ${item.productName}`}
+                                className="w-12 text-center bg-transparent font-semibold focus:outline-none"
+                              />
+                              <button
+                                onClick={() => handleUpdateQty(itemId, item.qty + 1)}
+                                aria-label={`Tăng số lượng ${item.productName}`}
+                                className="p-1 hover:bg-gray-200 rounded transition"
+                              >
+                                <Plus size={18} className="text-gray-700" />
+                              </button>
+                            </div>
 
-                      {/* Subtotal for Item */}
-                      <div className="mt-3 pt-3 border-t border-gray-200 text-right">
-                        <span className="text-gray-600">Thành tiền: </span>
-                        <span className="font-bold text-gray-900">
-                          {((item.price - item.discount) * item.qty).toLocaleString('vi-VN')} VND
-                        </span>
-                      </div>
-                    </motion.div>
-                  ))}
+                            {/* Delete Button */}
+                            <button
+                              onClick={() => setConfirmDelete({ isOpen: true, itemId, count: 0 })}
+                              aria-label={`Xóa ${item.productName}`}
+                              className="text-red-500 hover:text-red-700 transition mt-2"
+                            >
+                              <Trash2 size={20} />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Subtotal for Item */}
+                        <div className="mt-3 pt-3 border-t border-gray-200 text-right">
+                          <span className="text-gray-600">Thành tiền: </span>
+                          <span className="font-bold text-gray-900">
+                            {(finalPrice * item.qty).toLocaleString('vi-VN')} VND
+                          </span>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
                 </AnimatePresence>
               </div>
             </div>
@@ -432,7 +391,6 @@ export default function CartPage() {
                       exit={{ opacity: 0, height: 0 }}
                       className="space-y-4"
                     >
-                      {/* Recipient Name */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Tên người nhận *
@@ -446,7 +404,6 @@ export default function CartPage() {
                         />
                       </div>
 
-                      {/* Phone */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Số điện thoại *
@@ -460,7 +417,6 @@ export default function CartPage() {
                         />
                       </div>
 
-                      {/* Address Line */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Địa chỉ chi tiết *
@@ -474,7 +430,6 @@ export default function CartPage() {
                         />
                       </div>
 
-                      {/* City */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Thành phố / Tỉnh
@@ -510,7 +465,7 @@ export default function CartPage() {
                         name="shipping"
                         value={option.id}
                         checked={shippingOption === option.id}
-                        onChange={e => setShippingOption(e.target.value)}
+                        onChange={e => setShipping(e.target.value)}
                         className="mt-1"
                       />
                       <div className="flex-1">
@@ -536,7 +491,7 @@ export default function CartPage() {
                       <p className="text-sm text-green-700">{appliedPromo.description}</p>
                     </div>
                     <button
-                      onClick={removePromo}
+                      onClick={handleRemovePromo}
                       className="text-green-600 hover:text-green-700"
                     >
                       <X size={20} />
@@ -553,7 +508,7 @@ export default function CartPage() {
                       aria-label="Mã khuyến mãi"
                     />
                     <button
-                      onClick={applyPromo}
+                      onClick={handleApplyPromo}
                       className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
                     >
                       Áp dụng
@@ -596,14 +551,14 @@ export default function CartPage() {
                 {/* Checkout Button */}
                 <button
                   onClick={handleCheckout}
-                  disabled={isCartEmpty || selectedItems.size === 0}
+                  disabled={isCartEmpty || selectedItems.size === 0 || loading}
                   className={`w-full mt-6 py-3 rounded-lg font-semibold transition ${
-                    isCartEmpty || selectedItems.size === 0
+                    isCartEmpty || selectedItems.size === 0 || loading
                       ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       : 'bg-green-600 text-white hover:bg-green-700'
                   }`}
                 >
-                  Thanh toán ({selectedItems.size} sản phẩm)
+                  {loading ? 'Đang xử lý...' : `Thanh toán (${selectedItems.size} sản phẩm)`}
                 </button>
               </div>
             </div>
@@ -620,7 +575,7 @@ export default function CartPage() {
             ? `Bạn chắc chắn muốn xóa ${confirmDelete.count} sản phẩm này khỏi giỏ hàng?`
             : 'Bạn chắc chắn muốn xóa sản phẩm này khỏi giỏ hàng?'
         }
-        onConfirm={confirmDelete.itemId === 'all' ? handleConfirmDeleteAll : () => removeItem(confirmDelete.itemId)}
+        onConfirm={confirmDelete.itemId === 'all' ? handleConfirmDeleteAll : () => handleRemoveItem(confirmDelete.itemId)}
         onCancel={() => setConfirmDelete({ isOpen: false, itemId: null, count: 0 })}
       />
 
@@ -638,64 +593,3 @@ export default function CartPage() {
     </div>
   );
 }
-
-/**
- * ==================== ACCEPTANCE CRITERIA MAPPING ====================
- * 
- * ✓ US4.1 - Thêm sản phẩm vào giỏ
- *   - Hiển thị danh sách sản phẩm với tên, ảnh, giá, số lượng
- *   - Component khởi tạo với mock data (có thể call GET /api/cart)
- * 
- * ✓ US4.2 - Xem & chỉnh sửa giỏ hàng
- *   - Tăng/giảm số lượng qua nút [+] [-]
- *   - Nhập trực tiếp số lượng vào input
- *   - Xóa sản phẩm với xác nhận dialog
- *   - Xóa nhiều sản phẩm được chọn cùng lúc
- *   - Cập nhật ngay lập tức, animate khi xóa
- * 
- * ✓ US4.3 - Nhập địa chỉ giao hàng
- *   - Form với các field: recipient, phone, addressLine, city
- *   - Validation cơ bản (required fields) khi thanh toán
- *   - Collapsible UI, có thể expand/collapse
- * 
- * ✓ US4.4 - Chọn phương thức giao hàng
- *   - Radio options: Express (50k), Standard (30k), Economy (15k)
- *   - Phí vận chuyển hiển thị real-time
- *   - Hỗ trợ mã SHIPFREE để miễn phí vận chuyển
- * 
- * ✓ US4.5 - Hiển thị tổng giá trị
- *   - Subtotal = sum((price - discount) × qty) cho sản phẩm được chọn
- *   - Shipping fee theo option chọn
- *   - Discount = áp mã promo (percent, fixed, shipping)
- *   - Grand Total = subtotal + shipping - discount (>= 0)
- * 
- * ✓ FEATURE: Chọn sản phẩm (Selection)
- *   - Checkbox cho từng sản phẩm
- *   - Chọn tất cả / Bỏ chọn tất cả
- *   - Hiển thị số lượng chọn (X/Y)
- *   - Highlight sản phẩm được chọn (ring-2 ring-green-500)
- *   - Thanh toán chỉ tính sản phẩm được chọn
- * 
- * ✓ FEATURE: Xóa tất cả sản phẩm được chọn
- *   - Nút "Xóa X sản phẩm" hiển thị khi có lựa chọn
- *   - Xác nhận trước khi xóa
- *   - Toast notification sau xóa thành công
- *   - Cập nhật lại count và UI
- * 
- * ✓ FEATURE: Responsive Design
- *   - Desktop: 2 cột (items + summary)
- *   - Mobile: 1 cột (items trên, summary ở dưới sticky)
- *   - Nút "Xóa tất cả" responsive (full width on mobile)
- * 
- * ✓ FEATURE: Notifications & Feedback
- *   - Toast thành công/lỗi (3s auto-hide)
- *   - Confirm dialog trước xóa
- *   - Success modal sau checkout
- *   - Animation Framer Motion cho tất cả interactions
- * 
- * ✓ FEATURE: Accessibility
- *   - aria-label cho buttons + inputs
- *   - Keyboard accessible (tab, enter, space)
- *   - Form labels dùng <label> tag
- *   - Semantic HTML structure
- */

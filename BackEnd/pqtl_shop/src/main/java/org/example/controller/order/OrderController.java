@@ -27,6 +27,7 @@ public class OrderController {
             @RequestBody Order order) {
         try {
             String userId = extractUserIdFromAuthentication(authentication);
+
             order.setUserId(userId);
             Order created = orderService.createOrder(order);
             return ResponseEntity.ok(created);
