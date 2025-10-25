@@ -69,7 +69,10 @@ const Header = ({ user, cartCount, onSearch }) => {
                 </div>
               </div>
             ) : (
-              <button className="hidden lg:block text-blue-600 hover:text-blue-700 font-medium">
+              <button
+                className="hidden lg:block text-blue-600 hover:text-blue-700 font-medium"
+                onClick={() => navigate('/login')}
+              >
                 Đăng nhập / Đăng ký
               </button>
             )}

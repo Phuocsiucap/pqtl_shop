@@ -1,21 +1,28 @@
 package org.example.config;
 
-
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 import lombok.RequiredArgsConstructor;
+import org.example.model.login.User;
 import org.example.repository.login.UserRepository;
+import org.example.repository.login.UserDetailsImpl;
 import org.example.service.login.JwtService;
+import org.springframework.context.annotation.Bean;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -48,16 +55,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            var user = userRepository.findByEmail(email).orElse(null);
+            User user = userRepository.findByEmail(email).orElse(null);
+
             if (user != null && jwtService.isTokenValid(token, user.getEmail())) {
 
-                var authorities = Collections.singletonList(
-                        new SimpleGrantedAuthority(user.getRole())
-                );
+                // Dùng UserDetailsImpl để wrapper User
+                UserDetailsImpl userDetails = new UserDetailsImpl(user);
 
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        user, null, authorities
-                );
+                UsernamePasswordAuthenticationToken authToken =
+                        new UsernamePasswordAuthenticationToken(
+                                userDetails, null, userDetails.getAuthorities()
+                        );
 
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
@@ -66,4 +74,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         filterChain.doFilter(request, response);
     }
+
+
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String path = request.getServletPath();
+        return path.startsWith("/api/auth/login") ||
+                path.startsWith("/api/auth/register") ||
+                path.startsWith("/api/auth/verify");
+    }
+
+
 }

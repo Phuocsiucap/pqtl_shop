@@ -5,7 +5,11 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 //page
 import HomePage from "./page/customer/home";
 import ProductPage from "./page/customer/ProductPage";
+import LoginPage from './page/login/Login';
+import Register from './page/login/Register';
+import VerifyPage from './page/login/Verify';
 import CartPage from './page/customer/cart';
+// import DashboardPage from './page/admin/DashboardPage';
 //admin page
 // import Dashboard from "./page/admin/bestSellingDashboard";
 
@@ -48,9 +52,15 @@ function App() {
               <Route path="sales-statistics" element={<ProductSalesStatistics/>}/>
             </Route>
 
-            {/* <Route path="/admin/dashboard" element={<Dashboard />} /> */}
-          </Routes>
-        </Router>
+          {/* <Route path="/admin/dashboard" element={<Dashboard />} /> */}
+
+           {/* Auth Pages */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/verify" element={<VerifyPage />} />
+          
+        </Routes>
+      </Router>
       </CartProvider>
     </BestSellingProvider>
   );
