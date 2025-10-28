@@ -1,29 +1,29 @@
 package org.example.controller;
+
 import org.example.model.Product;
 import org.example.service.SearchProductService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/products")
-@RequiredArgsConstructor
 public class SearchProductController {
 
-    private final SearchProductService productService;
+    private final SearchProductService service;
 
-    // API tìm kiếm sản phẩm theo từ khóa
-    @GetMapping("/search")
-    public List<Product> searchProducts(@RequestParam String keyword) {
-        return productService.searchProducts(keyword);
+    public SearchProductController(SearchProductService service) {
+        this.service = service;
     }
 
-    // API tìm kiếm theo từ khóa và danh mục
-    @GetMapping("/search/category")
-    public List<Product> searchProductsByCategory(
-            @RequestParam String keyword,
-                @RequestParam String categoryId) {
-        return productService.searchProductsByCategory(keyword, categoryId);
+    // Lấy tất cả sản phẩm
+    @GetMapping
+    public List<Product> getAllProducts() {
+        return service.getAllProducts();
+    }
+
+    // Tìm kiếm sản phẩm
+    @GetMapping("/search")
+    public List<Product> searchProducts(@RequestParam String keyword) {
+        return service.searchProducts(keyword);
     }
 }

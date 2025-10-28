@@ -1,0 +1,26 @@
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap");
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+/* css cho menu item (li)*/
+.top-menu-item {
+  @apply hover:text-primary relative after:absolute after:bottom-0 after:left-0 after:bg-primary
+    after:h-0.5 after:w-0 hover:after:w-full after:transition-all after:ease-in-out after:duration-300 font-bold;
+}
+.icon {
+  @apply h-5 w-5 inline-block;
+}
+.test {
+  @apply mx-3 my-3 lg:mx-10 xl:mx-32;
+}
+.input-form {
+  @apply py-3 w-[90%]  outline-none border-gray-600 border-2 focus:border-2 placeholder:text-left
+  focus:border-primary rounded-md px-5 font-semibold focus:shadow-sm focus:shadow-primary;
+}
+.input-search {
+  @apply text-sm font-Montserrat text-primary border-2 border-gray-500
+  focus:outline-primary rounded-lg py-1.5 pl-10 placeholder-gray-600 focus:placeholder-primary;
+}
+.button-primary {
+  @apply rounded-md text-white transition-all duration-500 ease-in-out;
+}

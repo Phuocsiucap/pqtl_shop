@@ -1,0 +1,33 @@
+.test {
+  padding-top: 10px;
+}
+.product-card {
+  position: relative;
+  width: 320px;
+}
+.colors {
+  margin: 10px 0;
+  color: #666;
+  font-size: 14px;
+}
+.price-range {
+  font-size: 16px;
+  color: red;
+  font-weight: bold;
+}
+.introduction p {
+  margin-bottom: 8px;
+}
+.product-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 50px;
+  justify-content: center;
+}
+
+.product-card {
+  background: #f5f4f4;
+  text-align: center;
+  position: relative;
+  width: 300px;
+}

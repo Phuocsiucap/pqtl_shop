@@ -1,0 +1,380 @@
+// ============================================
+// CART API - TEST DATA VỚI POSTMAN
+// ============================================
+
+// ============================================
+// 1. GET /api/cart - LẤY GIỎ HÀNG
+// ============================================
+/*
+Method: GET
+URL: http://localhost:8080/api/cart
+Headers:
+  - Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+  - Content-Type: application/json
+
+Response (Success - 200):
+{
+  [
+    {
+      "productId": "507f1f77bcf86cd799439011",
+      "productName": "Laptop Dell XPS 13",
+      "image": "https://via.placeholder.com/300x300?text=Dell+XPS",
+      "price": 25000000,
+      "discount": 2000000,
+      "qty": 2,
+      "total": 46000000
+    },
+    {
+      "productId": "507f1f77bcf86cd799439012",
+      "productName": "Chuột Logitech MX Master 3",
+      "image": "https://via.placeholder.com/300x300?text=Logitech",
+      "price": 2500000,
+      "discount": 250000,
+      "qty": 1,
+      "total": 2250000
+    }
+  ]
+}
+*/
+
+
+// ============================================
+// 2. POST /api/cart/add - THÊM ITEM VÀO GIỎ
+// ============================================
+/*
+Method: POST
+URL: http://localhost:8080/api/cart/add
+Headers:
+  - Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+  - Content-Type: application/json
+
+Body (Raw - JSON):
+*/
+{
+  "productId": "507f1f77bcf86cd799439011",
+  "productName": "Laptop Dell XPS 13",
+  "image": "https://via.placeholder.com/300x300?text=Dell+XPS",
+  "price": 25000000,
+  "discount": 2000000,
+  "qty": 1
+}
+
+/*
+Response (Success - 200):
+{
+  "id": "64a7f1e8c1d2e3f4g5h6i7j8",
+  "userId": "507f191e810c19729de860ea",
+  "items": [
+    {
+      "productId": "507f1f77bcf86cd799439011",
+      "productName": "Laptop Dell XPS 13",
+      "image": "https://via.placeholder.com/300x300?text=Dell+XPS",
+      "price": 25000000,
+      "discount": 2000000,
+      "qty": 1,
+      "total": 23000000
+    }
+  ],
+  "createdAt": "2024-10-19T10:30:00",
+  "updatedAt": "2024-10-19T10:30:00"
+}
+*/
+
+// Ví dụ thêm các sản phẩm khác:
+// Điện thoại
+{
+  "productId": "507f1f77bcf86cd799439020",
+  "productName": "iPhone 15 Pro Max",
+  "image": "https://via.placeholder.com/300x300?text=iPhone+15",
+  "price": 30000000,
+  "discount": 3000000,
+  "qty": 1
+}
+
+// Tai nghe
+{
+  "productId": "507f1f77bcf86cd799439021",
+  "productName": "Sony WH-1000XM5",
+  "image": "https://via.placeholder.com/300x300?text=Sony+Headset",
+  "price": 8000000,
+  "discount": 800000,
+  "qty": 2
+}
+
+// Màn hình
+{
+  "productId": "507f1f77bcf86cd799439022",
+  "productName": "LG UltraWide 34 inch",
+  "image": "https://via.placeholder.com/300x300?text=LG+Monitor",
+  "price": 12000000,
+  "discount": 1000000,
+  "qty": 1
+}
+
+// Bàn phím
+{
+  "productId": "507f1f77bcf86cd799439023",
+  "productName": "Keychron K3 Pro",
+  "image": "https://via.placeholder.com/300x300?text=Keychron",
+  "price": 3500000,
+  "discount": 350000,
+  "qty": 1
+}
+
+
+// ============================================
+// 3. PUT /api/cart/{productId} - CẬP NHẬT SỐ LƯỢNG
+// ============================================
+/*
+Method: PUT
+URL: http://localhost:8080/api/cart/507f1f77bcf86cd799439011
+Headers:
+  - Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+  - Content-Type: application/json
+
+Body (Raw - JSON):
+*/
+{
+  "qty": 3
+}
+
+/*
+Ví dụ cập nhật số lượng khác:
+*/
+{
+  "qty": 5
+}
+
+/*
+Response (Success - 200):
+{
+  "id": "64a7f1e8c1d2e3f4g5h6i7j8",
+  "userId": "507f191e810c19729de860ea",
+  "items": [
+    {
+      "productId": "507f1f77bcf86cd799439011",
+      "productName": "Laptop Dell XPS 13",
+      "image": "https://via.placeholder.com/300x300?text=Dell+XPS",
+      "price": 25000000,
+      "discount": 2000000,
+      "qty": 3,
+      "total": 69000000
+    }
+  ],
+  "updatedAt": "2024-10-19T10:35:00"
+}
+*/
+
+
+// ============================================
+// 4. DELETE /api/cart/{productId} - XÓA ITEM
+// ============================================
+/*
+Method: DELETE
+URL: http://localhost:8080/api/cart/507f1f77bcf86cd799439011
+Headers:
+  - Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+  - Content-Type: application/json
+
+Response (Success - 200):
+{
+  "id": "64a7f1e8c1d2e3f4g5h6i7j8",
+  "userId": "507f191e810c19729de860ea",
+  "items": [],
+  "updatedAt": "2024-10-19T10:40:00"
+}
+*/
+
+
+// ============================================
+// 5. POST /api/cart/bulk-delete - XÓA NHIỀU ITEMS
+// ============================================
+/*
+Method: POST
+URL: http://localhost:8080/api/cart/bulk-delete
+Headers:
+  - Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+  - Content-Type: application/json
+
+Body (Raw - JSON):
+*/
+{
+  "ids": [
+    "507f1f77bcf86cd799439011",
+    "507f1f77bcf86cd799439012",
+    "507f1f77bcf86cd799439013"
+  ]
+}
+
+/*
+Ví dụ xóa 2 items:
+*/
+{
+  "ids": [
+    "507f1f77bcf86cd799439020",
+    "507f1f77bcf86cd799439021"
+  ]
+}
+
+/*
+Response (Success - 200):
+{
+  "id": "64a7f1e8c1d2e3f4g5h6i7j8",
+  "userId": "507f191e810c19729de860ea",
+  "items": [],
+  "updatedAt": "2024-10-19T10:45:00"
+}
+*/
+
+
+// ============================================
+// 6. DELETE /api/cart - XÓA TẤT CẢ ITEMS
+// ============================================
+/*
+Method: DELETE
+URL: http://localhost:8080/api/cart
+Headers:
+  - Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+  - Content-Type: application/json
+
+Body: (Để trống)
+
+Response (Success - 200):
+{
+  "id": "64a7f1e8c1d2e3f4g5h6i7j8",
+  "userId": "507f191e810c19729de860ea",
+  "items": [],
+  "updatedAt": "2024-10-19T10:50:00"
+}
+*/
+
+
+// ============================================
+// 7. GET /api/cart/subtotal - LẤY TỔNG TIỀN
+// ============================================
+/*
+Method: GET
+URL: http://localhost:8080/api/cart/subtotal
+Headers:
+  - Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+  - Content-Type: application/json
+
+Response (Success - 200):
+{
+  "subtotal": 92250000
+}
+
+Giải thích:
+- 2 * (25000000 - 2000000) = 46000000 (Laptop)
+- 1 * (2500000 - 250000) = 2250000 (Chuột)
+- 2 * (8000000 - 800000) = 14400000 (Tai nghe)
+- 1 * (12000000 - 1000000) = 11000000 (Màn hình)
+- 1 * (3500000 - 350000) = 3150000 (Bàn phím)
+Total = 76800000
+*/
+
+
+// ============================================
+// 8. GET /api/cart/count - ĐẾM SỐ ITEMS
+// ============================================
+/*
+Method: GET
+URL: http://localhost:8080/api/cart/count
+Headers:
+  - Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+  - Content-Type: application/json
+
+Response (Success - 200):
+{
+  "count": 6
+}
+
+Giải thích:
+- Laptop: qty 2
+- Chuột: qty 1
+- Tai nghe: qty 2
+- Màn hình: qty 1
+Total = 6 items
+*/
+
+
+// ============================================
+// ERROR RESPONSES
+// ============================================
+
+// 401 - User not authenticated
+{
+  "error": "User not authenticated"
+}
+
+// 400 - Invalid request
+{
+  "error": "Invalid quantity"
+}
+
+// 404 - Product not found
+{
+  "error": "Product not found in cart"
+}
+
+
+// ============================================
+// POSTMAN ENVIRONMENT VARIABLES
+// ============================================
+/*
+Thiết lập biến môi trường trong Postman:
+
+1. Mở Environment
+2. Tạo mới hoặc edit hiện tại
+3. Thêm các biến:
+
+VARIABLE NAME          | INITIAL VALUE | CURRENT VALUE
+-------------------------------------------------
+base_url              | http://localhost:8080 | http://localhost:8080
+token                 | (paste your jwt token) | (paste your jwt token)
+user_id               | 507f191e810c19729de860ea | (your user id)
+product_id_1          | 507f1f77bcf86cd799439011 | 507f1f77bcf86cd799439011
+product_id_2          | 507f1f77bcf86cd799439012 | 507f1f77bcf86cd799439012
+
+Cách sử dụng:
+- URL: {{base_url}}/api/cart
+- Header: Authorization: Bearer {{token}}
+*/
+
+
+// ============================================
+// COLLECTION TEST SEQUENCE
+// ============================================
+/*
+Thứ tự test để kiểm tra đầy đủ:
+
+1. POST /api/cart/add - Thêm Laptop
+   Body: {"productId": "507f1f77bcf86cd799439011", ...}
+
+2. POST /api/cart/add - Thêm Chuột
+   Body: {"productId": "507f1f77bcf86cd799439012", ...}
+
+3. POST /api/cart/add - Thêm Tai nghe
+   Body: {"productId": "507f1f77bcf86cd799439021", ...}
+
+4. GET /api/cart - Lấy giỏ hàng (verify có 3 items)
+
+5. GET /api/cart/count - Đếm items (verify count)
+
+6. GET /api/cart/subtotal - Lấy subtotal (verify tính toán)
+
+7. PUT /api/cart/507f1f77bcf86cd799439011 - Update qty Laptop
+   Body: {"qty": 3}
+
+8. GET /api/cart - Lấy lại giỏ (verify qty thay đổi)
+
+9. DELETE /api/cart/507f1f77bcf86cd799439012 - Xóa Chuột
+
+10. GET /api/cart - Verify Chuột bị xóa
+
+11. POST /api/cart/bulk-delete - Xóa nhiều items
+    Body: {"ids": ["507f1f77bcf86cd799439011", "507f1f77bcf86cd799439021"]}
+
+12. GET /api/cart - Verify giỏ rỗng
+
+13. DELETE /api/cart - Clear cart (double check)

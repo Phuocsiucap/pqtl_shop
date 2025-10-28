@@ -1,16 +1,18 @@
+import logo from './logo.svg';
 import './App.css';
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
-// Customer pages
+//page
 import HomePage from "./page/customer/home";
 import ProductPage from "./page/customer/ProductPage";
-import ProductsPage from "./components/SearchProduct/ProductsPage";
 import LoginPage from './page/login/Login';
 import Register from './page/login/Register';
 import VerifyPage from './page/login/Verify';
+import CartPage from './page/customer/cart';
+// import DashboardPage from './page/admin/DashboardPage';
+//admin page
+// import Dashboard from "./page/admin/bestSellingDashboard";
 
-// Admin pages
-import Dashboard from "./page/admin/bestSellingDashboard";
 import AdminLayout from './components/admin/layout/Layout';
 import AdminDashboard from './page/admin/DashboardPage';
 import OrdersPage from './page/admin/OrdersPage';
@@ -20,40 +22,46 @@ import ExpiredProductsPage from './page/admin/ExpiredProductsPage';
 import InventoryPage from './page/admin/InventoryPage';
 import RevenuePage from './page/admin/RevenuePage';
 import BestSellersPage from './page/admin/BestSellersPage';
+import ProductSalesStatistics from './page/admin/ProductSalesStatisticsPage';
 
-// Provider
+
+
+//provider
+
 import { BestSellingProvider } from "./context/BestSellingContext";
-
+import { CartProvider } from './context/CartContext';
 function App() {
   return (
     <BestSellingProvider>
-      <Router>
-        <Routes>
-          {/* Customer pages */}
-          <Route path="/" element={<HomePage />} />
-          <Route path="/product/:id" element={<ProductPage />} />
-          <Route path="/products/search" element={<ProductsPage />} /> {/* ← Route tìm kiếm */}
+      <CartProvider>
+        <Router>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/product/:id" element={<ProductPage />} />
+            <Route path="/cart" element={<CartPage/>} />
 
-          {/* Admin pages */}
-          <Route path="/admin" element={<AdminLayout/>}>
-            <Route index element={<AdminDashboard />} />
-            <Route path="orders" element={<OrdersPage />} />
-            <Route path="users" element={<UsersPage />} />
-            <Route path="clearance" element={<ClearancePage />} />
-            <Route path="expired" element={<ExpiredProductsPage />} />
-            <Route path="inventory" element={<InventoryPage />} />
-            <Route path="revenue" element={<RevenuePage />} />
-            <Route path="best-sellers" element={<BestSellersPage />} />
-          </Route>
+            <Route path="/admin" element={<AdminLayout/>}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="orders" element={<OrdersPage />} />
+              <Route path="users" element={<UsersPage />} />
+              <Route path="clearance" element={<ClearancePage />} />
+              <Route path="expired" element={<ExpiredProductsPage />} />
+              <Route path="inventory" element={<InventoryPage />} />
+              <Route path="revenue" element={<RevenuePage />} />
+              <Route path="best-sellers" element={<BestSellersPage />} />
+              <Route path="sales-statistics" element={<ProductSalesStatistics/>}/>
+            </Route>
 
-          <Route path="/admin/dashboard" element={<Dashboard />} />
+          {/* <Route path="/admin/dashboard" element={<Dashboard />} /> */}
 
-          {/* Auth Pages */}
+           {/* Auth Pages */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<Register />} />
           <Route path="/verify" element={<VerifyPage />} />
+          
         </Routes>
       </Router>
+      </CartProvider>
     </BestSellingProvider>
   );
 }

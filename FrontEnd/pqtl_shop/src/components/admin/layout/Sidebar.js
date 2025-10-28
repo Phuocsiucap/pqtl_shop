@@ -11,17 +11,20 @@ import {
   Box,
   Users,
   X,
+  PackageCheck
 } from "lucide-react";
 
 const menuItems = [
-  { icon: BarChart3, label: "Trang chủ", path: "/admin", end: true }, // ✅ Thêm end: true
+  { icon: BarChart3, label: "Trang chủ", path: "/admin", end: true }, 
   { icon: TrendingUp, label: "Sản phẩm bán chạy", path: "/admin/best-sellers" },
+  { icon: PackageCheck, label: "Số lượng bán ra", path: "/admin/sales-statistics" },
   { icon: DollarSign, label: "Doanh thu", path: "/admin/revenue" },
   { icon: ShoppingCart, label: "Đơn hàng", path: "/admin/orders" },
   { icon: Clock, label: "Sản phẩm quá hạn", path: "/admin/expired" },
   { icon: Archive, label: "Thanh lý", path: "/admin/clearance" },
   { icon: Box, label: "Tồn kho", path: "/admin/inventory" },
   { icon: Users, label: "Người dùng", path: "/admin/users" },
+
 ];
 
 export default function Sidebar({ isOpen, toggleSidebar }) {

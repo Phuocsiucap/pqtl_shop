@@ -1,24 +1,24 @@
-        package org.example.service;
+package org.example.service;
 
-        import org.example.model.Product;
-        import org.example.repository.ProductRepository;
-        import lombok.RequiredArgsConstructor;
-        import org.springframework.stereotype.Service;
+import org.example.model.Product;
+import org.example.repository.ProductRepository;
+import org.springframework.stereotype.Service;
+import java.util.List;
 
-        import java.util.List;
-        @Service
-        @RequiredArgsConstructor // Tạo constructor cho final fields
-        public class SearchProductService {
+@Service
+public class SearchProductService {
 
-            private final ProductRepository productRepository;
+    private final ProductRepository repository;
 
-            // Tìm kiếm sản phẩm theo từ khóa
-            public List<Product> searchProducts(String keyword) {
-                return productRepository.findByNameContainingIgnoreCase(keyword);
-            }
+    public SearchProductService(ProductRepository repository) {
+        this.repository = repository;
+    }
 
-            // Tìm kiếm theo danh mục
-            public List<Product> searchProductsByCategory(String keyword, String categoryId) {
-                return productRepository.findByCategoryIdAndNameContainingIgnoreCase(categoryId, keyword);
-            }
-        }
+    public List<Product> getAllProducts() {
+        return repository.findAll();
+    }
+
+    public List<Product> searchProducts(String keyword) {
+        return repository.findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(keyword, keyword);
+    }
+}
