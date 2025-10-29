@@ -4,17 +4,17 @@ import { request1,request } from "../../utils/request";
 import { PricetoString } from "../../Component/Translate_Price";
 function CartItem({
   item,
-  setCartgoods,
+  setCartItems,
   access_token,
   selectedItems,
   setSelectedItems,
 }) {
   const toggleSelectItem = () => {
     setSelectedItems((prev) => {
-      if (prev.includes(item.id)) {
-        return prev.filter((id) => id !== item.id); // Bỏ chọn
+      if (prev.includes(item.productId)) {
+        return prev.filter((id) => id !== item.productId); // Bỏ chọn
       } else {
-        return [...prev, item.id]; // Chọn
+        return [...prev, item.productId]; // Chọn
       }
     });
   };
@@ -22,8 +22,8 @@ function CartItem({
   const handleClickPlus = async () => {
     try {
       await request1.patch(
-        `cart/update/${item.id}/`,
-        { quantity: item.quantity + 1 },
+        `cart/item.productId}`,
+        { "qty": item.qty + 1 },
         {
           headers: {
             Authorization: `Bearer ${access_token}`,
@@ -31,9 +31,9 @@ function CartItem({
           },
         }
       );
-      setCartgoods((prev) =>
+      setCartItems((prev) =>
         prev.map((i) =>
-          i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
+          i.productId === item.productId ? { ...i, qty: i.qty + 1 } : i
         )
       );
     } catch (error) {
@@ -42,14 +42,14 @@ function CartItem({
   };
 
   const handleClickSubtraction = async () => {
-    if (item.quantity ===1){
+    if (item.qty ===1){
       handleDelete(item);
       return;
     }
     try {
       await request1.patch(
-        `cart/update/${item.id}/`,
-        { quantity: item.quantity - 1 },
+        `cart/${item.productId}`,
+        { qty: item.qty - 1 },
         {
           headers: {
             Authorization: `Bearer ${access_token}`,
@@ -57,9 +57,9 @@ function CartItem({
           },
         }
       );
-      setCartgoods((prev) =>
+      setCartItems((prev) =>
         prev.map((i) =>
-          i.id === item.id ? { ...i, quantity: i.quantity - 1 } : i
+          i.id === item.id ? { ...i, qty: i.qty - 1 } : i
         )
       );
     } catch (error) {
@@ -70,13 +70,13 @@ function CartItem({
   const handleDelete = async () => {
     if (window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này?")) {
       try {
-        await request1.delete(`cart/remove/${item.id}/`, {
+        await request1.delete(`cart/${item.productId}`, {
           headers: {
             Authorization: `Bearer ${access_token}`,
             "Content-Type": "application/json",
           },
         });
-        setCartgoods((prev) => prev.filter((i) => i.id !== item.id));
+        setCartItems((prev) => prev.filter((i) => i.productId !== item.productId));
       } catch (error) {
         console.error("Lỗi khi xóa sản phẩm:", error);
       }
@@ -88,48 +88,68 @@ function CartItem({
     <div className="flex items-center bg-white shadow-sm rounded-md p-4 mb-4">
       <input
         type="checkbox"
-        checked={selectedItems.includes(item.id)}
+        checked={selectedItems.includes(item.productId)}
         onChange={toggleSelectItem}
         className="mr-4"
       />
       <div className="flex basis-[40%] lg:basis-[50%] px-1 lg:pl-5">
         <div className="flex items-center">
           <img
-            src={`${request}${item.good.image}`}
+            // src={`${request}${item.image}`}
+            src={`${item.image}`}
             alt=""
             className=" w-[50px] h-[50px] lg:w-[150px] lg:h-[150px]"
           />
           <p className="font-semibold text-[8px] md:text-sm lg:text-base px-1">
-            {item.good.goodName}
+            {item.productName}
           </p>
         </div>
       </div>
       <div className="basis-[60%] flex items-center text-[8px] md:text-xs lg:text-base px-2 justify-around">
-        {/* giá cả */}
-        <p className="text-red-500 font-semibold">
-          {
-          
-          PricetoString(item.good.price.split(".")[0])}
-        </p>
-        {/* số lượng sản phẩm */}
+        {/* /* giá cả */ }
+        <div className="flex flex-col items-start">
+          {item.discount ? (
+            <>
+              {/* Giá cũ */}
+              <p className="text-gray-500 line-through text-xs md:text-sm">
+                {PricetoString(item.price.toString().split(".")[0])}
+              </p>
+              {/* Giá sau giảm */}
+              <p className="text-red-500 font-semibold">
+                {PricetoString(
+                  Math.round(
+                    item.price * (1 - (item.discount > 1 ? item.discount / 100 : item.discount))
+                  )
+                    .toString()
+                    .split(".")[0]
+                )}
+              </p>
+            </>
+          ) : (
+            <p className="text-red-500 font-semibold">
+              {PricetoString(item.price.toString().split(".")[0])}
+            </p>
+          )}
+        </div>
+        {/* /* số lượng sản phẩm */ }
         <div className="font-bold">
           <p className="flex md:gap-x-1 items-center">
             Số lượng:
             <RiSubtractFill
               className="cursor-pointer mx-1 lg:mx-2 md:border-[2px]"
-              onClick={() => handleClickSubtraction(item.id, item)}
+              onClick={() => handleClickSubtraction(item.productId, item)}
             />
-            {item.quantity}
+            {item.qty}
             <HiPlusSm
               className="cursor-pointer mx-1 lg:mx-2 md:border-[2px]"
-              onClick={() => handleClickPlus(item.id, item)}
+              onClick={() => handleClickPlus(item.productId, item)}
             />
           </p>
         </div>
         {/* thao tác */}
         <span
           className="text-red-500 font-semibold cursor-pointer"
-          onClick={() => handleDelete(item.id, item)}
+          onClick={() => handleDelete(item.productId, item)}
         >
           Xóa
         </span>

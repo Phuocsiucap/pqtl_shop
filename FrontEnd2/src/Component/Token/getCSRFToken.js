@@ -1,7 +1,6 @@
+import Cookies from 'js-cookie';
 function getCSRFTokenFromCookie(name) {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop().split(';').shift();
-    return null; // Nếu không tìm thấy
-  }
-export {getCSRFTokenFromCookie}
+  return Cookies.get(name) || null;
+}
+
+export { getCSRFTokenFromCookie };

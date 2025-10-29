@@ -34,8 +34,8 @@ function Login() {
       return;
     }
     try {
-      const response = await request1.post("user/login/", {
-        email: user.email,
+      const response = await request1.post("auth/login", {
+        username: user.email,
         password: user.password,
       });
   
@@ -43,8 +43,8 @@ function Login() {
         alert("Đăng nhập thành công");
   
         // Lưu thông tin vào cookie
-        Cookies.set("access_token", response.data.access_token, { expires: 7, path: "" });
-        Cookies.set("refresh_token", response.data.refresh_token, { expires: 7, path: "" });
+        Cookies.set("access_token", response.data.accessToken, { expires: 7, path: "" });
+        Cookies.set("refresh_token", response.data.refreshToken, { expires: 7, path: "" });
         Cookies.set("user", JSON.stringify(response.data.user), { expires: 7, path: "" });
         localStorage.setItem('user',JSON.stringify(response.data.user));
         dispatch(LoginUser(response.data.user));

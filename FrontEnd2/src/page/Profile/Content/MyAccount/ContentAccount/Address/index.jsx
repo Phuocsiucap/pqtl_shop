@@ -22,11 +22,13 @@ function Address() {
   const [currentEditId, setCurrentEditId] = useState(null);
   const access_token = getCSRFTokenFromCookie("access_token");
 
+
   useEffect(() => {
     // Fetch all addresses when component mounts
     const fetchAddresses = async () => {
+      console.log("token", access_token);
       try {
-        const response = await request1.get("user/addresses/", {
+        const response = await request1.get("user/addresses", {
           headers: {
             Authorization: `Bearer ${access_token}`,
             "Content-Type": "application/json",
@@ -74,7 +76,7 @@ function Address() {
 
       try {
         const response = await request1.post(
-          "user/addresses/",
+          "user/addresses",
           address,
           {
             headers: {

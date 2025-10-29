@@ -1,10 +1,13 @@
 package org.example.repository.login;
 
+import org.example.model.Address;
 import org.example.model.login.User;
+import org.springframework.data.mongodb.core.mapping.Field;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
+import java.util.List;
 
 public class UserDetailsImpl implements UserDetails {
 
