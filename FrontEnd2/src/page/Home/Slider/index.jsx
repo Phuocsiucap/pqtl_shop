@@ -7,10 +7,10 @@ import Image4 from '../../../assets/images/Image4.png';
 function Slider() {
     const [index,setIndex]=useState(0);
     const Images=[
-        {title:"Back to School ưu đãi đặc biệt cho học sinh sinh viên", data: Image1},
-        {title:"Quà tặng hấp dẫn hơn 6 triệu đồng", data: Image2},
-        {title:"Laptop Lenovo ThinkPad - Giá chỉ từ 17 Triệu", data: Image3},
-        {title:"Thu cũ đổi mới lên đời, trợ giá đến 4 Triệu đồng", data: Image4},
+        {title:"Thực phẩm sạch – Organic / Nông sản tươi", data: Image1},
+        {title:"Thực phẩm đông lạnh / Hải sản", data: Image2},
+        {title:"Cửa hàng trái cây – Vitamin mỗi ngày", data: Image3},
+        {title:"Ưu đãi mùa này – Giảm giá đến 40%", data: Image4},
     ]
     return ( 
     <div className='rounded-xl mx-3 my-3 lg:mx-15 xl:mx-32 relative border-2 border-gray-100 border-solid'>

@@ -12,11 +12,11 @@ import "tippy.js/dist/tippy.css";
 import Search from "./Search";
 function Navbar() {
   const titles_1 = [
-    { title: "Máy tính", link: "/laptop" },
-    { title: "Chuột", link: "/mouse" },
-    { title: "Bàn Phím", link: "/keyboard" },
-    { title: "Sale hot", link: "/" },
-    { title: "Chơi game nhận thưởng hot", link: "https://trihung.itch.io/game-discount" }, 
+    { title: "Rau củ hữu cơ", link: "/organic-vegetables" },
+    { title: "Thịt sạch", link: "/clean-meats" },
+    { title: "Trái cây tươi", link: "/fresh-fruits" },
+    { title: "Đồ khô & Gia vị", link: "/dried-goods" },
+    { title: "Khuyến mãi", link: "/promotions" },
     { title: "Về chúng tôi", link: "/about" },
   ];
   
@@ -47,7 +47,7 @@ function Navbar() {
             to="/"
             className="text-primary uppercase text-xl font-bold font-Montserrat"
           >
-            PhdTech
+            PQTLSHOP
           </Link>
         </div>
         {/*search input */}
@@ -64,7 +64,7 @@ function Navbar() {
               <Search search={search.toLowerCase().split(" ")} />
             </div>
           )}
-        >
+          >
           <div className="hidden lg:flex relative group">
             <input
               type="text"
@@ -79,15 +79,12 @@ function Navbar() {
         {/*contact and user */}
         <div className="flex justify-between items-center gap-x-4">
           {/* button sale */}
-          {/* button sale */}
           <div className="">
-            <button
-              className="text-md font-Montserrat text-white 
+            <button className="text-md font-Montserrat text-white 
                         font-bold cursor-pointer py-1 px-3 bg-gradient-to-r from-primary to-yellow-200
                         rounded-md hover:text-red-500
-                        "
-            >
-              <Link to={"/saleproduct"}>Sale</Link>
+                        " title="Ưu đãi hôm nay">
+              <Link to={"/saleproduct"}>Ưu đãi</Link>
             </button>
           </div>
           {/*other button */}
@@ -101,7 +98,7 @@ function Navbar() {
             <li className="flex justify-between items-center gap-x-2">
               <IoTimeSharp className="text-yellow-600" />{" "}
               <p className="text-primary font-bold cursor-pointer hover:text-yellow-600">
-                8:30-18:30
+                7:30-21:30
               </p>
             </li>
             <li className="list-none text-xl font-bold hover:text-primary relative group text-center">
@@ -142,12 +139,14 @@ function Navbar() {
         </div>
       </div>
       {/*lower navbar */}
-      <div className="bg-second py-2 text-center justify-center">
+      <div className="bg-primary py-2 text-center justify-center">
         <ul className="hidden text-center items-center gap-x-20  text-white font-Montserrat justify-center lg:flex">
           {titles_1.map((title_1, index) => {
             return (
               <li key={index} className="top-menu-item">
-                <Link to={title_1.link}>{title_1.title}</Link>
+                <Link to={title_1.link} className="text-white">
+                  {title_1.title}
+                </Link>
               </li>
             );
           })}
@@ -167,7 +166,7 @@ function Navbar() {
             <input
               type="text"
               placeholder="Tìm kiếm sản phẩm... "
-              className="input-search w-[80%]"
+              className="input-search"
               value={search}
               onChange={(e) => handleOnchange(e)}
             />

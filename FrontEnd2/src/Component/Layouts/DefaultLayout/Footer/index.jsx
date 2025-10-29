@@ -16,7 +16,7 @@ function Footer() {
         {title:"Follow zalo cập nhật khuyến mãi",icon: <FaWifi/>},
         {title:"Facebook",icon: <FaFacebookF/>},
         {title:"Tik tok",icon: <FaTiktok/>},
-        {title:"PHD Tech lap",icon: <FaYoutube/>},
+        {title:"PQTL_Shop",icon: <FaYoutube/>},
         {title:"Có gì mới",icon: <FaStar/>},
         
     ]
@@ -51,13 +51,13 @@ function Footer() {
                 </div>
                 <div>
                     {/*email */}
-                <p className="font-semibold pt-5">Email: <span className="text-primary">phdtech@gmail.com</span></p>
+                <p className="font-semibold pt-5">Email: <span className="text-primary">pqtlshop@gmail.com</span></p>
                 {/*address */}
-                <p>Showroom trải nghiệm: 
-                <span className="text-primary font-semibold">95C Nguyễn Thị Minh Khai,</span>
+                <p>Địa chỉ cửa hàng: 
+                <span className="text-primary font-semibold">306 Đ.Hồ Tùng Mậu,</span>
                 </p>
-                P. Bến Thành, Q1, TP HCM 
-                <p className="text-primary font-semibold">(giờ làm việc: 8h30 - 19h30)</p>
+                Từ Liêm, Hà Nội 
+                <p className="text-primary font-semibold">(giờ làm việc: 7h30 - 21h30)</p>
                 </div>
             </div>
             {/*Theo dõi */}
