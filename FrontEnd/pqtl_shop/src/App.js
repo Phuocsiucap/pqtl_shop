@@ -8,6 +8,7 @@ import ProductPage from "./page/customer/ProductPage";
 import LoginPage from './page/login/Login';
 import Register from './page/login/Register';
 import VerifyPage from './page/login/Verify';
+import OAuth2Success from './page/login/Oauth';
 import CartPage from './page/customer/cart';
 // import DashboardPage from './page/admin/DashboardPage';
 //admin page
@@ -58,6 +59,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<Register />} />
           <Route path="/verify" element={<VerifyPage />} />
+          <Route path="/oauth" element={<OAuth2Success/>} />
           
         </Routes>
       </Router>

@@ -60,10 +60,14 @@ public class AuthController {
         var user = userRepository.findById(verificationToken.getUserId())
                 .orElseThrow(() -> new RuntimeException("User không tồn tại"));
 
+        // ✅ Cập nhật trạng thái
         user.setVerified(true);
+        user.setIsActive(true);
         userRepository.save(user);
+
         verificationTokenRepository.delete(verificationToken);
 
-        return ResponseEntity.ok("Xác minh tài khoản thành công!");
+        return ResponseEntity.ok("Xác minh tài khoản thành công! Bạn có thể đăng nhập.");
     }
+
 }
