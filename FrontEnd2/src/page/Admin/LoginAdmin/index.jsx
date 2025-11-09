@@ -16,15 +16,16 @@ const LoginForm = () => {
         alert("Điền đầy đủ thông tin đăng nhập")
         return;
       }
-      const response=await request1.post("admin/login/",{
+      // admin/login/
+      const response=await request1.post("auth/login",{
         username:email,
         password:password
       })
       console.log(response.data.access_token);
       if (response.status === 200) {
         alert("Đăng nhập thành công");
-        Cookies.set("access_token_admin", response.data.access_token, { expires: 7, path: "/" });
-        Cookies.set("refresh_token_admin", response.data.refresh_token, { expires: 7, path: "/" });
+        Cookies.set("access_token_admin", response.data.accessToken, { expires: 7, path: "/" });
+        Cookies.set("refresh_token_admin", response.data.refreshToken, { expires: 7, path: "/" });
         navigate("/admin")
       }
     }

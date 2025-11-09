@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FaChartLine, FaUsers, FaBoxOpen, FaFileInvoice, FaBook } from "react-icons/fa"; 
+import { FaChartLine, FaUsers, FaBoxOpen, FaFileInvoice, FaBook, FaFire } from "react-icons/fa"; 
 import { FaUser } from "react-icons/fa";
 import { IoLogOut } from "react-icons/io5";
 import { BiCategory } from "react-icons/bi";
@@ -16,6 +16,7 @@ const Sidebar1 = () => {
     { link: "/admin/manageuser", label: "Quản lý người dùng", icon: <FaUsers /> },
     { link: "/admin/managegood", label: "Quản lý sản phẩm", icon: <FaBoxOpen /> },
     { link: "/admin/managebill", label: "Quản lý đơn hàng", icon: <FaFileInvoice /> },
+    { link: "/admin/bestseller", label: "Bán chạy", icon: <FaFire /> },
   ];
 
   const menuItems1 = [
