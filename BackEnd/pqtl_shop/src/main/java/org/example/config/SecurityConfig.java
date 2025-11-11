@@ -33,10 +33,14 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/verify").permitAll()
                         .requestMatchers("/api/products").permitAll()
+                        // Cho phép truy cập công khai các API tìm kiếm, chi tiết sản phẩm và trang chủ (GET)
+                        .requestMatchers("/api/v1/search/**").permitAll()
+                        .requestMatchers("/api/v1/products/**").permitAll()
+                        .requestMatchers("/api/v1/homepage/**").permitAll() // Bổ sung cho Homepage
                         .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
-                        .requestMatchers("/api/**").authenticated()
                         .requestMatchers("/api/cart/**").authenticated()
                         .requestMatchers("/api/orders/**").authenticated()
+                        // POST review nên được bảo vệ, nhưng tạm thời cho phép nếu /api/v1/products/** là public
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class); // thêm JWT filter
@@ -57,7 +61,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("http://localhost:8888", "*")); // 👈 CHỈ rõ origin frontend
+        configuration.setAllowedOriginPatterns(List.of("http://localhost:8888", "http://localhost:8891", "*")); // 👈 Bổ sung cổng 8891
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE","PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true); // 👈 Cho phép cookie / Authorization

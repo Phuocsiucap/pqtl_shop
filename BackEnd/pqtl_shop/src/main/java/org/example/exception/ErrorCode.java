@@ -25,7 +25,10 @@ public enum ErrorCode {
     REVERSE_FRIEND_REQUEST_EXISTS(1015, "The other user has already sent you a friend request", HttpStatus.BAD_REQUEST),
     CANNOT_ADD_YOURSELF(1016, "Cannot send friend request to yourself", HttpStatus.BAD_REQUEST),
     FRIEND_REQUEST_NOT_FOUND(1017, "Friend request not found", HttpStatus.NOT_FOUND),
-    INVALID_FRIEND_REQUEST_STATUS(1018, "Invalid friend request status", HttpStatus.BAD_REQUEST);
+    INVALID_FRIEND_REQUEST_STATUS(1018, "Invalid friend request status", HttpStatus.BAD_REQUEST),
+
+    // Product errors
+    PRODUCT_NOT_FOUND(2001, "Product not found", HttpStatus.NOT_FOUND);
 
     private final int code;
     private final String message;

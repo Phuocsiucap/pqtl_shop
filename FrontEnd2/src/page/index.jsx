@@ -1,10 +1,12 @@
 import { Defaultlayout } from "../Component/Layouts"
 import AdminLayout from "../Component/Layouts/AdminLayout"
 import About from "./About"
+import SearchResultPage from "./SearchResultPage"
 // import Cartshopping from "./Cartshopping"
 import Home from "./Home"
 import Login from "./Login"
 import Products from "./Product"
+import ProductDetail from "./Product/ProductDetail"
 import Regester from "./Regester"
 import Profile from "./Profile"
 import SaleProducts from "./SaleProducts"
@@ -32,7 +34,9 @@ import LoginForm from "./Admin/LoginAdmin"
 import BestSellerList from "./Admin/BestSeller"
 const PublicPage=[
     {path:"/", component: Home, layout: Defaultlayout},
-    {path:"/product/:id", component: Products, layout: Defaultlayout},
+    {path:"/products/:id", component: ProductDetail, layout: Defaultlayout},
+    {path:"/search", component: SearchResultPage, layout: Defaultlayout},
+    {path:"/category/:slug", component: SearchResultPage, layout: Defaultlayout},
     // {path:"/cartshopping", component: Cartshopping, layout: Defaultlayout},
     {path:"/cartshopping", component: CartShopping, layout: Defaultlayout},
     {path:"/about", component: About, layout: Defaultlayout},

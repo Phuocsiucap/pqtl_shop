@@ -5,19 +5,20 @@ import { IoMenu } from "react-icons/io5";
 import { FaPhone } from "react-icons/fa";
 import { IoTimeSharp } from "react-icons/io5";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import Tippy from "@tippyjs/react/headless";
 import "tippy.js/dist/tippy.css";
 import Search from "./Search";
 function Navbar() {
+  const navigate = useNavigate();
   const titles_1 = [
-    { title: "Rau củ hữu cơ", link: "/organic-vegetables" },
-    { title: "Thịt sạch", link: "/clean-meats" },
-    { title: "Trái cây tươi", link: "/fresh-fruits" },
-    { title: "Đồ khô & Gia vị", link: "/dried-goods" },
-    { title: "Khuyến mãi", link: "/promotions" },
-    { title: "Về chúng tôi", link: "/about" },
+    { title: "Trái Cây Tươi", link: "/category/fresh-fruit" },
+    { title: "Rau Ăn Lá Hữu Cơ", link: "/category/organic-vegetable" },
+    { title: "Củ Quả & Gia Vị", link: "/category/fruit-spice" },
+    { title: "Thịt & Trứng Sạch", link: "/category/meat-egg" },
+    { title: "Hải Sản Tươi", link: "/category/seafood" },
+    { title: "Thực Phẩm Khô", link: "/category/dried-food" },
   ];
   
   const titles_2 = [
@@ -32,6 +33,18 @@ function Navbar() {
   const handleOnchange = (e) => {
     e.preventDefault();
     setSearch(e.target.value);
+  };
+  const handleSearchSubmit = () => {
+    if (search.trim() !== "") {
+      const keyword = search.trim();
+      const encodedKeyword = encodeURIComponent(keyword);
+      navigate(`/search?keyword=${encodedKeyword}`);
+    }
+  };
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && search.trim() !== "") {
+      handleSearchSubmit();
+    }
   };
   return (
     <div>
@@ -72,6 +85,7 @@ function Navbar() {
               className="input-search"
               value={search}
               onChange={(e) => handleOnchange(e)}
+              onKeyDown={handleKeyDown}
             />
             <IoMdSearch className="absolute top-2 left-3 text-xl text-gray-600 group-hover:text-primary font-bold" />
           </div>
@@ -169,6 +183,7 @@ function Navbar() {
               className="input-search"
               value={search}
               onChange={(e) => handleOnchange(e)}
+              onKeyDown={handleKeyDown}
             />
           </div>
         </Tippy>
