@@ -71,7 +71,7 @@ function Login() {
         <div className="font-Montserrat w-[100%] md:w-[50%] xl:w-[30%] border-2 md:border-gray-200 rounded-md flex flex-col gap-y-2 items-center mx-2">
           <Link to={"/"}>
             <p className="font-bold text-primary  text-sm lg:text-3xl uppercase text-center mt-5">
-              phdtech
+              PQTLSHOP
             </p>
           </Link>
           <p className="font-bold text-2xl">Đăng nhập</p>
