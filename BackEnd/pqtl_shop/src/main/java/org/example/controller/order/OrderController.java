@@ -3,6 +3,9 @@ package org.example.controller.order;
 import lombok.RequiredArgsConstructor;
 import org.example.model.Order;
 import org.example.model.login.User;
+import org.example.repository.login.UserDetailsImpl;
+import org.example.repository.login.UserRepository;
+import org.example.service.login.UserService;
 import org.example.service.order.OrderService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -19,6 +22,7 @@ import java.util.Optional;
 public class OrderController {
 
     private final OrderService orderService;
+    private UserRepository userRepository;
 
     // 🟢 Tạo đơn hàng mới
     @PostMapping
@@ -26,7 +30,8 @@ public class OrderController {
             Authentication authentication,
             @RequestBody Order order) {
         try {
-            String userId = extractUserIdFromAuthentication(authentication);
+            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+            String userId = userDetails.getId();
 
             order.setUserId(userId);
             Order created = orderService.createOrder(order);
@@ -40,7 +45,8 @@ public class OrderController {
     @GetMapping
     public ResponseEntity<?> getUserOrders(Authentication authentication) {
         try {
-            String userId = extractUserIdFromAuthentication(authentication);
+            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+            String userId = userDetails.getId();
             List<Order> orders = orderService.getOrdersByUser(userId);
             return ResponseEntity.ok(orders);
         } catch (Exception e) {
@@ -54,7 +60,8 @@ public class OrderController {
             Authentication authentication,
             @PathVariable String id) {
         try {
-            String userId = extractUserIdFromAuthentication(authentication);
+            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+            String userId = userDetails.getId();
             Optional<Order> orderOpt = orderService.getOrderById(id);
             if (orderOpt.isPresent() && orderOpt.get().getUserId().equals(userId)) {
                 return ResponseEntity.ok(orderOpt.get());
@@ -73,7 +80,8 @@ public class OrderController {
             @PathVariable String id,
             @RequestBody Order order) {
         try {
-            String userId = extractUserIdFromAuthentication(authentication);
+            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+            String userId = userDetails.getId();
             Optional<Order> result = orderService.updateOrder(id, order, userId);
             if (result.isPresent()) {
                 return ResponseEntity.ok(result.get());
@@ -92,7 +100,8 @@ public class OrderController {
             @PathVariable String id,
             @RequestParam String status) {
         try {
-            String userId = extractUserIdFromAuthentication(authentication);
+            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+            String userId = userDetails.getId();
             Optional<Order> result = orderService.updateOrderStatus(id, status, userId);
             if (result.isPresent()) {
                 return ResponseEntity.ok(result.get());
@@ -110,7 +119,8 @@ public class OrderController {
             Authentication authentication,
             @PathVariable String id) {
         try {
-            String userId = extractUserIdFromAuthentication(authentication);
+            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+            String userId = userDetails.getId();
             boolean deleted = orderService.deleteOrder(id, userId);
             if (deleted) {
                 return ResponseEntity.noContent().build();
@@ -127,7 +137,7 @@ public class OrderController {
     public ResponseEntity<?> getOrdersByStatus(@RequestParam String status) {
         try {
             List<Order> orders = orderService.getOrdersByStatus(status);
-            return ResponseEntity.ok(orders);
+             return ResponseEntity.ok(orders);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }

@@ -22,7 +22,7 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
         ErrorCode errorCode = ErrorCode.UNAUTHORIZED; // Hoặc điều chỉnh logic để lấy ErrorCode khác
 
-        response.setStatus(errorCode.getStatusCode().value());
+        response.setStatus(ErrorCode.UNAUTHORIZED.getStatusCode().value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 
         APIResponse<?> apiResponse = APIResponse.builder()

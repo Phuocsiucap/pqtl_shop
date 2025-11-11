@@ -14,7 +14,7 @@ public class JwtService {
 
     private static final String SECRET_KEY = "THIS_IS_A_SUPER_SECRET_KEY_32_CHARACTERS_MINIMUM";
 
-    private static final long ACCESS_TOKEN_EXPIRATION = 1000 * 60 * 15; // 15 phút
+    private static final long ACCESS_TOKEN_EXPIRATION = 1000 * 60 * 30000; // 15 phút
     private static final long REFRESH_TOKEN_EXPIRATION = 1000L * 60 * 60 * 24 * 7; // 7 ngày
 
     private Key getSignInKey() {

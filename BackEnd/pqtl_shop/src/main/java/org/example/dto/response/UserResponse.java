@@ -2,14 +2,22 @@ package org.example.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import org.example.model.Address;
+import org.springframework.data.mongodb.core.mapping.Field;
 import org.springframework.web.bind.annotation.CrossOrigin;
+
+import java.util.List;
 
 @Data
 @AllArgsConstructor
-@CrossOrigin(origins = "http://localhost:3000", allowedHeaders = "*")
+
 public class UserResponse {
     private String id;
     private String username;
     private String email;
     private String role;
+    private String userType;
+    private Integer loyaltyPoints ;
+    private Boolean isActive ;
+
 }

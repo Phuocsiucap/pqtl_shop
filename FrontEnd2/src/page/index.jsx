@@ -29,6 +29,7 @@ import ManagementBill from "./Admin/ManaBill"
 import DetailModal from "./Admin/ManaBill/DetailModal"
 import ManagementGood from "./Admin/ManaGood/indes"
 import LoginForm from "./Admin/LoginAdmin"
+import BestSellerList from "./Admin/BestSeller"
 const PublicPage=[
     {path:"/", component: Home, layout: Defaultlayout},
     {path:"/product/:id", component: Products, layout: Defaultlayout},
@@ -60,6 +61,7 @@ const PublicPage=[
     {path:"/admin/managegood", component: ManagementGood, layout: AdminLayout},
     {path:"/admin/managebill", component: ManagementBill, layout: AdminLayout},
     {path:"/admin/managebill/billdetail", component: DetailModal, layout: AdminLayout},
+    {path:"/admin/bestseller", component: BestSellerList, layout: AdminLayout},
     
 ]
 const PrivatePage=[

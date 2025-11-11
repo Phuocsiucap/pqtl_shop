@@ -2,7 +2,9 @@ package org.example.service.order;
 
 import lombok.RequiredArgsConstructor;
 import org.example.model.Order;
+import org.example.model.OrderItem;
 import org.example.repository.order.OrderRepository;
+import org.example.service.CartService;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -15,6 +17,7 @@ import java.util.Optional;
 public class OrderService {
 
     private final OrderRepository orderRepository;
+    private final CartService cartService;
 
     // 🟢 Tạo đơn hàng mới
     public Order createOrder(Order order) {
@@ -30,6 +33,10 @@ public class OrderService {
         // Tính toán finalAmount
         double finalAmount = order.getTotalPrice() - order.getDiscount() + order.getShippingFee();
         order.setFinalAmount(finalAmount);
+        // 🧹 Xóa từng sản phẩm trong đơn hàng khỏi giỏ
+        for (OrderItem item : order.getItems()) {
+            cartService.removeItemFromCart(order.getUserId(), item.getProductId());
+        }
 
         return orderRepository.save(order);
     }

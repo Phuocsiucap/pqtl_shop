@@ -1,0 +1,175 @@
+Chuẩn luôn 👍 — nếu bạn đang **test bằng Postman**, mình chỉ cần **gọi API đăng ký (register)** hoặc **tạo dữ liệu giả trực tiếp qua API**.
+Dưới đây là hướng dẫn **test đầy đủ bằng Postman** cho code bạn đang có.
+
+---
+
+## 🧩 Bước 1 — Tạo user giả bằng API `/api/auth/register`
+
+### 📤 Request:
+
+**POST** `http://localhost:8080/api/auth/register`
+**Body (JSON):**
+
+```json
+{
+  "username": "johndoe",
+  "email": "john@gmail.com",
+  "password": "123456"
+}
+```
+
+👉 Kết quả trả về (201):
+
+```json
+{
+  "message": "Đăng ký thành công! Vui lòng kiểm tra email để xác minh tài khoản."
+}
+```
+
+> ⚠️ Nếu bạn chưa bật xác minh email thì sửa `AuthService` tạm thời cho `verified = true;` để test nhanh:
+
+```java
+User user = User.builder()
+    .username(request.getUsername())
+    .email(request.getEmail())
+    .password(passwordEncoder.encode(request.getPassword()))
+    .role("CUSTOMER")
+    .verified(true) // 👈 thêm dòng này để khỏi cần verify
+    .build();
+```
+
+---
+
+## 🧩 Bước 2 — Đăng nhập lấy token
+
+**POST** `http://localhost:8080/api/auth/login`
+
+**Body (JSON):**
+
+```json
+{
+  "username": "johndoe",
+  "password": "123456"
+}
+```
+
+**Kết quả:**
+
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+---
+
+## 🧩 Bước 3 — Lấy thông tin user đang đăng nhập
+
+**GET** `http://localhost:8080/api/user/profile`
+
+**Header:**
+
+```
+Authorization: Bearer <accessToken>
+```
+
+**Response:**
+
+```json
+{
+  "id": "671f7d8e1a9b4b0b73d8a4b2",
+  "username": "johndoe",
+  "email": "john@gmail.com",
+  "role": "CUSTOMER",
+  "loyaltyPoints": 0
+}
+```
+
+---
+
+## 🧩 Bước 4 — Cập nhật điểm thưởng
+
+**POST** `http://localhost:8080/api/user/johndoe/submit-score?score=50`
+
+**Header:**
+
+```
+Authorization: Bearer <accessToken>
+```
+
+**Response:**
+
+```json
+{
+  "username": "johndoe",
+  "loyaltyPoints": 50
+}
+```
+
+---
+
+## 🧩 Bước 5 — Thêm địa chỉ cho user
+
+**POST** `http://localhost:8080/api/user/addresses`
+
+**Header:**
+
+```
+Authorization: Bearer <accessToken>
+```
+
+**Body (JSON):**
+
+```json
+{
+  "name": "John Doe",
+  "phone": "0123456789",
+  "city": "Hà Nội",
+  "addressct": "123 Lê Lợi",
+  "isDefault": true
+}
+```
+
+---
+
+## 🧩 Bước 6 — Xem danh sách địa chỉ
+
+**GET** `http://localhost:8080/api/user/addresses`
+
+**Header:**
+
+```
+Authorization: Bearer <accessToken>
+```
+
+**Response:**
+
+```json
+[
+  {
+    "name": "John Doe",
+    "phone": "0123456789",
+    "city": "Hà Nội",
+    "addressct": "123 Lê Lợi",
+    "isDefault": true
+  }
+]
+```
+
+---
+
+✅ **Tóm lại:**
+Bạn test theo thứ tự này trong Postman:
+
+1. `POST /api/auth/register` → tạo user giả
+2. `POST /api/auth/login` → lấy token
+3. Gắn token vào Header Authorization
+4. `GET /api/user/profile`
+5. `POST /api/user/johndoe/submit-score?score=50`
+6. `POST /api/user/addresses`
+7. `GET /api/user/addresses`
+
+---
+
+Nếu bạn muốn mình tạo luôn **file Postman Collection (.json)** để import trực tiếp test, mình có thể sinh giúp luôn — bạn muốn không?

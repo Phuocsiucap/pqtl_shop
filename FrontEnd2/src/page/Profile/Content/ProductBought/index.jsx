@@ -6,11 +6,11 @@ import { Link } from "react-router-dom";
 function ProductBought() {
   const titles = ["Đơn hàng", "Ngày", "Trạng thái", "Tổng", "Thao tác"];
   const access_token = getCSRFTokenFromCookie("access_token");
-  const [builds, setBuilds] = useState([]);
+  const [orders, setOrders] = useState([]);
   useEffect(() => {
     const fetch = async () => {
       try {
-        const respone = await request1.get("order/order_list/", {
+        const respone = await request1.get("orders", {
           headers: {
             Authorization: `Bearer ${access_token}`,
             "Content-Type": "application/json",
@@ -18,16 +18,16 @@ function ProductBought() {
           withCredentials: true,
         });
         console.log(respone.data);
-        setBuilds(respone.data);
+        setOrders(respone.data);
       } catch (error) {
         console.log("Lỗi ", error);
       }
     };
-    if (builds.length === 0) {
+    if (orders.length === 0) {
       fetch();
     }
   }, []);
-  return builds && builds.length > 0 ? (
+  return orders && orders.length > 0 ? (
     <div className="font-Montserrat">
       {/* tiêu đề */}
       <div className="pb-6 pt-2 border-b-2 border-gray-200">
@@ -44,7 +44,7 @@ function ProductBought() {
       {/* sản phẩm */}
       <div>
         <ul>
-          {builds.map((build, index) => {
+          {orders.map((order, index) => {
             return (
               <div
                 key={index}
@@ -52,16 +52,16 @@ function ProductBought() {
               >
                 {/* mã hàng */}
                 <p className="text-primary font-bold text-sm">{index + 1}</p>
-                <p className="font-medium">{build.purchase_date}</p>
+                <p className="font-medium">{order.orderDate}</p>
                 <p className="font-semibold text-primary cursor-pointer">
-                  {build.shipping_status}
+                  {order.orderStatus}
                 </p>
                 <p className="font-bold text-red-500 text-[10px] md:text-md">
-                  {PricetoString(build.total_amount)}
+                  {PricetoString(order.finalAmount.toString())}
                 </p>
                 {/* thao tác */}
                 <div>
-                  <Link to={`/buildDetail/${build.order_id}`}>
+                  <Link to={`/buildDetail/${order.id}`}>
                     <button className="px-4 py-2 bg-primary text-white rounded-md font-bold">
                       Xem
                     </button>

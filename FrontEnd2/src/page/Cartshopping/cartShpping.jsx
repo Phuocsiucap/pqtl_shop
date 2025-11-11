@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { request1 } from "../../utils/request";
+import { request1, token } from "../../utils/request";
 import CartItem from "./cartItems";
 import VoucherModal from "./VoucherModels";
 import CartFooter from "./CartFooter";
@@ -11,7 +11,7 @@ import { getCSRFTokenFromCookie } from "../../Component/Token/getCSRFToken";
 // import CartFooter from "./cartFooter";
 function CartShopping() {
   const location = useLocation();
-  const [cartgoods, setCartgoods] = useState([]);
+  const [cartItems, setCartItems] = useState([]);
   const [showVoucher, setShowVoucher] = useState(false);
   const [voucher,setVoucher]=useState([]);
   const [selectedVoucher, setSelectedVoucher] = useState(null);
@@ -23,32 +23,33 @@ function CartShopping() {
   const navigate = useNavigate();
 //   const access_token = document.cookie.split("=")[1]; // Lấy token
   const user = useSelector((state) => state.user.user);
-  const access_token = getCSRFTokenFromCookie("access_token");
+  // const access_token = getCSRFTokenFromCookie("access_token") || token;
+  const access_token = token;
 
 
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await request1.get("cart/", {
+        const response = await request1.get("cart", {
           headers: {
             Authorization: `Bearer ${access_token}`,
             "Content-Type": "application/json",
           },
         });
-        setCartgoods(response.data.cart_goods);
+        setCartItems(response.data);
         console.log(response.data)
       } catch (error) {
         console.error("Lỗi khi lấy giỏ hàng:", error);
       }
-    };-
+    };
     fetchData();
   }, []);
 
   useEffect(() => {
-    let total = cartgoods
-      .filter((item) => selectedItems.includes(item.id)) // Lọc các mục được chọn
-      .reduce((sum, item) => sum + item.good.price * item.quantity, 0); // Tính tổng giá
+    let total = cartItems
+      .filter((item) => selectedItems.includes(item.productId)) // Lọc các mục được chọn
+      .reduce((sum, item) => sum + (item.price - item.discount)* item.qty, 0); // Tính tổng giá
 
     if (selectedVoucher) {
       total -= (total * selectedVoucher.voucher.discount_percentage) / 100; // Áp dụng giảm giá
@@ -56,17 +57,17 @@ function CartShopping() {
   
     setTotalPrice(total);
     console.log(selectedItems);
-  }, [cartgoods, selectedItems, selectedVoucher]); // Chạy lại khi giỏ hàng hoặc lựa chọn thay đổi
+  }, [cartItems, selectedItems, selectedVoucher]); // Chạy lại khi giỏ hàng hoặc lựa chọn thay đổi
   
   console.log("2",totalPrice)
   const handleOnclickOrder = () => {
     if(selectedItems.length>0) {
       if(window.confirm("Bạn chắc chắn đặt đơn hàng này")){
-        const itemsToOrder = cartgoods.filter((item) => selectedItems.includes(item.id));
+        const itemsToOrder = cartItems.filter((item) => selectedItems.includes(item.productId));
         // console.log("this is input dât:" ,itemsToOrder);
         // console.log(typeof itemsToOrder);
-        // console.log("Kiểu dữ liệu của cartgoods:", Array.isArray(cartgoods)); // Kiểm tra nếu cartgoods là mảng
-        // console.log("cartgoods:", cartgoods); // Kiểm tra nội dung cartgoods
+        // console.log("Kiểu dữ liệu của cartItems:", Array.isArray(cartItems)); // Kiểm tra nếu cartItems là mảng
+        // console.log("cartItems:", cartItems); // Kiểm tra nội dung cartItems
 
         localStorage.setItem(
           "orderData",
@@ -88,12 +89,12 @@ function CartShopping() {
     
   };
   const toggleSelectAll = () => {
-    if (selectedItems.length === cartgoods.length) {
+    if (selectedItems.length === cartItems.length) {
       // Nếu tất cả đã được chọn, bỏ chọn tất cả
       setSelectedItems([]);
     } else {
       // Nếu chưa chọn tất cả, chọn tất cả
-      const allItemIds = cartgoods.map((item) => item.id);
+      const allItemIds = cartItems.map((item) => item.productId);
       setSelectedItems(allItemIds);
     }
   };
@@ -145,13 +146,13 @@ function CartShopping() {
     </div>
   ) : (
     <div className="test bg-gray-50 font-Montserrat">
-      {cartgoods.length > 0 ? (
+      {cartItems.length > 0 ? (
         <>
-          {cartgoods.map((item) => (
+          {cartItems.map((item) => (
             <CartItem
-            key={item.id}
+            key={item.productId}
             item={item}
-            setCartgoods={setCartgoods}
+            setCartItems={setCartItems}
             access_token={access_token}
             selectedItems={selectedItems}
             setSelectedItems={setSelectedItems}
@@ -162,11 +163,11 @@ function CartShopping() {
               onClick={toggleSelectAll}
               className="px-4 py-2 bg-blue-500 text-white font-semibold rounded-md hover:bg-blue-600 transition"
             >
-              {selectedItems.length === cartgoods.length ? "Bỏ chọn tất cả" : "Chọn tất cả"}
+              {selectedItems.length === cartItems.length ? "Bỏ chọn tất cả" : "Chọn tất cả"}
             </button>
           </div>
           <CartFooter
-            cartgoods={cartgoods}
+            cartItems={cartItems}
             handleOnclickOrder={handleOnclickOrder}
             showVoucher={handleOnclinkShowVoucher}
             totalPrice={totalPrice}

@@ -19,6 +19,13 @@ function Order({}) {
   const {itemsToOrder, totalPrice, selectedVoucher } = orderData;
 
   const [showPaymentReturn, setShowPaymentReturn] = useState(false)
+  const [shippingMethod, setShippingMethod] = useState(null);
+  const [paymentMethod, setPaymentMethod] = useState(null);
+  // Tính tổng cuối cùng
+  const discount = selectedVoucher?.voucher?.discountValue || 0;
+  const shippingFee = 25000; // hoặc 0 nếu miễn phí
+  const finalAmount = totalPrice - discount + shippingFee;
+
 
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search); // Lấy query string
@@ -26,7 +33,7 @@ function Order({}) {
     setShowPaymentReturn(hasQuery); // Cập nhật state
   }, [location.search]);
 
-  const [goodOrder, setGoodOrder] = useState(itemsToOrder);
+  const [productOrder, setProductOrder] = useState(itemsToOrder);
 
 
   const [selectAddress, setSelectAddress] = useState(() => {
@@ -43,10 +50,11 @@ function Order({}) {
   // console.log("1", typeof itemsToOrder);
   // console.log("2", location.state);
   const [showAddress, setShowAddress] = useState(false);
-  const access_token = getCSRFTokenFromCookie("access_token");
+  const access_token = getCSRFTokenFromCookie("access_token") ;
+  // const access_token =  token ;
   const title = ["Đơn giá", "Số lượng", "Thành tiền"];
   useEffect(() => {
-    setGoodOrder(itemsToOrder); // Gán giá trị mới cho goodOrder khi itemsToOrder thay đổi
+    setProductOrder(itemsToOrder); // Gán giá trị mới cho goodOrder khi itemsToOrder thay đổi
   }, [itemsToOrder]);
 
   const handleOnclickShowAddress = () => {
@@ -56,7 +64,7 @@ function Order({}) {
   useEffect(() => {
     const fetch = async () => {
       try {
-        const respone = await request1.get("user/addresses/", {
+        const respone = await request1.get("user/addresses", {
           headers: {
             Authorization: `Bearer ${access_token}`,
             "Content-Type": "application/json",
@@ -117,39 +125,50 @@ function Order({}) {
   const HandleOnclickOrder = async () => {
     const Address = JSON.parse(localStorage.getItem("selectAddress"));
     const orderData = JSON.parse(localStorage.getItem("orderData"));
-    const payment = JSON.parse(localStorage.getItem("payment"));
-  
-    if (!Address || !orderData || !payment) {
-      console.error("Thiếu dữ liệu cần thiết");
+
+    if (!Address || !orderData) {
+      alert("Vui lòng chọn địa chỉ và sản phẩm.");
       return;
     }
-  
-    const addressShip = `${Address.name}.${Address.phone}.${Address.city}.${Address.addressct}`;
-    const Voucher = orderData?.selectedVoucher;
-  
+
+    const shippingAddress = `${Address.name}, ${Address.phone}, ${Address.city}, ${Address.addressct}`;
+
+    const payload = {
+      items: orderData.itemsToOrder.map((item) => ({
+        productId: item.productId,
+        productName: item.productName,
+        quantity: item.qty,
+        price: item.price,
+      })),
+      totalPrice: orderData.totalPrice,
+      discount: orderData.selectedVoucher ? orderData.selectedVoucher.voucher.discountValue : 0,
+      shippingFee: 25000, // tuỳ logic
+      finalAmount: orderData.totalPrice - (orderData.selectedVoucher?.voucher.discountValue || 0) + 25000,
+      shippingAddress,
+      shippingMethod,
+      paymentMethod,
+      paymentStatus: paymentMethod === "COD" ? "Chưa thanh toán" : "Đã thanh toán",
+      orderStatus: "Đã xác nhận",
+      note: "",
+    };
+
     try {
-      const response = await request1.post(
-        "order/",
-        {
-          order_id: payment.order_id,
-          shipping_address: addressShip,
-          goods_id: orderData.itemsToOrder.map((item) => item.id),
-          voucherUserId: Voucher ? Voucher.id : null,
-          pay_id: payment.id,
+      const response = await request1.post("orders", payload, {
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+          "Content-Type": "application/json",
         },
-        {
-          headers: {
-            Authorization: `Bearer ${access_token}`,
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
-        }
-      );
+      });
+      console.log("Tạo đơn hàng thành công:", response.data);
+      localStorage.removeItem("orderData");
+      alert("Đặt hàng thành công!");
+      navigate("/cartshopping");
     } catch (error) {
       console.error("Lỗi khi tạo đơn hàng:", error.response || error);
-      setError("Không thể tạo đơn hàng. Vui lòng thử lại.");
+      alert("Không thể tạo đơn hàng, vui lòng thử lại.");
     }
   };
+
   
 
   const handleSelectAddress = (item) => {
@@ -168,7 +187,7 @@ function Order({}) {
       </div>
     </div>
   ) : (
-    goodOrder && (
+    productOrder && (
       <div className="font-Montserrat bg-gray-100">
         {/*  tiêu đề */}
         <div className="border-y-[1px] border-gray-100 bg-white">
@@ -221,9 +240,9 @@ function Order({}) {
               })}
             </div>
           </div>
-          {goodOrder &&
-            goodOrder.map((item, index) => {
-              const good = item.good;
+          {productOrder &&
+            productOrder.map((item, index) => {
+              
               return (
                 <div
                   key={index}
@@ -233,29 +252,29 @@ function Order({}) {
                   <div className="flex basis-[40%] md:basis-[60%] pl-5">
                     <div className="flex items-center">
                       <img
-                        src={`${request}${good.image}`}
+                        src={`${request}${item.image}`}
                         alt=""
                         className=" w-[50px] h-[50px] lg:w-[150px] lg:h-[150px]"
                       />
                       <p className="font-semibold text-[8px] md:text-sm lg:text-base px-1">
-                        {good.goodName}
+                        {item.productName}
                       </p>
                     </div>
                   </div>
                   <div className="basis-[60%] md:basis-[40%] flex items-center text-[8px] md:text-xs lg:text-base justify-between mx-2">
                     {/* giá cả */}
                     <p className="text-red-500 font-semibold">
-                      {PricetoString(good.price.split(".")[0])}
+                      {PricetoString(item.price.toString().split(".")[0])}
                     </p>
                     {/* số lượng sản phẩm */}
                     <div className="font-bold">
-                      <p className="">{item.quantity}</p>
+                      <p className="">{item.qty}</p>
                     </div>
                     {/* thành tiền */}
                     <div className="text-red-500 font-semibold">
                       <p>
                         {PricetoString(
-                          parseInt(good.price.split(".")[0]) * item.quantity
+                          parseInt(item.price.toString().split(".")[0]) * item.qty
                         )}
                         đ
                       </p>
@@ -281,14 +300,48 @@ function Order({}) {
             </div>
           </div>
         </div>
-        {/* <div className="test flex justify-end mr-5 py-10">
+        <div className="bg-white p-5 mt-5">
+          <p className="font-semibold text-lg mb-3">Phương thức giao hàng</p>
+          <select
+            className="border p-2 rounded w-full"
+            value={shippingMethod}
+            onChange={(e) => setShippingMethod(e.target.value)}
+          >
+            <option value="Nhanh">Giao hàng nhanh</option>
+            <option value="Tiết kiệm">Giao hàng tiết kiệm</option>
+            <option value="Tiêu chuẩn">Giao hàng tiêu chuẩn</option>
+          </select>
+
+          <p className="font-semibold text-lg mt-5 mb-3">Phương thức thanh toán</p>
+          <select
+            className="border p-2 rounded w-full"
+            value={paymentMethod}
+            onChange={(e) => setPaymentMethod(e.target.value)}
+          >
+            <option value="COD">Thanh toán khi nhận hàng (COD)</option>
+            <option value="Chuyển khoản">Chuyển khoản ngân hàng</option>
+            <option value="Ví điện tử">Ví điện tử</option>
+          </select>
+        </div>
+        <div className="bg-white p-5 mt-5 font-semibold">
+          <p>Tạm tính: {PricetoString(totalPrice)}đ</p>
+          {selectedVoucher && (
+            <p>Giảm giá: -{PricetoString(selectedVoucher.voucher.discountValue)}đ</p>
+          )}
+          <p>Phí vận chuyển: {PricetoString(25000)}đ</p>
+          <p className="text-red-500 mt-2 text-lg">
+            Tổng thanh toán: {PricetoString(finalAmount)}đ
+          </p>
+        </div>
+
+        <div className="test flex justify-end mr-5 py-10">
           <button
             className="button-primary bg-red-500 px-5 py-3 text-base font-bold hover:bg-red-400"
             onClick={() => HandleOnclickOrder()}
           >
             Đặt hàng
           </button>
-        </div> */}
+        </div>
         <div>
           {showAddress && (
             <AddressOD
@@ -300,7 +353,7 @@ function Order({}) {
             />
           )}
         </div>
-        <div>
+        {/* <div>
           {(
             <PaymentFrom
               totalPrice = {totalPrice}
@@ -313,7 +366,7 @@ function Order({}) {
             <PaymentReturn
                 setShowPaymentReturn={setShowPaymentReturn}
             />
-          )}
+          )} */}
       </div>
     )
   );
