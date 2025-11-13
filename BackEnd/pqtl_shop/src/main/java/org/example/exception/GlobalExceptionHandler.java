@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 @ControllerAdvice //annotation xy ly ngoai le
 public class    GlobalExceptionHandler {
@@ -49,5 +51,12 @@ public class    GlobalExceptionHandler {
                 .code(500)
                 .message("Internal error: " + e.getMessage())
                 .build();
+    }
+
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<Map<String, String>> handleRuntimeException(RuntimeException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", ex.getMessage());
+        return ResponseEntity.badRequest().body(error);
     }
 }

@@ -33,35 +33,32 @@ public class AuthService {
 
     // ---------------------- REGISTER ----------------------
     public AuthResponse register(RegisterRequest request) {
-        // 1️⃣ Kiểm tra email trùng
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("Email đã tồn tại");
         }
 
-        // 2️⃣ Tạo user chưa xác minh
         User user = User.builder()
                 .username(request.getUsername())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role("CUSTOMER")
                 .verified(false)
-                .isActive(true)
+                .isActive(false) // 👈 tài khoản chưa kích hoạt
                 .loyaltyPoints(0)
                 .build();
 
         userRepository.save(user);
 
-        // 3️⃣ Tạo token xác minh
+        // Tạo token xác minh
         String token = UUID.randomUUID().toString();
         VerificationToken verificationToken = VerificationToken.builder()
                 .token(token)
                 .userId(user.getId())
                 .expiryDate(LocalDateTime.now().plusHours(24))
                 .build();
-
         verificationTokenRepository.save(verificationToken);
 
-        // 4️⃣ Gửi email xác minh
+        // Gửi email xác minh
         String verifyLink = "http://localhost:8080/api/auth/verify?token=" + token;
         emailService.sendEmail(
                 user.getEmail(),
@@ -72,25 +69,30 @@ public class AuthService {
                         + "Liên kết sẽ hết hạn sau 24 giờ.\n\n"
         );
 
-        // 5️⃣ Thông báo đăng ký thành công nhưng chưa kích hoạt
         return AuthResponse.builder()
                 .message("Đăng ký thành công! Vui lòng kiểm tra email để xác minh tài khoản.")
                 .build();
     }
 
+
     // ---------------------- LOGIN ----------------------
     public AuthResponse login(LoginRequest request) {
+        // 🔍 Chỉ tìm theo email
         Optional<User> userOpt = userRepository.findByEmail(request.getUsername());
-        if (userOpt.isEmpty()) {
-            userOpt = userRepository.findByUsername(request.getUsername());
+
+        User user = userOpt.orElseThrow(() -> new RuntimeException("Email không tồn tại"));
+
+        // 🚫 Chặn người dùng chưa xác minh hoặc chưa kích hoạt
+        if (!user.isVerified() || !user.getIsActive()) {
+            throw new RuntimeException("Tài khoản chưa được xác minh hoặc chưa kích hoạt");
         }
 
-        User user = userOpt.orElseThrow(() -> new RuntimeException("User not found"));
-
+        // 🔐 Kiểm tra mật khẩu
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new RuntimeException("Sai mật khẩu");
         }
 
+        // 🪙 Tạo token
         String accessToken = jwtService.generateAccessToken(user.getEmail());
         String refreshToken = jwtService.generateRefreshToken(user.getEmail());
 
@@ -101,6 +103,8 @@ public class AuthService {
                 .message("Đăng nhập thành công")
                 .build();
     }
+
+
 
     // ---------------------- REFRESH TOKEN ----------------------
     public AuthResponse refreshToken(String refreshToken) {
