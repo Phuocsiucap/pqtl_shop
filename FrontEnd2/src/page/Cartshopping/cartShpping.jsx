@@ -23,8 +23,8 @@ function CartShopping() {
   const navigate = useNavigate();
 //   const access_token = document.cookie.split("=")[1]; // Lấy token
   const user = useSelector((state) => state.user.user);
-  // const access_token = getCSRFTokenFromCookie("access_token") || token;
-  const access_token = token;
+  const access_token = getCSRFTokenFromCookie("access_token") 
+  // const access_token = token;
 
 
 
