@@ -35,18 +35,22 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
         // 🔹 Kiểm tra user đã tồn tại chưa
         User user = userRepository.findByEmail(email)
                 .orElseGet(() -> {
-                    User newUser = new User();
-                    newUser.setEmail(email);
-                    newUser.setUsername(name);
-                    newUser.setRole(Role.CUSTOMER.toString());
+                    User newUser = User.builder()
+                            .email(email)
+                            .username(name)
+                            .role(Role.CUSTOMER.toString())
+                            .verified(true) // OAuth2 login dùng email đã xác thực
+                            .build();
                     return userRepository.save(newUser);
                 });
 
+
         // 🔹 Tạo JWT token
-        String token = jwtService.generateAccessToken(user.getUsername());
+        String token = jwtService.generateAccessToken(user.getEmail());
 
         // 🔹 Redirect về frontend với token
-        String redirectUrl = "http://localhost:3000/oauth2/success?token=" + token;
+        String redirectUrl = "http://localhost:8888/oauth2/success?token=" + token;
         response.sendRedirect(redirectUrl);
+
     }
 }

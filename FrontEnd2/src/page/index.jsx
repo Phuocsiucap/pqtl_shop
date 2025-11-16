@@ -32,6 +32,8 @@ import DetailModal from "./Admin/ManaBill/DetailModal"
 import ManagementGood from "./Admin/ManaGood/indes"
 import LoginForm from "./Admin/LoginAdmin"
 import BestSellerList from "./Admin/BestSeller"
+import OAuth2RedirectHandler from "./OAuth2RedirectHandler";
+
 const PublicPage=[
     {path:"/", component: Home, layout: Defaultlayout},
     {path:"/products/:id", component: ProductDetail, layout: Defaultlayout},
@@ -66,7 +68,8 @@ const PublicPage=[
     {path:"/admin/managebill", component: ManagementBill, layout: AdminLayout},
     {path:"/admin/managebill/billdetail", component: DetailModal, layout: AdminLayout},
     {path:"/admin/bestseller", component: BestSellerList, layout: AdminLayout},
-    
+    { path: "/oauth2/success", component: OAuth2RedirectHandler, layout: null },
+
 ]
 const PrivatePage=[
 

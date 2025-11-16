@@ -69,5 +69,14 @@ public class AuthController {
 
         return ResponseEntity.ok("Xác minh tài khoản thành công! Bạn có thể đăng nhập.");
     }
+    private final JwtService jwtService;
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentUser(@RequestHeader("Authorization") String authHeader) {
+        String token = authHeader.replace("Bearer ", "");
+        String email = jwtService.extractUsername(token);
+        User user = userRepository.findByEmail(email).orElseThrow();
+        return ResponseEntity.ok(user);
+    }
+
 
 }
