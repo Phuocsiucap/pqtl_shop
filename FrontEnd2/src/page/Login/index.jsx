@@ -27,38 +27,35 @@ function Login() {
     setShowmessage(false);
   };
   const handleOnsumbit = async (e) => {
-    e.preventDefault();
-    if (user.password === "" || user.email === "") {
-      setMessage("Điền đầy đủ thông tin đăng nhập!");
-      setShowmessage(true);
-      return;
+  e.preventDefault();
+  if (user.password === "" || user.email === "") {
+    setMessage("Điền đầy đủ thông tin đăng nhập!");
+    setShowmessage(true);
+    return;
+  }
+  try {
+    const response = await request1.post("auth/login", {
+      username: user.email,
+      password: user.password,
+    });
+
+    if (response.status === 200) {
+      alert("Đăng nhập thành công");
+
+      Cookies.set("access_token", response.data.accessToken, { expires: 7, path: "" });
+      Cookies.set("refresh_token", response.data.refreshToken, { expires: 7, path: "" });
+      Cookies.set("user", JSON.stringify(response.data.user), { expires: 7, path: "" });
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+      dispatch(LoginUser(response.data.user));
+      navigate("/");
     }
-    try {
-      const response = await request1.post("auth/login", {
-        username: user.email,
-        password: user.password,
-      });
-  
-      if (response.status === 200) {
-        alert("Đăng nhập thành công");
-  
-        // Lưu thông tin vào cookie
-        Cookies.set("access_token", response.data.accessToken, { expires: 7, path: "" });
-        Cookies.set("refresh_token", response.data.refreshToken, { expires: 7, path: "" });
-        Cookies.set("user", JSON.stringify(response.data.user), { expires: 7, path: "" });
-        localStorage.setItem('user',JSON.stringify(response.data.user));
-        dispatch(LoginUser(response.data.user));
-        navigate("/");
-      }
-    } catch (e) {
-      if (e.response?.status === 400) {
-        setMessage("Thông tin đăng nhập không đúng");
-        setShowmessage(true);
-      } else {
-        alert("Có lỗi sảy ra Không kết nối được với server");
-      }
-    }
-  };
+  } catch (e) {
+    const errMessage = e.response?.data?.message || "Vui lòng xác thực email";
+    setMessage(errMessage);
+    setShowmessage(true);
+  }
+};
+
   
   return (
     // login page
