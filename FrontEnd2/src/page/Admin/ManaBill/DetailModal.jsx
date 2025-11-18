@@ -1,5 +1,6 @@
 // DetailModal Component
 import { request1,request } from "../../../utils/request";
+import { PricetoString } from "../../../Component/Translate_Price";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const DetailModal = () => {
@@ -7,10 +8,11 @@ const DetailModal = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const order = location.state?.order;
-  console.log("1->>>>>>", order);
+  console.log("Order data:", order);
+  
   if (!order) {
     return (
-      <div className="container mx-auto p-6">s
+      <div className="container mx-auto p-6">
         <h2 className="text-2xl font-semibold text-red-500">
           Không có dữ liệu đơn hàng!
         </h2>
@@ -24,56 +26,57 @@ const DetailModal = () => {
     );
   }
 
-  // Tính tổng tiền chưa giảm giá và giảm giá
-  const discountPercentage =
-    order.voucher && order.voucher.length > 0
-      ? order.voucher[0].discount_percentage
-      : 0;
-  const totalAmountBeforeDiscount =(order.order.total_amount / (100 - discountPercentage)) * 100;
-  const discountAmount = (totalAmountBeforeDiscount * discountPercentage) / 100;
-  const finalAmount = totalAmountBeforeDiscount - discountAmount;
+  // Tính tổng tiền
+  const totalBeforeDiscount = order.totalPrice || 0;
+  const discountAmount = order.discount || 0;
+  const shippingFee = order.shippingFee || 0;
+  const finalAmount = order.finalAmount || 0;
 
   return (
     <div className="container mx-auto p-6 font-medium">
       <h2 className="text-3xl font-bold text-blue-600 mb-6">
-        Chi tiết đơn hàng #{order.order.order_id}
+        Chi tiết đơn hàng #{order.id}
       </h2>
 
       {/* Thông tin đơn hàng */}
       <div className="bg-blue-50 p-4 rounded-md shadow-md mb-8">
         <p className="text-lg text-primary">
-          <strong>Thời gian đặt hàng:</strong> {order.order.purchase_date}
+          <strong>Thời gian đặt hàng:</strong> {order.orderDate ? new Date(order.orderDate).toLocaleString('vi-VN') : 'N/A'}
         </p>
         <p className="text-lg">
-          <strong>Địa chỉ giao hàng:</strong>{" "}
-          {order.order.shipping_address.split(".").map((item, index) => (
-            <span key={index} className="block">
-              {item}
-            </span>
-          ))}
+          <strong>Địa chỉ giao hàng:</strong> {order.shippingAddress || 'N/A'}
+        </p>
+        <p className="text-lg">
+          <strong>Phương thức giao hàng:</strong> {order.shippingMethod || 'N/A'}
+        </p>
+        <p className="text-lg">
+          <strong>Phương thức thanh toán:</strong> {order.paymentMethod || 'N/A'}
+        </p>
+        <p className="text-lg">
+          <strong>Trạng thái thanh toán:</strong> {order.paymentStatus || 'N/A'}
         </p>
         <p className="text-lg text-red-500">
           <strong>Tổng tiền: </strong>
-          {order.order.total_amount.toLocaleString("vi-VN")} đ
+          {PricetoString(finalAmount)} đ
         </p>
         <p className="text-lg">
           <strong>Trạng thái vận chuyển:</strong>{" "}
           <span
             className={`${
-              order.order.shipping_status === "Chờ xác nhận"
-                ? "text-green-500"
-                : order.order.shipping_status === "Đã xác nhận"
-                ? "text-green-500"
-                : order.order.shipping_status === "Đã hủy"
+              order.shipping_status === "Chờ xác nhận"
+                ? "text-yellow-500"
+                : order.shipping_status === "Đã xác nhận"
+                ? "text-blue-500"
+                : order.shipping_status === "Đã hủy"
                 ? "text-red-500"
-                : order.order.shipping_status === "Đang giao"
-                ?"text-blue-500"
-                : order.order.shipping_status === "Đã giao"
-                ?"text-blue-500"
+                : order.shipping_status === "Đang giao"
+                ? "text-blue-500"
+                : order.shipping_status === "Đã giao"
+                ? "text-green-500"
                 : "text-gray-600"
             }`}
           >
-            {order.order.shipping_status}
+            {order.shipping_status || "Chờ xác nhận"}
           </span>
         </p>
       </div>
@@ -92,38 +95,42 @@ const DetailModal = () => {
           </tr>
         </thead>
         <tbody>
-          {order.good.map((product, index) => {
-            const order_good = order.order_good.find(
-              (item) => item.good === product.id
-            );
-            const thanhTien = parseFloat(product.price) * order_good.quantity;
-            return (
-              <tr
-                key={index}
-                className={`text-center ${
-                  index % 2 === 0 ? "bg-white" : "bg-blue-50"
-                }`}
-              >
-                <td className="border border-gray-300 px-4 py-2 flex flex-col items-center gap-2 justify-center">
-                  <img
-                    src={`${request}${product.image}`}
-                    alt={product.goodName}
-                    className="w-[200px] h-[200px] object-cover rounded-md"
-                  />
-                  <span className="text-center">{product.goodName}</span>
-                </td>
-                <td className="border border-gray-300 px-4 py-2">
-                  {order_good.quantity}
-                </td>
-                <td className="border border-gray-300 px-4 py-2">
-                  {parseFloat(product.price).toLocaleString("vi-VN")} đ
-                </td>
-                <td className="border border-gray-300 px-4 py-2 font-bold text-red-500">
-                  {thanhTien.toLocaleString("vi-VN")} đ
-                </td>
-              </tr>
-            );
-          })}
+          {Array.isArray(order.items) && order.items.length > 0 && (
+            <>
+              {order.items.map((item, index) => {
+                const itemTotal = (item.price || 0) * (item.quantity || 0);
+                return (
+                  <tr
+                    key={index}
+                    className={`text-center ${
+                      index % 2 === 0 ? "bg-white" : "bg-blue-50"
+                    }`}
+                  >
+                    <td className="border border-gray-300 px-4 py-2">
+                      <div className="text-center">{item.productName || item.name || 'N/A'}</div>
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2">
+                      {item.quantity || 0}
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2">
+                      {PricetoString(item.price || 0)} đ
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2 font-bold text-red-500">
+                      {PricetoString(itemTotal)} đ
+                    </td>
+                  </tr>
+                );
+              })}
+            </>
+          )}
+          
+          {(!Array.isArray(order.items) || order.items.length === 0) && (
+            <tr>
+              <td colSpan={4} className="border border-gray-300 px-4 py-2 text-center">
+                Không có sản phẩm nào
+              </td>
+            </tr>
+          )}
 
           {/* Dòng tổng tiền, giảm giá và tổng tiền cuối cùng */}
           <tr className="bg-white font-medium text-lg">
@@ -131,25 +138,38 @@ const DetailModal = () => {
               Tổng tiền sản phẩm
             </td>
             <td className="px-4 py-3 text-center text-red-500">
-              {totalAmountBeforeDiscount.toLocaleString("vi-VN")} đ
+              {PricetoString(totalBeforeDiscount)} đ
             </td>
           </tr>
-          {order.voucher && order.voucher.length > 0 && (
+          
+          {discountAmount > 0 && (
             <tr className="bg-white font-medium text-lg">
               <td colSpan={3} className="text-left px-4 py-3 text-primary">
-                Voucher {order.voucher[0].title} :
+                Giảm giá:
               </td>
               <td className="px-4 py-3 text-center">
-                - {discountAmount.toLocaleString("vi-VN")} đ
+                - {PricetoString(discountAmount)} đ
               </td>
             </tr>
           )}
+
+          {shippingFee > 0 && (
+            <tr className="bg-white font-medium text-lg">
+              <td colSpan={3} className="text-left px-4 py-3">
+                Phí vận chuyển:
+              </td>
+              <td className="px-4 py-3 text-center">
+                + {PricetoString(shippingFee)} đ
+              </td>
+            </tr>
+          )}
+          
           <tr className="bg-white font-medium text-lg">
             <td colSpan={3} className="text-left px-4 py-3">
               Tổng tiền cần thanh toán:
             </td>
             <td className="px-4 py-3 text-red-600 text-center font-bold">
-              {finalAmount.toLocaleString("vi-VN")} đ
+              {PricetoString(finalAmount)} đ
             </td>
           </tr>
         </tbody>

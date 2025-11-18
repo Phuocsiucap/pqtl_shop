@@ -29,4 +29,7 @@ public class User {
     private List<Address> addresses;  
     private String role ;
     private boolean verified = false;
+    
+    // Thêm trường fullName - cần thiết cho admin API hiển thị tên người dùng
+    private String fullName;
 }

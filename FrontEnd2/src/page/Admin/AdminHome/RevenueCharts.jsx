@@ -30,6 +30,17 @@ ChartJS.register(
 const RevenueCharts = ({ access_token }) => {
   const [dataMonth, setDataMonth] = useState([]);
   const [dataWeek, setDataWeek] = useState([]);
+  
+  // Tính toán mảng revenue từ dataMonth theo thứ tự tháng
+  const monthlyRevenueValues = Array.isArray(dataMonth) && dataMonth.length > 0 
+    ? dataMonth.map(item => item.revenue || 0)
+    : Array(12).fill(0);
+
+  // Tính toán mảng revenue từ dataWeek theo thứ tự ngày
+  const weeklyRevenueValues = Array.isArray(dataWeek) && dataWeek.length > 0
+    ? dataWeek.map(item => item.revenue || 0)
+    : Array(7).fill(0);
+  
   // Dữ liệu mẫu cho doanh thu trong 12 tháng
   const monthlyRevenueData = {
     labels: [
@@ -49,8 +60,7 @@ const RevenueCharts = ({ access_token }) => {
     datasets: [
       {
         label: "Doanh thu (VND)",
-        // data: [1200000, 1500000, 1800000, 2000000, 2200000, 2500000, 2300000, 2400000, 2100000, 2600000, 2700000, 3000000],
-        data: dataMonth.length > 0 ? dataMonth : Array(12).fill(0),
+        data: monthlyRevenueValues,
         borderColor: "#34D399", // Màu viền (xanh lá)
         backgroundColor: "rgba(52, 211, 153, 0.2)", // Màu nền của các điểm dữ liệu
         borderWidth: 2,
@@ -65,7 +75,7 @@ const RevenueCharts = ({ access_token }) => {
     datasets: [
       {
         label: "Doanh thu (VND)",
-        data: dataWeek.length > 0 ? dataWeek : Array(7).fill(0),
+        data: weeklyRevenueValues,
         borderColor: "#3B82F6", // Màu viền (xanh dương)
         backgroundColor: "rgba(59, 130, 246, 0.2)", // Màu nền của các điểm dữ liệu
         borderWidth: 2,
@@ -83,8 +93,8 @@ const RevenueCharts = ({ access_token }) => {
           },
           withCredentials: true,
         });
-        console.log(response);
-        setDataMonth(response.data.revenues);
+        console.log("Monthly revenue:", response.data);
+        setDataMonth(response.data);
       } catch (e) {
         console.log("Lỗi ", e);
       }
@@ -101,8 +111,8 @@ const RevenueCharts = ({ access_token }) => {
           },
           withCredentials: true,
         });
-        // console.log(response);
-        setDataWeek(response.data.revenue);
+        console.log("Weekly revenue:", response.data);
+        setDataWeek(response.data);
       } catch (e) {
         console.log("Lỗi ", e);
       }

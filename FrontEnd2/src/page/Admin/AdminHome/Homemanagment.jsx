@@ -8,7 +8,7 @@ const [data,setData]=useState({})
   useEffect(()=>{
     const fetch=async()=>{
       try{
-        const response=await request1.get("admin/today-revenue/",{
+        const response=await request1.get("v1/admin/today-revenue/",{
           headers: {
             Authorization: `Bearer ${access_token}`,
             "Content-Type": "application/json",

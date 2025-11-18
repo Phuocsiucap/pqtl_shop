@@ -15,7 +15,7 @@ const BestSellerList = () => {
   useEffect(() => {
     const fetchBestSellers = async () => {
       try {
-        const response = await request1.get("admin/goods/", {
+        const response = await request1.get("v1/admin/goods/", {
           headers: {
             Authorization: `Bearer ${access_token}`,
             "Content-Type": "application/json",

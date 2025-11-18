@@ -67,7 +67,7 @@ const ProductEditModal = ({ product, closeModal, saveProductChanges }) => {
       formDataToSend.append("image", formData.imageFile); // Add the file here
     }
     try {
-      const response = await request1.put(`admin/goods/${product.id}/`, formDataToSend, {
+      const response = await request1.put(`v1/admin/goods/${product.id}/`, formDataToSend, {
         headers: {
           Authorization: `Bearer ${access_token}`, // Đảm bảo token đúng
           "Content-Type": "multipart/form-data",

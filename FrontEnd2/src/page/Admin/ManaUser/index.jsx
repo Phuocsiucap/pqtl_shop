@@ -21,7 +21,7 @@ const UserList = () => {
     const confirmDelete = window.confirm("Bạn có chắc chắn muốn xóa người dùng này?");
     if (confirmDelete) {
       try {
-        const response = await request1.delete(`admin/users/${id}/`, {
+        const response = await request1.delete(`v1/admin/users/${id}/`, {
           headers: {
             Authorization: `Bearer ${access_token}`,
             "Content-Type": "application/json",
@@ -46,7 +46,7 @@ const UserList = () => {
   useEffect(() => {
     const fetch = async () => {
       try {
-        const response = await request1.get("admin/users/", {
+        const response = await request1.get("v1/admin/users/", {
           headers: {
             Authorization: `Bearer ${access_token}`,
             "Content-Type": "application/json",

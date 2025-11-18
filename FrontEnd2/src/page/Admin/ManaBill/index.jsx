@@ -9,19 +9,21 @@ const OrderManagement = () => {
   const [orders, setOrders] = useState([]);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [showConfirmPopup, setShowConfirmPopup] = useState(false);
   const access_token = getCSRFTokenFromCookie("access_token_admin");
   const navigate=useNavigate();
   const handleViewDetails = async(order) => {
+    console.log("Order clicked:", order);
     try {
-      const response = await request1.get(`admin/orders/${order.order_id}/goods/`, {
+      const response = await request1.get(`v1/admin/orders/${order.id}/goods/`, {
         headers: {
           Authorization: `Bearer ${access_token}`,
           "Content-Type": "application/json",
         },
         withCredentials: true,
       });
-      console.log("1",response);
+      console.log("Order details:",response);
       // setOrders(response.data);
       navigate("/admin/managebill/billdetail",{state:{order: response.data}})
     } catch (e) {
@@ -30,9 +32,10 @@ const OrderManagement = () => {
   };
 
   const handleConfirmOrder = (order) => {
+    console.log("Confirm order clicked:", order);
     setSelectedOrder(order);
+    setSelectedOrderId(order.id);
     setShowConfirmPopup(true);
-
   };
 
   const handleCloseDetailModal = () => {
@@ -41,11 +44,23 @@ const OrderManagement = () => {
 
   const handleCloseConfirmPopup = () => {
     setShowConfirmPopup(false);
+    setSelectedOrderId(null);
+    setSelectedOrder(null);
   };
 
   const handleConfirm = async() => {
+    console.log("handleConfirm called with selectedOrderId:", selectedOrderId);
+    console.log("selectedOrder:", selectedOrder);
+    
+    if (!selectedOrderId) {
+      alert("Lỗi: ID đơn hàng không hợp lệ");
+      return;
+    }
+    
     let newStatus;
-    switch (selectedOrder.shipping_status) {
+    const currentStatus = selectedOrder.shipping_status || "Chờ xác nhận";
+    
+    switch (currentStatus) {
       case "Chờ xác nhận":
         newStatus = "Đã xác nhận";
         break;
@@ -56,10 +71,10 @@ const OrderManagement = () => {
         newStatus = "Đã giao";
         break;
       default:
-        newStatus = selectedOrder.shipping_status;
+        newStatus = currentStatus;
     }
     try{
-      const response=await request1.patch(`admin/orders/${selectedOrder.order_id}/`,
+      const response=await request1.patch(`v1/admin/orders/${selectedOrderId}/`,
         {
           shipping_status: newStatus,
         },
@@ -71,16 +86,17 @@ const OrderManagement = () => {
           withCredentials: true,
         }
       )
-      // console.log(response)
+      console.log("Order updated:", response)
       // Cập nhật lại trạng thái của đơn hàng
       const updatedOrders = orders.map((o) =>
-        o.order_id === selectedOrder.order_id
+        o.id === selectedOrderId
           ? { ...o, shipping_status: newStatus }
           : o
       );
       setOrders(updatedOrders);
-      // setOrders(updatedOrders);
       setShowConfirmPopup(false);
+      setSelectedOrderId(null);
+      setSelectedOrder(null);
     }
     catch(e){
       alert("Có lỗi khi cập nhật đơn hàng")
@@ -90,14 +106,14 @@ const OrderManagement = () => {
   useEffect(() => {
     const fetch = async () => {
       try {
-        const response = await request1.get("admin/orders/", {
+        const response = await request1.get("v1/admin/orders/", {
           headers: {
             Authorization: `Bearer ${access_token}`,
             "Content-Type": "application/json",
           },
           withCredentials: true,
         });
-        console.log(response);
+        console.log("All orders:", response.data);
         setOrders(response.data);
       } catch (e) {
         console.log("Lỗi ", e);
@@ -128,7 +144,7 @@ const OrderManagement = () => {
             <h3 className="text-lg font-semibold mb-4">
               Cập nhật đơn hàng 
               <span className="text-primary font-semibold">
-              &nbsp;#{selectedOrder.order_id}
+              &nbsp;#{selectedOrder.id}
               </span>
             </h3>
             <p>Bạn có chắc chắn cập nhật trạng thái đơn hàng này không?</p>

@@ -11,16 +11,20 @@ public class Product {
     private String id;
     private String name;
     private String description;
-    private String category; // Bổ sung cho tìm kiếm
-    private String image;        // URL ảnh
+    private String category;
+    private String image;
     private double price;
     private double discount;
     private int stockQuantity;
     private int soldQuantity;
-    private Boolean isBestSeller = false; // Bổ sung cho trang chủ
-    private Boolean isSeasonal = false; // Bổ sung cho trang chủ
-    private Double rating; // Bổ sung cho chi tiết/tìm kiếm
-    private Integer reviewCount; // Bổ sung cho chi tiết/tìm kiếm
+    private Boolean isBestSeller = false;
+    private Boolean isSeasonal = false;
+    private Double rating;
+    private Integer reviewCount;
+    
+    // Thêm các trường cần thiết cho admin API
+    private String brand;           // Thương hiệu - cần thiết cho quản lý sản phẩm
+    private String specifications;  // Thông số kỹ thuật - cần thiết cho chi tiết sản phẩm
 
     public double getFinalPrice() {
         return price - discount;

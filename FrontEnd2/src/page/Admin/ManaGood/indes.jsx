@@ -35,7 +35,7 @@ const ProductList = () => {
     );
     if (confirmDelete) {
       try{
-        const response = await request1.delete(`admin/goods/${id}/`, {
+        const response = await request1.delete(`v1/admin/goods/${id}/`, {
           headers: {
             Authorization: `Bearer ${access_token}`,
             "Content-Type": "application/json",
@@ -75,7 +75,7 @@ const ProductList = () => {
   useEffect(() => {
     const fetch = async () => {
       try {
-        const response = await request1.get("admin/goods/", {
+        const response = await request1.get("v1/admin/goods/", {
           headers: {
             Authorization: `Bearer ${access_token}`,
             "Content-Type": "application/json",
@@ -143,8 +143,8 @@ const ProductList = () => {
                     className="w-20 h-20 object-cover rounded-md"
                   />
                 </td>
-                <td className="px-6 py-4">{product.goodName}</td>
-                <td className="px-6 py-4">{product.amount}</td>
+                <td className="px-6 py-4">{product.name}</td>
+                <td className="px-6 py-4">{product.stockQuantity}</td>
                 <td className="px-6 py-4 text-center">
                   <button
                     onClick={() => viewProductDetails(product)}

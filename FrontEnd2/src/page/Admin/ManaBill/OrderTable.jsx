@@ -34,20 +34,22 @@ const OrderTable = ({ orders, onViewDetails, onConfirmOrder }) => {
         {orders.map((order, index) => (
           <tr key={index}>
             <td className="border px-4 py-2 text-primary font-semibold">
-              #{order.order_id}
+              #{order.id}
             </td>
-            {order.total_amount && (
+            {order.finalAmount && (
               <td className="border px-4 py-2 text-red-500 font-semibold">
-                {PricetoString(order.total_amount)} VND
+                {PricetoString(order.finalAmount)} VND
               </td>
             )}
-            <td className="border px-4 py-2">{order.purchase_date}</td>
+            <td className="border px-4 py-2">
+              {order.orderDate ? new Date(order.orderDate).toLocaleDateString('vi-VN') : 'N/A'}
+            </td>
             <td
               className={`border px-4 py-2 ${getStatusColor(
-                order.shipping_status
+                order.shipping_status || "Chờ xác nhận"
               )} font-semibold`}
             >
-              {order.shipping_status}
+              {order.shipping_status || "Chờ xác nhận"}
             </td>
             <td className="border px-4 py-2">
               <button
@@ -58,7 +60,8 @@ const OrderTable = ({ orders, onViewDetails, onConfirmOrder }) => {
               </button>
               {(order.shipping_status === "Chờ xác nhận" ||
                 order.shipping_status === "Đã xác nhận" ||
-                order.shipping_status === "Đang giao") && (
+                order.shipping_status === "Đang giao" ||
+                !order.shipping_status) && (
                 <button
                   onClick={() => onConfirmOrder(order)}
                   className="bg-green-500 text-white px-4 py-2 rounded-md"
