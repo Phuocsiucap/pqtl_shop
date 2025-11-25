@@ -113,16 +113,19 @@ function QuickAccessCategories() {
             setCategoryError(null);
             try {
                 const data = await getCategories();
-                setCategories(data);
+                // Ensure data is always an array
+                const categoriesArray = Array.isArray(data) ? data : [];
+                setCategories(categoriesArray);
 
-                if (data.length > 0) {
-                    const firstCategory = data[0];
+                if (categoriesArray.length > 0) {
+                    const firstCategory = categoriesArray[0];
                     setSelectedCategory(firstCategory);
                     fetchProductsByCategory(firstCategory, 0);
                 }
             } catch (error) {
                 console.error('Không thể tải danh mục:', error);
                 setCategoryError('Không thể tải danh mục sản phẩm. Vui lòng thử lại sau.');
+                setCategories([]); // Ensure empty array on error
             } finally {
                 setLoadingCategories(false);
             }
@@ -171,9 +174,8 @@ function QuickAccessCategories() {
                             type="button"
                             key={categoryId}
                             onClick={() => handleCategoryClick(category)}
-                            className={`block rounded-lg shadow-md overflow-hidden transition transform hover:scale-105 focus:outline-none ${
-                                active ? 'ring-2 ring-primary shadow-xl' : 'bg-white'
-                            }`}
+                            className={`block rounded-lg shadow-md overflow-hidden transition transform hover:scale-105 focus:outline-none ${active ? 'ring-2 ring-primary shadow-xl' : 'bg-white'
+                                }`}
                         >
                             <img
                                 src={resolveCategoryImage(category)}
