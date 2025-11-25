@@ -10,7 +10,7 @@ function ProductCard({ product }) {
     const [isAdding, setIsAdding] = useState(false);
     
     const rating = Math.round(product.rating || 0);
-    const finalPrice = product.price - (product.discount || 0);
+    const computedFinalPrice = product.finalPrice ?? (product.price - (product.discount || 0));
 
     const handleAddToCart = async (e) => {
         e.preventDefault(); // Ngăn chặn navigation khi click vào button
@@ -45,7 +45,7 @@ function ProductCard({ product }) {
         setIsAdding(true);
         try {
             // Tính toán giá cuối cùng
-            const finalPrice = product.price - (product.discount || 0);
+            const finalPrice = computedFinalPrice;
             const total = finalPrice * 1; // quantity = 1
 
             // Format dữ liệu theo yêu cầu của backend CartItem
@@ -136,9 +136,9 @@ function ProductCard({ product }) {
                 {/* Price */}
                 <div className="flex items-center mb-3">
                     {product.discount > 0 && (
-                        <span className="text-xs text-gray-400 line-through mr-2">{product.price.toLocaleString()} VND</span>
+                        <span className="text-xs text-gray-400 line-through mr-2">{product.price?.toLocaleString()} VND</span>
                     )}
-                    <span className="text-lg font-bold text-red-600">{finalPrice.toLocaleString()} VND</span>
+                    <span className="text-lg font-bold text-red-600">{computedFinalPrice?.toLocaleString()} VND</span>
                 </div>
 
                 {/* Add to Cart Button */}

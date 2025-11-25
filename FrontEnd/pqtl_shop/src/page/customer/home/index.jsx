@@ -25,12 +25,12 @@ const mockData = {
     { title: "Gạo sạch Việt Nam", subtitle: "Chất lượng cao – giá tốt – an toàn", cta: "Khám phá", color: "from-amber-500 to-green-600" }
   ],
   categories: [
-    { name: "Rau củ", icon: "🥦", count: 120 },
-    { name: "Trái cây", icon: "🍎", count: 90 },
-    { name: "Thịt – Cá", icon: "🐟", count: 70 },
-    { name: "Sữa & Trứng", icon: "🥚", count: 45 },
-    { name: "Gạo – Ngũ cốc", icon: "🌾", count: 60 },
-    { name: "Gia vị – Dầu ăn", icon: "🧂", count: 55 }
+    { name: "Trái Cây Tươi", slug: "trai-cay-tuoi", icon: "🍎", count: 92 },
+    { name: "Rau Ăn Hữu Cơ", slug: "rau-an-huu-co", icon: "🥦", count: 120 },
+    { name: "Củ Quả & Gia Vị", slug: "cu-qua-gia-vi", icon: "🧄", count: 78 },
+    { name: "Thịt & Trứng Sạch", slug: "thit-trung-sach", icon: "🥚", count: 65 },
+    { name: "Hải Sản Tươi", slug: "hai-san-tuoi", icon: "🐟", count: 54 },
+    { name: "Thực Phẩm Khô", slug: "thuc-pham-kho", icon: "🌾", count: 61 }
   ],
   products: {
     new: [

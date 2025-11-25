@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { request1 } from "../../../utils/request";
 import { getCSRFTokenFromCookie } from "../../../Component/Token/getCSRFToken";
+import { getCategories } from "../../../api/category";
 
-const AddProductModal = ({ closeModal }) => {
+const AddProductModal = ({ closeModal, onSave, onError }) => {
   const [newProduct, setNewProduct] = useState({
     goodName: "",
     amount: "",
@@ -13,19 +14,32 @@ const AddProductModal = ({ closeModal }) => {
     image: null,
   });
   const [imagePreview, setImagePreview] = useState(null);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
   const access_token = getCSRFTokenFromCookie("access_token_admin");
 
-  // Danh sách thể loại nông sản
-  const categories = [
-    { id: 1, name: "Trái Cây Tươi" },
-    { id: 2, name: "Rau Ăn Lá Hữu Cơ" },
-    { id: 3, name: "Củ Quả & Gia Vị" },
-    { id: 4, name: "Thịt & Trứng Sạch" },
-    { id: 5, name: "Hải Sản Tươi" },
-    { id: 6, name: "Thực Phẩm Khô" },
-    { id: 7, name: "Ngũ Cốc" },
-    { id: 8, name: "Đậu & Hạt" },
-  ];  
+  // Load categories from API
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const cats = await getCategories();
+        setCategories(cats);
+      } catch (error) {
+        console.error("Error loading categories:", error);
+        // Fallback to default categories
+        setCategories([
+          { id: "1", name: "Trái Cây Tươi" },
+          { id: "2", name: "Rau Ăn Hữu Cơ" },
+          { id: "3", name: "Củ Quả & Gia Vị" },
+          { id: "4", name: "Thịt & Trứng Sạch" },
+          { id: "5", name: "Hải Sản Tươi" },
+          { id: "6", name: "Thực Phẩm Khô" },
+        ]);
+      }
+    };
+    loadCategories();
+  }, []);  
   // Danh sách vùng miền/nhà cung cấp nông sản
   const brands = [
     { id: 1, name: "Đà Lạt" },
@@ -52,16 +66,38 @@ const AddProductModal = ({ closeModal }) => {
     }
   };
 
+  // Validation
+  const validate = () => {
+    const newErrors = {};
+    
+    if (!newProduct.goodName || newProduct.goodName.trim() === "") {
+      newErrors.goodName = "Tên sản phẩm là bắt buộc";
+    }
+    
+    if (!newProduct.amount || newProduct.amount === "" || parseInt(newProduct.amount) < 0) {
+      newErrors.amount = "Số lượng phải là số dương";
+    }
+    
+    if (!newProduct.price || newProduct.price === "" || parseFloat(newProduct.price) <= 0) {
+      newErrors.price = "Giá phải là số dương";
+    }
+    
+    if (!newProduct.category || newProduct.category === "") {
+      newErrors.category = "Vui lòng chọn danh mục";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   // Hàm lưu sản phẩm mới
   const saveNewProduct = async () => {
-    if (
-      newProduct.goodName &&
-      newProduct.amount &&
-      newProduct.price &&
-      newProduct.specifications &&
-      newProduct.brand &&
-      newProduct.category
-    ) {
+    if (!validate()) {
+      return;
+    }
+
+    setLoading(true);
+    try {
       const formData = new FormData();
       formData.append("good", JSON.stringify({
         goodName: newProduct.goodName,
@@ -76,29 +112,28 @@ const AddProductModal = ({ closeModal }) => {
       if (newProduct.image) {
         formData.append("image", newProduct.image);
       }
-      try {
-        const response = await request1.post(
-          "admin/goods/",
-          formData,
-          {
-            headers: {
-              Authorization: `Bearer ${access_token}`, // Đảm bảo token đúng
-              "Content-Type": "multipart/form-data",
-            },
-            withCredentials: true, // Cho phép gửi cookie
-          }
-        );
-        console.log(response);
-        if(response.status===200){
-          alert("Thêm thành công");
-          closeModal();
+      
+      const response = await request1.post(
+        "v1/admin/goods/",
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+            "Content-Type": "multipart/form-data",
+          },
+          withCredentials: true,
         }
-      } catch (e) {
-        console.log("Lỗi ", e);
-        alert("Thêm thất bại");
+      );
+      
+      if (response.status === 200 || response.status === 201) {
+        onSave && onSave();
       }
-    } else {
-      alert("Vui lòng điền đầy đủ thông tin!");
+    } catch (e) {
+      console.error("Lỗi khi thêm sản phẩm:", e);
+      const errorMsg = e.response?.data?.error || "Thêm sản phẩm thất bại";
+      onError && onError(errorMsg);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -131,42 +166,63 @@ const AddProductModal = ({ closeModal }) => {
           <h2 className="text-xl font-semibold mb-4">Thêm Sản Phẩm</h2>
           <div className="mb-4 grid grid-cols-2 gap-4">
             <div className="col-span-2">
-              <label className="block mb-2">Tên sản phẩm</label>
+              <label className="block mb-2">Tên sản phẩm <span className="text-red-500">*</span></label>
               <input
                 type="text"
                 value={newProduct.goodName}
-                onChange={(e) =>
-                  setNewProduct({ ...newProduct, goodName: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-md"
+                onChange={(e) => {
+                  setNewProduct({ ...newProduct, goodName: e.target.value });
+                  if (errors.goodName) setErrors({ ...errors, goodName: "" });
+                }}
+                className={`w-full px-4 py-2 border rounded-md ${
+                  errors.goodName ? "border-red-500" : "border-gray-300"
+                }`}
                 placeholder="Nhập tên sản phẩm"
               />
+              {errors.goodName && (
+                <p className="mt-1 text-sm text-red-600">{errors.goodName}</p>
+              )}
             </div>
 
             <div className="col-span-1">
-              <label className="block mb-2">Số lượng</label>
+              <label className="block mb-2">Số lượng <span className="text-red-500">*</span></label>
               <input
                 type="number"
                 value={newProduct.amount}
-                onChange={(e) =>
-                  setNewProduct({ ...newProduct, amount: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-md"
-                placeholder="Nhập số lượng"
+                onChange={(e) => {
+                  setNewProduct({ ...newProduct, amount: e.target.value });
+                  if (errors.amount) setErrors({ ...errors, amount: "" });
+                }}
+                min="0"
+                className={`w-full px-4 py-2 border rounded-md ${
+                  errors.amount ? "border-red-500" : "border-gray-300"
+                }`}
+                placeholder="0"
               />
+              {errors.amount && (
+                <p className="mt-1 text-sm text-red-600">{errors.amount}</p>
+              )}
             </div>
 
             <div className="col-span-1">
-              <label className="block mb-2">Giá bán</label>
+              <label className="block mb-2">Giá bán (VNĐ) <span className="text-red-500">*</span></label>
               <input
                 type="number"
                 value={newProduct.price}
-                onChange={(e) =>
-                  setNewProduct({ ...newProduct, price: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-md"
-                placeholder="Nhập giá bán"
+                onChange={(e) => {
+                  setNewProduct({ ...newProduct, price: e.target.value });
+                  if (errors.price) setErrors({ ...errors, price: "" });
+                }}
+                min="0"
+                step="1000"
+                className={`w-full px-4 py-2 border rounded-md ${
+                  errors.price ? "border-red-500" : "border-gray-300"
+                }`}
+                placeholder="0"
               />
+              {errors.price && (
+                <p className="mt-1 text-sm text-red-600">{errors.price}</p>
+              )}
             </div>
 
             <div className="col-span-2">
@@ -204,36 +260,51 @@ const AddProductModal = ({ closeModal }) => {
             </div>
 
             <div className="col-span-1">
-              <label className="block mb-2">Danh mục nông sản</label>
+              <label className="block mb-2">Danh mục <span className="text-red-500">*</span></label>
               <select
                 value={newProduct.category}
-                onChange={(e) =>
-                  setNewProduct({ ...newProduct, category: e.target.value })
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-md"
+                onChange={(e) => {
+                  setNewProduct({ ...newProduct, category: e.target.value });
+                  if (errors.category) setErrors({ ...errors, category: "" });
+                }}
+                className={`w-full px-4 py-2 border rounded-md ${
+                  errors.category ? "border-red-500" : "border-gray-300"
+                }`}
               >
                 <option value="">Chọn danh mục</option>
-                {categories.map((category, index) => (
-                  <option key={index} value={category.name}>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.name}>
                     {category.name}
                   </option>
                 ))}
               </select>
+              {errors.category && (
+                <p className="mt-1 text-sm text-red-600">{errors.category}</p>
+              )}
             </div>
           </div>
 
           <div className="flex justify-between mt-4">
             <button
               onClick={closeModal}
-              className="bg-gray-400 text-white px-6 py-2 rounded-md hover:bg-gray-500"
+              disabled={loading}
+              className="bg-gray-400 text-white px-6 py-2 rounded-md hover:bg-gray-500 disabled:opacity-50"
             >
               Hủy
             </button>
             <button
               onClick={saveNewProduct}
-              className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700"
+              disabled={loading}
+              className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
             >
-              Lưu
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Đang xử lý...
+                </>
+              ) : (
+                "Lưu sản phẩm"
+              )}
             </button>
           </div>
         </div>

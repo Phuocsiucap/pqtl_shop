@@ -21,8 +21,8 @@ export const useHomepageData = (): HomepageData => {
     setError(null);
     try {
       const [bestsellersResponse, seasonalResponse] = await Promise.all([
-        apiRequest.get('/v1/homepage/bestsellers'),
-        apiRequest.get('/v1/homepage/seasonal'),
+        apiRequest.get('v1/homepage/bestsellers'),
+        apiRequest.get('v1/homepage/seasonal'),
       ]);
 
       // Log để debug

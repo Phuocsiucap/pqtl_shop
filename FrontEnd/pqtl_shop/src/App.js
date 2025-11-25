@@ -5,6 +5,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 //page
 import HomePage from "./page/customer/home";
 import ProductPage from "./page/customer/ProductPage";
+import CategoryProductsPage from "./page/customer/category/CategoryProductsPage";
 import LoginPage from './page/login/Login';
 import Register from './page/login/Register';
 import VerifyPage from './page/login/Verify';
@@ -39,6 +40,7 @@ function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/product/:id" element={<ProductPage />} />
+            <Route path="/category/:slug" element={<CategoryProductsPage />} />
             <Route path="/cart" element={<CartPage/>} />
 
             <Route path="/admin" element={<AdminLayout/>}>
