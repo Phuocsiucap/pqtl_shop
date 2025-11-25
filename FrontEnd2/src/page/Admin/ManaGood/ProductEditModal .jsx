@@ -42,17 +42,30 @@ const ProductEditModal = ({ product, closeModal, saveProductChanges }) => {
     }
   };
 
+  // Danh sách thể loại nông sản
   const categories = [
-    { id: 3, name: "Máy tính" },
-    { id: 4, name: "Chuột" },
-    { id: 5, name: "Bàn phím" },
+    { id: 1, name: "Trái Cây Tươi" },
+    { id: 2, name: "Rau Ăn Lá Hữu Cơ" },
+    { id: 3, name: "Củ Quả & Gia Vị" },
+    { id: 4, name: "Thịt & Trứng Sạch" },
+    { id: 5, name: "Hải Sản Tươi" },
+    { id: 6, name: "Thực Phẩm Khô" },
+    { id: 7, name: "Ngũ Cốc" },
+    { id: 8, name: "Đậu & Hạt" },
   ];
 
+  // Danh sách vùng miền/nhà cung cấp nông sản
   const brands = [
-    { id: 3, name: "Dell" },
-    { id: 4, name: "HP" },
-    { id: 5, name: "Lenovo" },
-    { id: 6, name: "Asus" },
+    { id: 1, name: "Đà Lạt" },
+    { id: 2, name: "Lâm Đồng" },
+    { id: 3, name: "Đồng Tháp" },
+    { id: 4, name: "Tiền Giang" },
+    { id: 5, name: "Bến Tre" },
+    { id: 6, name: "Cần Thơ" },
+    { id: 7, name: "An Giang" },
+    { id: 8, name: "Hữu Cơ Việt" },
+    { id: 9, name: "Nông Trại Xanh" },
+    { id: 10, name: "Khác" },
   ];
   const handeOnclickSave = async () => {
     const formDataToSend = new FormData();
@@ -98,6 +111,7 @@ const ProductEditModal = ({ product, closeModal, saveProductChanges }) => {
               value={formData.goodName}
               onChange={handleChange}
               className="w-full px-4 py-2 border rounded-md"
+
             />
           </div>
 
@@ -125,15 +139,16 @@ const ProductEditModal = ({ product, closeModal, saveProductChanges }) => {
 
           <div className="flex space-x-4">
             <div className="flex-1">
-              <label className="block text-sm font-semibold">Hãng</label>
+              <label className="block text-sm font-semibold">Vùng miền / Nhà cung cấp</label>
               <select
                 name="brand"
                 value={formData.brand}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border rounded-md"
               >
+                <option value="">Chọn vùng miền</option>
                 {brands.map((brand) => (
-                  <option key={brand.id} value={brand.id}>
+                  <option key={brand.id} value={brand.name}>
                     {brand.name}
                   </option>
                 ))}
@@ -141,15 +156,16 @@ const ProductEditModal = ({ product, closeModal, saveProductChanges }) => {
             </div>
 
             <div className="flex-1">
-              <label className="block text-sm font-semibold">Thể loại</label>
+              <label className="block text-sm font-semibold">Danh mục nông sản</label>
               <select
                 name="category"
                 value={formData.category}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border rounded-md"
               >
+                <option value="">Chọn danh mục</option>
                 {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
+                  <option key={category.id} value={category.name}>
                     {category.name}
                   </option>
                 ))}
@@ -159,7 +175,7 @@ const ProductEditModal = ({ product, closeModal, saveProductChanges }) => {
 
           <div>
             <label className="block text-sm font-semibold">
-              Thông số kỹ thuật
+              Thông tin sản phẩm / Đặc điểm
             </label>
             <textarea
               name="specifications"
@@ -167,6 +183,7 @@ const ProductEditModal = ({ product, closeModal, saveProductChanges }) => {
               onChange={handleChange}
               rows="4"
               className="w-full px-4 py-2 border rounded-md"
+              placeholder="Nhập thông tin về nguồn gốc, cách bảo quản, đặc điểm nông sản..."
             />
           </div>
 
@@ -207,3 +224,4 @@ const ProductEditModal = ({ product, closeModal, saveProductChanges }) => {
 };
 
 export default ProductEditModal;
+

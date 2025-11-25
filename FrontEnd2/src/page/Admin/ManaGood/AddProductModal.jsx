@@ -15,17 +15,29 @@ const AddProductModal = ({ closeModal }) => {
   const [imagePreview, setImagePreview] = useState(null);
   const access_token = getCSRFTokenFromCookie("access_token_admin");
 
-  // Danh sách thương hiệu và thể loại
+  // Danh sách thể loại nông sản
   const categories = [
-    { id: 3, name: "Máy tính" },
-    { id: 4, name: "Chuột" },
-    { id: 5, name: "Bàn phím" },
+    { id: 1, name: "Trái Cây Tươi" },
+    { id: 2, name: "Rau Ăn Lá Hữu Cơ" },
+    { id: 3, name: "Củ Quả & Gia Vị" },
+    { id: 4, name: "Thịt & Trứng Sạch" },
+    { id: 5, name: "Hải Sản Tươi" },
+    { id: 6, name: "Thực Phẩm Khô" },
+    { id: 7, name: "Ngũ Cốc" },
+    { id: 8, name: "Đậu & Hạt" },
   ];  
+  // Danh sách vùng miền/nhà cung cấp nông sản
   const brands = [
-    { id: 3, name: "Dell" },
-    { id: 4, name: "HP" },
-    { id: 5, name: "Lenovo" },
-    { id: 6, name: "Asus" },
+    { id: 1, name: "Đà Lạt" },
+    { id: 2, name: "Lâm Đồng" },
+    { id: 3, name: "Đồng Tháp" },
+    { id: 4, name: "Tiền Giang" },
+    { id: 5, name: "Bến Tre" },
+    { id: 6, name: "Cần Thơ" },
+    { id: 7, name: "An Giang" },
+    { id: 8, name: "Hữu Cơ Việt" },
+    { id: 9, name: "Nông Trại Xanh" },
+    { id: 10, name: "Khác" },
   ];
   // Hàm xử lý xem trước ảnh
   const handleImageChange = (e) => {
@@ -157,10 +169,9 @@ const AddProductModal = ({ closeModal }) => {
               />
             </div>
 
-            <div className="col-span-1">
-              <label className="block mb-2">Tính năng đặc biệt</label>
-              <input
-                type="text"
+            <div className="col-span-2">
+              <label className="block mb-2">Thông tin sản phẩm / Đặc điểm</label>
+              <textarea
                 value={newProduct.specifications}
                 onChange={(e) =>
                   setNewProduct({
@@ -169,12 +180,13 @@ const AddProductModal = ({ closeModal }) => {
                   })
                 }
                 className="w-full px-4 py-2 border border-gray-300 rounded-md"
-                placeholder="Nhập tính năng đặc biệt"
+                placeholder="Nhập thông tin về nguồn gốc, cách bảo quản, đặc điểm nông sản..."
+                rows="3"
               />
             </div>
 
             <div className="col-span-1">
-              <label className="block mb-2">Thương hiệu</label>
+              <label className="block mb-2">Vùng miền / Nhà cung cấp</label>
               <select
                 value={newProduct.brand}
                 onChange={(e) =>
@@ -182,9 +194,9 @@ const AddProductModal = ({ closeModal }) => {
                 }
                 className="w-full px-4 py-2 border border-gray-300 rounded-md"
               >
-                <option value="">Chọn thương hiệu</option>
+                <option value="">Chọn vùng miền</option>
                 {brands.map((brand, index) => (
-                  <option key={index} value={brand.id}>
+                  <option key={index} value={brand.name}>
                     {brand.name}
                   </option>
                 ))}
@@ -192,7 +204,7 @@ const AddProductModal = ({ closeModal }) => {
             </div>
 
             <div className="col-span-1">
-              <label className="block mb-2">Thể loại</label>
+              <label className="block mb-2">Danh mục nông sản</label>
               <select
                 value={newProduct.category}
                 onChange={(e) =>
@@ -200,9 +212,9 @@ const AddProductModal = ({ closeModal }) => {
                 }
                 className="w-full px-4 py-2 border border-gray-300 rounded-md"
               >
-                <option value="">Chọn thể loại</option>
+                <option value="">Chọn danh mục</option>
                 {categories.map((category, index) => (
-                  <option key={index} value={category.id}>
+                  <option key={index} value={category.name}>
                     {category.name}
                   </option>
                 ))}
