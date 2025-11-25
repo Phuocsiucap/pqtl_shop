@@ -41,7 +41,7 @@ function SearchResultPage() {
     const location = useLocation();
     const { search, products, loading, error } = useSearch();
 
-    // Lấy keyword từ query parameter 'q'
+    // Lấy keyword từ query parameter 'keyword'
     const queryParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
     const keyword = queryParams.get('keyword');
 
@@ -50,14 +50,14 @@ function SearchResultPage() {
             // Gọi API tìm kiếm khi keyword thay đổi hoặc component được mount
             search({ keyword: keyword });
         }
-    }, [keyword, search]);
+    }, [keyword]); // Bỏ search khỏi dependency để tránh vòng lặp vô hạn
 
     // Xử lý trạng thái tải
     if (loading) {
         return (
             <div className="min-h-[60vh] flex flex-col items-center justify-center p-8 bg-gray-50">
                 <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-primary mb-4"></div>
-                <p className="text-xl text-gray-600">Đang tải kết quả tìm kiếm cho "{keyword}"...</p>
+                <p className="text-xl text-gray-600">Đang tải kết quả tìm kiếm cho "{keyword || ''}"...</p>
             </div>
         );
     }
@@ -74,11 +74,11 @@ function SearchResultPage() {
     }
 
     // Xử lý không có kết quả
-    if (!products || products.content.length === 0) {
+    if (!products || !products.content || products.content.length === 0) {
         return (
             <div className="min-h-[60vh] flex flex-col items-center justify-center p-8 bg-white m-4 rounded-lg shadow-md">
                 <p className="text-2xl text-gray-700 font-bold mb-2">Không tìm thấy sản phẩm</p>
-                <p className="text-gray-500">Rất tiếc, không có sản phẩm nào phù hợp với từ khóa: "{keyword}"</p>
+                <p className="text-gray-500">Rất tiếc, không có sản phẩm nào phù hợp với từ khóa: "{keyword || ''}"</p>
             </div>
         );
     }

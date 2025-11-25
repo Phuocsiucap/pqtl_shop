@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Product, SearchParams, Page, SearchHistory } from '../types/product';
 import { request1 as apiRequest } from '../utils/request'; // Sử dụng request1 cho API backend
-import { Category } from '../api/category'; // Import danh mục
+import { Category } from '../api/category/index.js'; // Import danh mục
 
 // Định nghĩa lại kiểu Category dựa trên dữ liệu tĩnh
 type CategoryType = {

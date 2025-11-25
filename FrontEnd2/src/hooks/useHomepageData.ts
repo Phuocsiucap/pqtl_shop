@@ -25,11 +25,34 @@ export const useHomepageData = (): HomepageData => {
         apiRequest.get('/v1/homepage/seasonal'),
       ]);
 
-      setBestsellers(bestsellersResponse.data);
-      setSeasonalProducts(seasonalResponse.data);
+      // Log để debug
+      console.log('Bestsellers Response:', bestsellersResponse);
+      console.log('Seasonal Response:', seasonalResponse);
+      
+      // Đảm bảo dữ liệu là mảng
+      const bestsellersData = Array.isArray(bestsellersResponse.data) 
+        ? bestsellersResponse.data 
+        : (bestsellersResponse.data?.content || []);
+      
+      const seasonalData = Array.isArray(seasonalResponse.data) 
+        ? seasonalResponse.data 
+        : (seasonalResponse.data?.content || []);
+
+      console.log('Bestsellers Data:', bestsellersData);
+      console.log('Bestsellers Data Length:', bestsellersData?.length);
+      console.log('Seasonal Data:', seasonalData);
+      console.log('Seasonal Data Length:', seasonalData?.length);
+
+      // Luôn set dữ liệu, kể cả khi là mảng rỗng (để component có thể xử lý)
+      setBestsellers(bestsellersData);
+      setSeasonalProducts(seasonalData);
     } catch (err) {
       console.error('Failed to fetch homepage data:', err);
+      console.error('Error details:', err.response?.data || err.message);
       setError('Không thể tải dữ liệu trang chủ.');
+      // Set null để component hiển thị thông báo "Không tìm thấy"
+      setBestsellers(null);
+      setSeasonalProducts(null);
     } finally {
       setLoading(false);
     }

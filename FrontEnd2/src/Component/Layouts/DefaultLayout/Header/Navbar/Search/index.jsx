@@ -43,7 +43,8 @@ function Search({ search: keywordArray }) {
     }, [searchKeywordString, search]);
 
     // Logic hiển thị gợi ý/kết quả
-    const displayHistory = history || [];
+    // Đảm bảo displayHistory luôn là mảng
+    const displayHistory = Array.isArray(history) ? history : [];
     const isSearching = searchKeywordString && searchKeywordString.length > 0;
 
     return (
