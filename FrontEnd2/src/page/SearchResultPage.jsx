@@ -87,14 +87,19 @@ const SearchProductItem = ({ product }) => {
         }
     };
 
-        return (
-            <div onClick={handleClick}>
-            <ProductCard product={{ ...product, id: productId }} />
+    return (
+        <div 
+            onClick={handleClick}
+            className="h-full flex flex-col cursor-pointer transition-transform hover:scale-105"
+        >
+            <div className="flex-1">
+                <ProductCard product={{ ...product, id: productId }} />
+            </div>
             {product.origin && (
                 <p className="text-xs text-gray-500 mt-2 px-1">Xuất xứ: {product.origin}</p>
             )}
-            </div>
-        );
+        </div>
+    );
 };
 
 function SearchResultPage() {
@@ -699,11 +704,11 @@ function SearchResultPage() {
                 </div>
             </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {products.content.map((product) => (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 auto-rows-fr">
+                                    {products.content.map((product) => (
                                         <SearchProductItem key={product.id || product._id} product={product} />
-                ))}
-            </div>
+                                    ))}
+                                </div>
                             </>
                         ) : (
                             <div className="bg-white rounded-lg shadow p-8 text-center">

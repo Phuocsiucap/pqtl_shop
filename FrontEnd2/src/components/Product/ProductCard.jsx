@@ -111,21 +111,21 @@ function ProductCard({ product }) {
     };
 
     return (
-        <div className="bg-white border rounded-lg shadow-md overflow-hidden hover:shadow-xl transition duration-300">
-            <Link to={`/products/${product.id}`}>
+        <div className="bg-white border rounded-lg shadow-md overflow-hidden hover:shadow-xl transition duration-300 h-full flex flex-col">
+            <Link to={`/products/${product.id}`} className="flex-shrink-0">
                 <img 
                     src={product.image} 
                     alt={product.name} 
-                    className="w-full h-40 object-cover" 
+                    className="w-full h-48 object-cover" 
                 />
             </Link>
-            <div className="p-4">
-                <h3 className="text-sm font-semibold h-10 overflow-hidden mb-1">
+            <div className="p-4 flex flex-col flex-1">
+                <h3 className="text-sm font-semibold min-h-[2.5rem] line-clamp-2 mb-2">
                     <Link to={`/products/${product.id}`} className="hover:text-primary">{product.name}</Link>
                 </h3>
                 
                 {/* Rating */}
-                <div className="flex items-center text-xs mb-2">
+                <div className="flex items-center text-xs mb-2 flex-shrink-0">
                     <span className="text-yellow-500 mr-1">
                         {'★'.repeat(rating)}
                         {'☆'.repeat(5 - rating)}
@@ -134,21 +134,23 @@ function ProductCard({ product }) {
                 </div>
 
                 {/* Price */}
-                <div className="flex items-center mb-3">
+                <div className="flex items-center mb-3 flex-shrink-0">
                     {product.discount > 0 && (
                         <span className="text-xs text-gray-400 line-through mr-2">{product.price?.toLocaleString()} VND</span>
                     )}
                     <span className="text-lg font-bold text-red-600">{computedFinalPrice?.toLocaleString()} VND</span>
                 </div>
 
-                {/* Add to Cart Button */}
-                <button 
-                    onClick={handleAddToCart}
-                    disabled={isAdding}
-                    className="w-full py-2 bg-green-600 text-white text-sm font-medium rounded hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    {isAdding ? "Đang thêm..." : "Thêm vào Giỏ hàng"}
-                </button>
+                {/* Add to Cart Button - Push to bottom */}
+                <div className="mt-auto">
+                    <button 
+                        onClick={handleAddToCart}
+                        disabled={isAdding}
+                        className="w-full py-2 bg-green-600 text-white text-sm font-medium rounded hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {isAdding ? "Đang thêm..." : "Thêm vào Giỏ hàng"}
+                    </button>
+                </div>
             </div>
         </div>
     );

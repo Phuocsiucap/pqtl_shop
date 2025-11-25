@@ -12,15 +12,8 @@ import "tippy.js/dist/tippy.css";
 import Search from "./Search";
 function Navbar() {
   const navigate = useNavigate();
-  const titles_1 = [
-    { title: "Trái Cây Tươi", link: "/category/fresh-fruit" },
-    { title: "Rau Ăn Lá Hữu Cơ", link: "/category/organic-vegetable" },
-    { title: "Củ Quả & Gia Vị", link: "/category/fruit-spice" },
-    { title: "Thịt & Trứng Sạch", link: "/category/meat-egg" },
-    { title: "Hải Sản Tươi", link: "/category/seafood" },
-    { title: "Thực Phẩm Khô", link: "/category/dried-food" },
-  ];
-  
+
+
   const titles_2 = [
     { title: "Giỏ hàng", link: "/cartshopping" },
     { title: "Tài khoản của tôi", link: "/" },
@@ -77,7 +70,7 @@ function Navbar() {
               <Search search={search.toLowerCase().split(" ")} />
             </div>
           )}
-          >
+        >
           <div className="hidden lg:flex relative group">
             <input
               type="text"
@@ -154,17 +147,7 @@ function Navbar() {
       </div>
       {/*lower navbar */}
       <div className="bg-primary py-2 text-center justify-center">
-        <ul className="hidden text-center items-center gap-x-20  text-white font-Montserrat justify-center lg:flex">
-          {titles_1.map((title_1, index) => {
-            return (
-              <li key={index} className="top-menu-item">
-                <Link to={title_1.link} className="text-white">
-                  {title_1.title}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+
         {/* sreach bar from sm to md */}
         <Tippy
           placement="bottom"
@@ -192,26 +175,12 @@ function Navbar() {
         <div
           className={`absolute block justify-around items-start w-full 
                     transition-all transform duration-500 ease-in-out
-                    h-auto bg-gray-50 top-[45px] ${
-                      ismenu
-                        ? " opacity-100  translate-x-0"
-                        : " opacity-0 translate-x-full"
-                    } lg:hidden z-10`}
+                    h-auto bg-gray-50 top-[45px] ${ismenu
+              ? " opacity-100  translate-x-0"
+              : " opacity-0 translate-x-full"
+            } lg:hidden z-10`}
         >
-          <ul className="font-Montserrat font-semibold py-2 text-xs text-red-500 hover:bg-gray-50 w-full text-center uppercase border-b-slate-200 md:text-xl">
-            <p className="decoration-red-500">Sản phẩm</p>
-            {titles_1.map((title_1, index) => {
-              return (
-                <li
-                  key={index}
-                  className=" font-Montserrat font-semibold text-center uppercase text-gray-500 hover:text-white hover:bg-primary/50 py-2 transition-all duration-500 ease-in-out md:text-lg md:py-5"
-                  onClick={() => setIsmenu(!ismenu)}
-                >
-                  <Link to={title_1.link}>{title_1.title}</Link>
-                </li>
-              );
-            })}
-          </ul>
+
           <ul className="font-Montserrat font-semibold py-2 text-xs text-red-500 hover:bg-gray-50 w-full text-center uppercase md:text-xl">
             Tài Khoản
             {titles_2.map((title_2, index) => {
