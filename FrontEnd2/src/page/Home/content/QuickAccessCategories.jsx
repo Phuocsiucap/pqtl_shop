@@ -3,22 +3,23 @@ import { Link } from 'react-router-dom';
 import ProductCard from '../../../components/Product/ProductCard';
 import { getCategories } from '../../../api/category';
 import { request1 } from '../../../utils/request';
-import Image2 from '../../../assets/images/Image2.jpg';
-import Image3 from '../../../assets/images/Image3.jpg';
-import Image4 from '../../../assets/images/Image4.png';
-import Image5 from '../../../assets/images/Image5.jpg';
-import Background3 from '../../../assets/images/Background_3.jpg';
 
-const CATEGORY_IMAGE_MAP = {
-    'trai-cay-tuoi': Image2,
-    'rau-an-huu-co': Image3,
-    'cu-qua-gia-vi': Image4,
-    'thit-trung-sach': Image5,
-    'hai-san-tuoi': Background3,
-    'thuc-pham-kho': Image3,
+const EmojiIcon = ({ emoji, size = 40 }) => (
+    <span style={{ fontSize: size, lineHeight: 1, display: 'inline-block' }} role="img" aria-label="icon">
+        {emoji}
+    </span>
+);
+
+const CATEGORY_ICON_MAP = {
+    'trai-cay-tuoi': (props) => <EmojiIcon emoji="🍓" {...props} />,
+    'rau-an-huu-co': (props) => <EmojiIcon emoji="🥦" {...props} />,
+    'cu-qua-gia-vi': (props) => <EmojiIcon emoji="🌶️" {...props} />,
+    'thit-trung-sach': (props) => <EmojiIcon emoji="🥩" {...props} />,
+    'hai-san-tuoi': (props) => <EmojiIcon emoji="🦐" {...props} />,
+    'thuc-pham-kho': (props) => <EmojiIcon emoji="🌾" {...props} />,
 };
 
-const DEFAULT_CATEGORY_IMAGE = Image2;
+const DEFAULT_CATEGORY_ICON = (props) => <EmojiIcon emoji="📦" {...props} />;
 const PAGE_SIZE = 8;
 
 const normalizeSlug = (value = '') =>
@@ -30,13 +31,13 @@ const normalizeSlug = (value = '') =>
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/(^-|-$)+/g, '');
 
-const resolveCategoryImage = (category) => {
+const resolveCategoryIcon = (category) => {
     if (!category) {
-        return DEFAULT_CATEGORY_IMAGE;
+        return DEFAULT_CATEGORY_ICON;
     }
 
     const slug = category.slug || normalizeSlug(category.name || '');
-    return CATEGORY_IMAGE_MAP[slug] || DEFAULT_CATEGORY_IMAGE;
+    return CATEGORY_ICON_MAP[slug] || DEFAULT_CATEGORY_ICON;
 };
 
 const isSameCategory = (a, b) => {
@@ -81,11 +82,10 @@ function QuickAccessCategories() {
             const totalPages = isPagedPayload ? response.data?.totalPages ?? 1 : 1;
             const totalElements = isPagedPayload ? response.data?.totalElements ?? rawProducts.length : rawProducts.length;
 
-            const placeholderImage = resolveCategoryImage(category);
             const normalizedProducts = rawProducts.map((product) => ({
                 ...product,
                 id: product.id || product._id,
-                image: product.image || placeholderImage,
+                // image: product.image || placeholderImage, // Removed placeholder image logic for products as we are focusing on category icons
             }));
 
             setCategoryProducts(normalizedProducts);
@@ -168,22 +168,21 @@ function QuickAccessCategories() {
                 {categories.map((category) => {
                     const active = isSameCategory(selectedCategory, category);
                     const categoryId = category.id || category._id || category.slug || category.name;
+                    const IconComponent = resolveCategoryIcon(category);
 
                     return (
                         <button
                             type="button"
                             key={categoryId}
                             onClick={() => handleCategoryClick(category)}
-                            className={`block rounded-lg shadow-md overflow-hidden transition transform hover:scale-105 focus:outline-none ${active ? 'ring-2 ring-primary shadow-xl' : 'bg-white'
+                            className={`flex flex-col items-center justify-center p-4 rounded-lg shadow-md transition transform hover:scale-105 focus:outline-none ${active ? 'ring-2 ring-primary shadow-xl bg-green-50' : 'bg-white'
                                 }`}
                         >
-                            <img
-                                src={resolveCategoryImage(category)}
-                                alt={category.name}
-                                className="w-full h-32 object-cover"
-                            />
-                            <div className="p-3 text-center bg-white">
-                                <p className="text-sm font-semibold text-gray-800">{category.name}</p>
+                            <div className={`p-3 rounded-full mb-3 ${active ? 'bg-green-200 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                                <IconComponent size={40} />
+                            </div>
+                            <div className="text-center">
+                                <p className={`text-sm font-semibold ${active ? 'text-green-800' : 'text-gray-800'}`}>{category.name}</p>
                             </div>
                         </button>
                     );
