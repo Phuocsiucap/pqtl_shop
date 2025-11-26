@@ -23,13 +23,9 @@ const BestSellerList = () => {
           withCredentials: true,
         });
         
-        // Sắp xếp theo số lượng đã bán (giả định có field 'sold' hoặc tính từ amount)
+        // Sắp xếp theo số lượng đã bán từ API
         const sortedProducts = response.data
-          .map(product => ({
-            ...product,
-            sold: Math.floor(Math.random() * 1000) // Thay bằng field thực tế từ API
-          }))
-          .sort((a, b) => b.sold - a.sold);
+          .sort((a, b) => (b.soldQuantity || 0) - (a.soldQuantity || 0));
         
         setProducts(sortedProducts);
       } catch (e) {
@@ -139,13 +135,13 @@ const BestSellerList = () => {
                   <td className="px-6 py-4">
                     <img
                       src={`${request}${product.image}`}
-                      alt={product.goodName}
+                      alt={product.name}
                       className="w-20 h-20 object-cover rounded-md shadow-sm"
                     />
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      {product.goodName}
+                      {product.name}
                       {actualIndex < 3 && (
                         <FaFire className="text-orange-500 animate-pulse" />
                       )}
@@ -153,12 +149,12 @@ const BestSellerList = () => {
                   </td>
                   <td className="px-6 py-4 text-center">
                     <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full font-semibold">
-                      {product.sold}
+                      {product.soldQuantity || 0}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-center">{product.amount}</td>
+                  <td className="px-6 py-4 text-center">{product.stockQuantity}</td>
                   <td className="px-6 py-4 text-center text-blue-600 font-semibold">
-                    {(product.sold * (product.price || 10000000)).toLocaleString('vi-VN')} ₫
+                    {((product.soldQuantity || 0) * (product.price || 0)).toLocaleString('vi-VN')} ₫
                   </td>
                   <td className="px-6 py-4 text-center">
                     <button
@@ -220,26 +216,26 @@ const BestSellerList = () => {
             <div className="space-y-4">
               <img
                 src={`${request}${selectedProduct.image}`}
-                alt={selectedProduct.goodName}
+                alt={selectedProduct.name}
                 className="w-full h-64 object-cover rounded-lg"
               />
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-gray-600">Tên sản phẩm:</p>
-                  <p className="font-semibold">{selectedProduct.goodName}</p>
+                  <p className="font-semibold">{selectedProduct.name}</p>
                 </div>
                 <div>
                   <p className="text-gray-600">Đã bán:</p>
-                  <p className="font-semibold text-green-600">{selectedProduct.sold} sản phẩm</p>
+                  <p className="font-semibold text-green-600">{selectedProduct.soldQuantity || 0} sản phẩm</p>
                 </div>
                 <div>
                   <p className="text-gray-600">Tồn kho:</p>
-                  <p className="font-semibold">{selectedProduct.amount}</p>
+                  <p className="font-semibold">{selectedProduct.stockQuantity}</p>
                 </div>
                 <div>
                   <p className="text-gray-600">Doanh thu:</p>
                   <p className="font-semibold text-blue-600">
-                    {(selectedProduct.sold * (selectedProduct.price || 10000000)).toLocaleString('vi-VN')} ₫
+                    {((selectedProduct.soldQuantity || 0) * (selectedProduct.price || 0)).toLocaleString('vi-VN')} ₫
                   </p>
                 </div>
               </div>
