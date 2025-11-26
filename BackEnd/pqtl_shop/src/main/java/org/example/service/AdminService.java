@@ -2,7 +2,6 @@ package org.example.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.model.Order;
-import org.example.model.OrderItem;
 import org.example.model.Product;
 import org.example.model.login.User;
 import org.example.repository.ProductRepository;
@@ -148,6 +147,7 @@ public class AdminService {
             product.setBrand(brand);
         }
         if (category != null && !category.isEmpty()) {
+            // setCategory() được tự động generate bởi Lombok @Data annotation
             product.setCategory(category);
         }
         

@@ -6,6 +6,7 @@ import { IoLogOut } from "react-icons/io5";
 import { BiCategory } from "react-icons/bi";
 import { FaBookOpen } from "react-icons/fa6";
 import Cookies from "js-cookie"; // Make sure to import Cookies
+import CategorySidebar from "../CategorySidebar";
 
 const Sidebar1 = () => {
   const navigate = useNavigate();
@@ -73,6 +74,9 @@ const Sidebar1 = () => {
             </Link>
           ))}
         </ul>
+
+        {/* Category Quick Access */}
+        <CategorySidebar />
 
         <h3 className="text-blue-600 text-lg font-semibold uppercase tracking-wide mt-8">
           Quản lý tài khoản

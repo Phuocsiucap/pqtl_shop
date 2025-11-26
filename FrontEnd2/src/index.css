@@ -24,3 +24,41 @@
 .button-primary {
   @apply rounded-md text-white transition-all duration-500 ease-in-out;
 }
+
+.filter-slider {
+  pointer-events: none;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  background: transparent;
+  position: absolute;
+  inset: 0;
+  height: 100%;
+}
+
+.filter-slider::-webkit-slider-thumb {
+  pointer-events: auto;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background-color: #16a34a;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+
+.filter-slider::-moz-range-thumb {
+  pointer-events: auto;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background-color: #16a34a;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+
+.filter-slider::-webkit-slider-runnable-track,
+.filter-slider::-moz-range-track {
+  background: transparent;
+  border: none;
+}

@@ -1,13 +1,13 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Product, SearchParams, Page, SearchHistory } from '../types/product';
 import { request1 as apiRequest } from '../utils/request'; // Sử dụng request1 cho API backend
-import { Category } from '../api/category'; // Import danh mục
+import { getCategories } from '../api/category';
 
-// Định nghĩa lại kiểu Category dựa trên dữ liệu tĩnh
 type CategoryType = {
-    id: string;
-    categporyName: string;
-}
+  id?: string;
+  name: string;
+  slug?: string;
+};
 
 interface SearchResult {
   products: Page<Product> | null;
@@ -26,17 +26,75 @@ export const useSearch = (): SearchResult => {
   const [error, setError] = useState<string | null>(null);
   const [categories, setCategories] = useState<CategoryType[]>([]); // State cho danh mục
 
+  const adaptResponseToPage = (
+    data: any,
+    params: SearchParams
+  ): Page<Product> => {
+    const defaultPage = params.page ?? 0;
+    const fallbackSize = Array.isArray(data)
+      ? data.length
+      : data?.content?.length ?? 0;
+    const defaultSize = (params.size ?? fallbackSize) || 1;
+
+    if (Array.isArray(data)) {
+      const totalElements = data.length;
+      const totalPages = Math.max(1, Math.ceil(totalElements / defaultSize));
+      const start = defaultPage * defaultSize;
+      const end = start + defaultSize;
+
+      return {
+        content: data.slice(start, end),
+        totalElements,
+        totalPages,
+        number: defaultPage,
+        size: defaultSize,
+        first: defaultPage === 0,
+        last: defaultPage >= totalPages - 1,
+      };
+    }
+
+    const content = Array.isArray(data?.content) ? data.content : [];
+    const totalElements = data?.totalElements ?? content.length;
+    const totalPages = data?.totalPages ?? Math.max(1, Math.ceil(totalElements / defaultSize));
+    const number = data?.number ?? defaultPage;
+    const size = data?.size ?? defaultSize;
+
+    return {
+      content,
+      totalElements,
+      totalPages,
+      number,
+      size,
+      first: data?.first ?? number === 0,
+      last: data?.last ?? number >= totalPages - 1,
+    };
+  };
+
   const search = useCallback(async (params: SearchParams) => {
     setLoading(true);
     setError(null);
     try {
       // Lọc bỏ các tham số null/undefined trước khi gửi
-      const filteredParams = Object.fromEntries(
-        Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== "")
-      );
+      // Nhưng giữ lại keyword ngay cả khi là chuỗi rỗng (để backend xử lý)
+      const filteredParams: any = {};
       
-      const response = await apiRequest.get('/v1/search', { params: filteredParams }); // API path là /api/v1/search, nhưng baseURL đã là /api/
-      setProducts(response.data);
+      // Luôn thêm keyword nếu có (kể cả chuỗi rỗng)
+      if (params.keyword !== undefined && params.keyword !== null) {
+        filteredParams.keyword = params.keyword;
+      }
+      
+      // Lọc các tham số khác
+      Object.entries(params).forEach(([key, value]) => {
+        if (key !== 'keyword' && value !== undefined && value !== null && value !== "") {
+          filteredParams[key] = value;
+        }
+      });
+      
+      console.log('Search params:', filteredParams); // Debug log
+      const response = await apiRequest.get('v1/search', { params: filteredParams }); // API path là /api/v1/search, baseURL đã gồm /api/
+      console.log('Search response:', response.data); // Debug log
+      const normalizedPage = adaptResponseToPage(response.data, filteredParams);
+      setProducts(normalizedPage);
       
     } catch (err) {
       console.error('Search failed:', err);
@@ -48,19 +106,19 @@ export const useSearch = (): SearchResult => {
   }, []);
 
   const fetchCategories = useCallback(async () => {
-      try {
-          // Sử dụng dữ liệu tĩnh đã import
-          setCategories(Category);
-      } catch (err) {
-          console.error('Fetch categories failed:', err);
-          setCategories([]);
-      }
+    try {
+      const data = await getCategories();
+      setCategories(data);
+    } catch (err) {
+      console.error('Fetch categories failed:', err);
+      setCategories([]);
+    }
   }, []);
 
   const fetchHistory = useCallback(async (userId?: string) => {
     // Giả định userId được truyền vào hoặc lấy từ context/auth
     try {
-      const response = await apiRequest.get('/v1/search/history', {
+      const response = await apiRequest.get('v1/search/history', {
         params: { userId },
       });
       setHistory(response.data);

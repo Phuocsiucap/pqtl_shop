@@ -7,16 +7,23 @@ import ScrollToTop from './Component/StopScroll';
 function App() {
   const dispatch=useDispatch();
   useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem("user"));
-    if (storedUser) {
-      dispatch(LoginUser(storedUser))
+    try {
+      const storedUserStr = localStorage.getItem("user");
+      if (storedUserStr) {
+        const storedUser = JSON.parse(storedUserStr);
+        if (storedUser) {
+          dispatch(LoginUser(storedUser))
+        }
+      }
+    } catch (error) {
+      console.error("Lỗi khi parse user từ localStorage:", error);
     }
-  }, []);
+  }, [dispatch]);
   return (
     <Router>
       <div className='App'>
-        <ScrollToTop/>
-      <Routes>
+        <ScrollToTop />
+        <Routes>
         {
 
           PublicPage.map((page,index)=>{

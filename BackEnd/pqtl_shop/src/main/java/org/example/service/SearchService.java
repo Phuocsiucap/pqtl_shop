@@ -15,8 +15,11 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class SearchService {
@@ -34,11 +37,37 @@ public class SearchService {
     public static class SearchParams {
         public String keyword;
         public String category;
+        public List<String> categories;
+        public String subCategory;
+        public List<String> subCategories;
         public Double priceMin;
         public Double priceMax;
+        public List<String> origins;
+        public List<String> certifications;
+        public Double ratingMin;
+        public Boolean onSaleOnly;
         public String sortBy; // e.g., price_asc, price_desc, rating_desc, sold_desc
         public Integer page = 0;
         public Integer size = 10;
+
+        public SearchParams copy() {
+            SearchParams copy = new SearchParams();
+            copy.keyword = this.keyword;
+            copy.category = this.category;
+            copy.categories = this.categories != null ? new ArrayList<>(this.categories) : null;
+            copy.subCategory = this.subCategory;
+            copy.subCategories = this.subCategories != null ? new ArrayList<>(this.subCategories) : null;
+            copy.priceMin = this.priceMin;
+            copy.priceMax = this.priceMax;
+            copy.origins = this.origins != null ? new ArrayList<>(this.origins) : null;
+            copy.certifications = this.certifications != null ? new ArrayList<>(this.certifications) : null;
+            copy.ratingMin = this.ratingMin;
+            copy.onSaleOnly = this.onSaleOnly;
+            copy.sortBy = this.sortBy;
+            copy.page = this.page;
+            copy.size = this.size;
+            return copy;
+        }
     }
 
     /**
@@ -46,70 +75,294 @@ public class SearchService {
      * US1.1, US1.3, US1.4
      */
     public Page<Product> searchProducts(SearchParams params) {
-        Query query = new Query();
-        Criteria criteria = new Criteria();
+        Query baseQuery = buildQuery(params);
+        Sort sort = resolveSort(params.sortBy);
+        int pageIndex = params.page != null ? params.page : 0;
+        int pageSize = params.size != null ? params.size : 10;
+        Pageable pageable = PageRequest.of(pageIndex, pageSize, sort);
 
-        // 1. Lọc theo Keyword (US1.1)
-        if (StringUtils.hasText(params.keyword)) {
-            // Sử dụng $or cho tên hoặc mô tả
-            Criteria keywordCriteria = new Criteria().orOperator(
-                    Criteria.where("name").regex(params.keyword, "i"),
-                    Criteria.where("description").regex(params.keyword, "i")
-            );
-            query.addCriteria(keywordCriteria);
-        }
-
-        // 2. Lọc theo Category (US1.3)
-        if (StringUtils.hasText(params.category)) {
-            query.addCriteria(Criteria.where("category").is(params.category));
-        }
-
-        // 3. Lọc theo Giá (US1.4)
-        if (params.priceMin != null || params.priceMax != null) {
-            Criteria priceCriteria = Criteria.where("finalPrice"); // Giả sử có trường finalPrice hoặc dùng getFinalPrice()
-            if (params.priceMin != null) {
-                priceCriteria.gte(params.priceMin);
-            }
-            if (params.priceMax != null) {
-                priceCriteria.lte(params.priceMax);
-            }
-            query.addCriteria(priceCriteria);
-        }
+        // Debug: Log query để kiểm tra
+        System.out.println("Search Query: " + baseQuery.toString());
+        System.out.println("Search Params - keyword: " + params.keyword + ", category: " + params.category);
         
-        // 4. Sắp xếp (US1.4)
-        Sort sort = Sort.unsorted();
-        if (StringUtils.hasText(params.sortBy)) {
-            switch (params.sortBy.toLowerCase()) {
-                case "price_asc":
-                    sort = Sort.by(Sort.Direction.ASC, "price");
-                    break;
-                case "price_desc":
-                    sort = Sort.by(Sort.Direction.DESC, "price");
-                    break;
-                case "rating_desc":
-                    sort = Sort.by(Sort.Direction.DESC, "rating");
-                    break;
-                case "sold_desc":
-                    sort = Sort.by(Sort.Direction.DESC, "soldQuantity");
-                    break;
-                default:
-                    // Mặc định sắp xếp theo relevance hoặc không sắp xếp
-                    break;
-            }
-        }
+        long total = mongoTemplate.count(baseQuery, Product.class);
+        System.out.println("Total products found: " + total);
         
-        Pageable pageable = PageRequest.of(params.page, params.size, sort);
-        query.with(pageable);
+        Query pagedQuery = baseQuery.with(pageable);
+        List<Product> products = mongoTemplate.find(pagedQuery, Product.class);
+        System.out.println("Products returned: " + products.size());
 
-        long total = mongoTemplate.count(query, Product.class);
-        List<Product> products = mongoTemplate.find(query, Product.class);
-
-        // Ghi lại lịch sử tìm kiếm nếu có keyword
         if (StringUtils.hasText(params.keyword)) {
-            saveSearchHistory(params.keyword, null); // Giả sử userId là null nếu chưa xác thực
+            saveSearchHistory(params.keyword, null);
         }
 
         return new org.springframework.data.domain.PageImpl<>(products, pageable, total);
+    }
+
+    public FilterMetadata getFilterMetadata(SearchParams params) {
+        FilterMetadata metadata = new FilterMetadata();
+
+        List<Product> products = mongoTemplate.find(buildQuery(params), Product.class);
+        metadata.categories = computeCounts(products, Product::getCategory);
+        metadata.subCategories = computeCounts(products, Product::getSubCategory);
+        metadata.origins = computeCounts(products, Product::getOrigin);
+        metadata.certifications = computeListCounts(products, Product::getCertifications);
+
+        metadata.ratings = computeRatingBuckets(params);
+        metadata.onSaleCount = computeOnSaleCount(params);
+
+        double[] priceRange = computePriceRange(params);
+        metadata.minPrice = priceRange[0];
+        metadata.maxPrice = priceRange[1];
+
+        return metadata;
+    }
+
+    private Query buildQuery(SearchParams params) {
+        Query query = new Query();
+        Criteria filters = buildCriteria(params);
+        if (filters != null) {
+            query.addCriteria(filters);
+        }
+        // Nếu không có filter nào, query trống sẽ trả về tất cả sản phẩm (đúng)
+        return query;
+    }
+
+    private Criteria buildCriteria(SearchParams params) {
+        List<Criteria> criteriaList = new ArrayList<>();
+
+        if (StringUtils.hasText(params.keyword)) {
+            // Trim và normalize keyword
+            String normalizedKeyword = params.keyword.trim();
+            if (normalizedKeyword.isEmpty()) {
+                // Bỏ qua nếu keyword rỗng sau khi trim
+            } else {
+                // Escape các ký tự đặc biệt trong regex nhưng vẫn cho phép tìm kiếm substring
+                String escapedKeyword = escapeRegexSpecialChars(normalizedKeyword);
+                // Sử dụng regex với flag "i" để case-insensitive
+                // Lưu ý: MongoDB regex không hỗ trợ tìm kiếm không dấu tự động
+                criteriaList.add(new Criteria().orOperator(
+                        Criteria.where("name").regex(escapedKeyword, "i"),
+                        Criteria.where("description").regex(escapedKeyword, "i")
+                ));
+            }
+        }
+
+        List<String> categories = mergeValues(params.category, params.categories);
+        if (!categories.isEmpty()) {
+            criteriaList.add(Criteria.where("category").in(categories));
+        }
+
+        List<String> subCategories = mergeValues(params.subCategory, params.subCategories);
+        if (!subCategories.isEmpty()) {
+            criteriaList.add(Criteria.where("subCategory").in(subCategories));
+        }
+
+        // Chỉ filter giá nếu có giá trị hợp lệ
+        // Nếu priceMin = 0 và priceMax = 0 (cả hai đều được set và = 0), không filter (hiển thị tất cả)
+        if (params.priceMin != null || params.priceMax != null) {
+            // Bỏ qua filter nếu cả hai đều được set và = 0 (giá trị mặc định từ Frontend)
+            boolean bothZero = (params.priceMin != null && params.priceMin == 0.0) && 
+                               (params.priceMax != null && params.priceMax == 0.0);
+            
+            if (!bothZero) {
+                Criteria priceCriteria = Criteria.where("finalPrice");
+                boolean hasCondition = false;
+                
+                if (params.priceMin != null && params.priceMin > 0) {
+                    priceCriteria.gte(params.priceMin);
+                    hasCondition = true;
+                }
+                if (params.priceMax != null && params.priceMax > 0) {
+                    priceCriteria.lte(params.priceMax);
+                    hasCondition = true;
+                }
+                
+                // Chỉ thêm criteria nếu có ít nhất một điều kiện giá hợp lệ
+                if (hasCondition) {
+                    criteriaList.add(priceCriteria);
+                }
+            }
+        }
+
+        if (hasValues(params.origins)) {
+            criteriaList.add(Criteria.where("origin").in(params.origins));
+        }
+
+        if (hasValues(params.certifications)) {
+            criteriaList.add(Criteria.where("certifications").all(params.certifications));
+        }
+
+        if (params.ratingMin != null) {
+            criteriaList.add(Criteria.where("rating").gte(params.ratingMin));
+        }
+
+        if (Boolean.TRUE.equals(params.onSaleOnly)) {
+            criteriaList.add(Criteria.where("discount").gt(0));
+        }
+
+        if (criteriaList.isEmpty()) {
+            return null;
+        }
+        if (criteriaList.size() == 1) {
+            return criteriaList.get(0);
+        }
+        return new Criteria().andOperator(criteriaList.toArray(new Criteria[0]));
+    }
+
+    private Sort resolveSort(String sortBy) {
+        if (!StringUtils.hasText(sortBy)) {
+            return Sort.by(Sort.Direction.DESC, "soldQuantity");
+        }
+
+        switch (sortBy.toLowerCase()) {
+            case "price_asc":
+            case "price_low_to_high":
+                return Sort.by(Sort.Direction.ASC, "finalPrice");
+            case "price_desc":
+            case "price_high_to_low":
+                return Sort.by(Sort.Direction.DESC, "finalPrice");
+            case "rating_desc":
+            case "rating":
+                return Sort.by(Sort.Direction.DESC, "rating");
+            case "newest":
+                return Sort.by(Sort.Direction.DESC, "createdAt");
+            case "sold_desc":
+            case "popular":
+            default:
+                return Sort.by(Sort.Direction.DESC, "soldQuantity");
+        }
+    }
+
+    private List<String> mergeValues(String singleValue, List<String> multiValues) {
+        List<String> result = new ArrayList<>();
+        if (StringUtils.hasText(singleValue)) {
+            result.add(singleValue);
+        }
+        if (multiValues != null) {
+            for (String value : multiValues) {
+                if (StringUtils.hasText(value) && !result.contains(value)) {
+                    result.add(value);
+                }
+            }
+        }
+        return result;
+    }
+
+    private boolean hasValues(List<String> values) {
+        if (values == null) {
+            return false;
+        }
+        return values.stream().anyMatch(StringUtils::hasText);
+    }
+
+    /**
+     * Escape các ký tự đặc biệt trong regex để tránh lỗi khi tìm kiếm
+     * Vẫn cho phép tìm kiếm substring (không dùng Pattern.quote)
+     */
+    private String escapeRegexSpecialChars(String input) {
+        if (input == null) {
+            return null;
+        }
+        // Escape các ký tự đặc biệt trong regex: . * + ? ^ $ [ ] { } | ( ) \
+        return input.replaceAll("([.\\[\\]{}()*+?^$|\\\\])", "\\\\$1");
+    }
+
+    private List<FilterCount> computeCounts(List<Product> products, Function<Product, String> extractor) {
+        Map<String, Long> counts = products.stream()
+                .map(extractor)
+                .filter(StringUtils::hasText)
+                .collect(Collectors.groupingBy(value -> value, Collectors.counting()));
+        return toFilterCounts(counts);
+    }
+
+    private List<FilterCount> computeListCounts(List<Product> products, Function<Product, List<String>> extractor) {
+        Map<String, Long> counts = products.stream()
+                .map(extractor)
+                .filter(values -> values != null && !values.isEmpty())
+                .flatMap(List::stream)
+                .filter(StringUtils::hasText)
+                .collect(Collectors.groupingBy(value -> value, Collectors.counting()));
+        return toFilterCounts(counts);
+    }
+
+    private List<FilterCount> toFilterCounts(Map<String, Long> counts) {
+        return counts.entrySet().stream()
+                .map(entry -> new FilterCount(entry.getKey(), entry.getValue()))
+                .sorted((a, b) -> {
+                    int compare = Long.compare(b.count, a.count);
+                    if (compare != 0) {
+                        return compare;
+                    }
+                    return a.value.compareToIgnoreCase(b.value);
+                })
+                .collect(Collectors.toList());
+    }
+
+    private List<FilterCount> computeRatingBuckets(SearchParams params) {
+        SearchParams copy = params.copy();
+        copy.ratingMin = null;
+        List<Product> products = mongoTemplate.find(buildQuery(copy), Product.class);
+        double[] thresholds = {5.0, 4.0, 3.0};
+        List<FilterCount> buckets = new ArrayList<>();
+        for (double threshold : thresholds) {
+            long count = products.stream()
+                    .filter(product -> product.getRating() != null && product.getRating() >= threshold)
+                    .count();
+            buckets.add(new FilterCount(String.valueOf(threshold), count));
+        }
+        return buckets;
+    }
+
+    private long computeOnSaleCount(SearchParams params) {
+        SearchParams copy = params.copy();
+        copy.onSaleOnly = null;
+        Query query = buildQuery(copy);
+        query.addCriteria(Criteria.where("discount").gt(0));
+        return mongoTemplate.count(query, Product.class);
+    }
+
+    private double[] computePriceRange(SearchParams params) {
+        SearchParams copy = params.copy();
+        copy.priceMin = null;
+        copy.priceMax = null;
+        List<Product> products = mongoTemplate.find(buildQuery(copy), Product.class);
+        double min = products.stream()
+                .map(Product::getFinalPrice)
+                .filter(value -> value != null && !value.isNaN())
+                .min(Double::compareTo)
+                .orElse(0.0);
+
+        double max = products.stream()
+                .map(Product::getFinalPrice)
+                .filter(value -> value != null && !value.isNaN())
+                .max(Double::compareTo)
+                .orElse(min);
+
+        return new double[]{min, max};
+    }
+
+    public static class FilterCount {
+        public String value;
+        public long count;
+
+        public FilterCount() {}
+
+        public FilterCount(String value, long count) {
+            this.value = value;
+            this.count = count;
+        }
+    }
+
+    public static class FilterMetadata {
+        public List<FilterCount> categories = List.of();
+        public List<FilterCount> subCategories = List.of();
+        public List<FilterCount> origins = List.of();
+        public List<FilterCount> certifications = List.of();
+        public List<FilterCount> ratings = List.of();
+        public long onSaleCount;
+        public Double minPrice;
+        public Double maxPrice;
     }
 
     /**

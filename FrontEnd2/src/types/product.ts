@@ -15,6 +15,9 @@ export interface Product {
   rating: number | null;
   reviewCount: number;
   finalPrice: number;
+  subCategory?: string;
+  origin?: string;
+  certifications?: string[];
 }
 
 export interface ProductReview {

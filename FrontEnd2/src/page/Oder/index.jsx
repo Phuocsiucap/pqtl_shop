@@ -4,19 +4,19 @@ import { useEffect, useState } from "react";
 import { PricetoString } from "../../Component/Translate_Price";
 import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
-import { request1,request } from "../../utils/request";
+import { request1, request } from "../../utils/request";
 import { getCSRFTokenFromCookie } from "../../Component/Token/getCSRFToken";
 import AddressOD from "./AddresOD";
 import PaymentFrom from "./PaymentFrom";
 import PaymentReturn from "./PaymentReturn";
 
-function Order({}) {
+function Order({ }) {
   const user = useSelector((state) => state.user.user);
   const location = useLocation();
   const navigate = useNavigate();
 
   const orderData = JSON.parse(localStorage.getItem("orderData"));
-  const {itemsToOrder, totalPrice, selectedVoucher } = orderData;
+  const { itemsToOrder, totalPrice, selectedVoucher } = orderData;
 
   const [showPaymentReturn, setShowPaymentReturn] = useState(false)
   const [shippingMethod, setShippingMethod] = useState(null);
@@ -45,12 +45,12 @@ function Order({}) {
   useEffect(() => {
     localStorage.setItem("selectAddress", JSON.stringify(selectAddress));
   }, [selectAddress]);
-  
+
   const [address, setAddress] = useState([]);
   // console.log("1", typeof itemsToOrder);
   // console.log("2", location.state);
   const [showAddress, setShowAddress] = useState(false);
-  const access_token = getCSRFTokenFromCookie("access_token") ;
+  const access_token = getCSRFTokenFromCookie("access_token");
   // const access_token =  token ;
   const title = ["Đơn giá", "Số lượng", "Thành tiền"];
   useEffect(() => {
@@ -120,8 +120,8 @@ function Order({}) {
       fetchPaymentData(); // Chỉ gọi hàm nếu có query
     }
   }, [location.search]); // Phụ thuộc vào `location.search`
-  
-  
+
+
   const HandleOnclickOrder = async () => {
     const Address = JSON.parse(localStorage.getItem("selectAddress"));
     const orderData = JSON.parse(localStorage.getItem("orderData"));
@@ -138,7 +138,7 @@ function Order({}) {
         productId: item.productId,
         productName: item.productName,
         quantity: item.qty,
-        price: item.price,
+        price: item.price - (item.discount || 0), // Send the actual price paid (after discount)
       })),
       totalPrice: orderData.totalPrice,
       discount: orderData.selectedVoucher ? orderData.selectedVoucher.voucher.discountValue : 0,
@@ -148,7 +148,7 @@ function Order({}) {
       shippingMethod,
       paymentMethod,
       paymentStatus: paymentMethod === "COD" ? "Chưa thanh toán" : "Đã thanh toán",
-      orderStatus: "Đã xác nhận",
+      orderStatus: "Chờ xác nhận", // Set initial status to Pending to allow cancellation
       note: "",
     };
 
@@ -169,12 +169,12 @@ function Order({}) {
     }
   };
 
-  
+
 
   const handleSelectAddress = (item) => {
     setSelectAddress(item);
   };
- 
+
   return user == null ? (
     <div>
       <div className="text-center text-xl font-Montserrat font-semibold my-10">
@@ -242,7 +242,7 @@ function Order({}) {
           </div>
           {productOrder &&
             productOrder.map((item, index) => {
-              
+
               return (
                 <div
                   key={index}

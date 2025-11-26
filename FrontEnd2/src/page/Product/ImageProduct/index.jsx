@@ -37,9 +37,11 @@ function ImageProduct({ id }) {
   }, []);
   const [number, setNumber] = useState(1);
   const handleClickplus = () => {
-    if (number >= 5) {
-      alert("Bạn đã đạt tối đa sản phẩm mua");
-      setNumber(5);
+    // Kiểm tra số lượng tồn kho thực tế
+    const maxQuantity = Product.amount || 999; // Nếu không có amount, cho phép số lượng lớn
+    if (number >= maxQuantity) {
+      alert(`Bạn đã đạt tối đa số lượng có thể mua (${maxQuantity})`);
+      setNumber(maxQuantity);
       return;
     } else {
       setNumber(number + 1);

@@ -1,7 +1,10 @@
-import React, { useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useEffect, useCallback, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import { useProductDetail } from '../../hooks/useProductDetail';
 import ProductReviewForm from './ProductReviewForm';
+import { request1 } from '../../utils/request';
+import { getCSRFTokenFromCookie } from '../../Component/Token/getCSRFToken';
 
 // Component hiển thị thông tin đánh giá
 const ReviewList = ({ reviews, fetchReviews, productId }) => {
@@ -72,6 +75,10 @@ const SimilarProducts = ({ products }) => {
 function ProductDetail() {
     // Giả định sử dụng react-router-dom để lấy ID
     const { id } = useParams(); 
+    const navigate = useNavigate();
+    const statusUser = useSelector((state) => state.user.status);
+    const [isAdding, setIsAdding] = useState(false);
+    const [quantity, setQuantity] = useState(1);
     const { product, similarProducts, reviews, loading, error, fetchProductDetail, fetchReviews } = useProductDetail();
 
     useEffect(() => {
@@ -87,6 +94,116 @@ function ProductDetail() {
             fetchReviews(id, 0, 5);
         }
     }, [id, fetchReviews]);
+
+    const handleAddToCart = async () => {
+        if (!statusUser) {
+            if (window.confirm("Bạn chưa đăng nhập. Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng.")) {
+                navigate("/login");
+            }
+            return;
+        }
+
+        if (!product) return;
+
+        // Kiểm tra số lượng tồn kho
+        if (product.stockQuantity !== undefined && product.stockQuantity <= 0) {
+            alert("Sản phẩm này đã hết hàng. Vui lòng chọn sản phẩm khác.");
+            return;
+        }
+
+        if (quantity <= 0) {
+            alert("Vui lòng chọn số lượng sản phẩm");
+            return;
+        }
+
+        // Kiểm tra số lượng không vượt quá tồn kho
+        if (product.stockQuantity !== undefined && quantity > product.stockQuantity) {
+            alert(`Số lượng tối đa có thể mua là ${product.stockQuantity}`);
+            return;
+        }
+
+        if (!window.confirm(`Bạn xác nhận thêm ${quantity} sản phẩm này vào giỏ hàng?`)) {
+            return;
+        }
+
+        // Lấy token mỗi lần gọi API để đảm bảo token luôn mới nhất
+        const access_token = getCSRFTokenFromCookie("access_token");
+        
+        if (!access_token) {
+            alert("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+            navigate("/login");
+            return;
+        }
+
+        setIsAdding(true);
+        try {
+            // Tính toán giá cuối cùng
+            const finalPrice = product.price - (product.discount || 0);
+            const total = finalPrice * quantity;
+
+            // Format dữ liệu theo yêu cầu của backend CartItem
+            const cartItem = {
+                productId: id,
+                productName: product.name,
+                image: product.image || '',
+                price: product.price,
+                discount: product.discount || 0,
+                qty: quantity,
+                total: total
+            };
+
+            console.log("Sending cart item:", cartItem);
+
+            // Thử endpoint /api/cart trước (theo CartController)
+            const response = await request1.post(
+                "cart",
+                cartItem,
+                {
+                    headers: {
+                        Authorization: `Bearer ${access_token}`,
+                        "Content-Type": "application/json",
+                    },
+                    withCredentials: true,
+                }
+            ).catch(async (error) => {
+                // Nếu endpoint /api/cart không hoạt động, thử /api/cart/add
+                if (error.response?.status === 404 || error.response?.status === 405) {
+                    console.log("Trying /api/cart/add endpoint...");
+                    return await request1.post(
+                        "cart/add",
+                        cartItem,
+                        {
+                            headers: {
+                                Authorization: `Bearer ${access_token}`,
+                                "Content-Type": "application/json",
+                            },
+                            withCredentials: true,
+                        }
+                    );
+                }
+                throw error;
+            });
+
+            console.log("Add to cart response:", response);
+            alert("Thêm sản phẩm vào giỏ hàng thành công!");
+            // Có thể navigate đến giỏ hàng hoặc giữ nguyên trang
+            // navigate("/cartshopping");
+        } catch (error) {
+            console.error("Lỗi khi thêm vào giỏ hàng:", error);
+            console.error("Error response:", error.response?.data);
+            if (error.response?.status === 401) {
+                alert("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+                navigate("/login");
+            } else if (error.response?.status === 400) {
+                const errorMsg = error.response?.data?.error || error.response?.data?.message || "Dữ liệu không hợp lệ";
+                alert(`Lỗi: ${errorMsg}`);
+            } else {
+                alert("Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng. Vui lòng thử lại.");
+            }
+        } finally {
+            setIsAdding(false);
+        }
+    };
 
     if (loading && !product) return <div className="p-8 text-center">Đang tải chi tiết sản phẩm...</div>;
     if (error) return <div className="p-8 text-center text-red-500">Lỗi: {error}</div>;
@@ -134,9 +251,56 @@ function ProductDetail() {
                         <p className="text-gray-500">Đã bán: {product.soldQuantity}</p>
                     </div>
 
-                    {/* Add to Cart Button (Placeholder) */}
-                    <button className="mt-6 w-full lg:w-1/2 py-3 bg-primary text-white font-bold rounded-lg hover:bg-primary-dark transition duration-300">
-                        Thêm vào giỏ hàng
+                    {/* Quantity Selector */}
+                    {product.stockQuantity > 0 && (
+                        <div className="mt-4 flex items-center gap-4">
+                            <label className="font-semibold">Số lượng:</label>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                                    className="px-3 py-1 border rounded hover:bg-gray-100"
+                                    disabled={quantity <= 1}
+                                >
+                                    -
+                                </button>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    max={product.stockQuantity || 999}
+                                    value={quantity}
+                                    onChange={(e) => {
+                                        const val = parseInt(e.target.value) || 1;
+                                        const max = product.stockQuantity || 999;
+                                        setQuantity(Math.max(1, Math.min(val, max)));
+                                    }}
+                                    className="w-16 text-center border rounded py-1"
+                                />
+                                <button
+                                    onClick={() => {
+                                        const max = product.stockQuantity || 999;
+                                        setQuantity(Math.min(max, quantity + 1));
+                                    }}
+                                    className="px-3 py-1 border rounded hover:bg-gray-100"
+                                    disabled={product.stockQuantity ? quantity >= product.stockQuantity : false}
+                                >
+                                    +
+                                </button>
+                            </div>
+                            {product.stockQuantity && (
+                                <span className="text-sm text-gray-500">
+                                    (Tối đa: {product.stockQuantity})
+                                </span>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Add to Cart Button */}
+                    <button 
+                        onClick={handleAddToCart}
+                        disabled={isAdding || product.stockQuantity <= 0}
+                        className="mt-6 w-full lg:w-1/2 py-3 bg-primary text-white font-bold rounded-lg hover:bg-primary-dark transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {isAdding ? "Đang thêm..." : product.stockQuantity > 0 ? "Thêm vào giỏ hàng" : "Hết hàng"}
                     </button>
                 </div>
             </div>
