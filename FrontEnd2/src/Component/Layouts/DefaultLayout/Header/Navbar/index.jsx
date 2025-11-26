@@ -56,6 +56,32 @@ function Navbar() {
             PQTLSHOP
           </Link>
         </div>
+        {/* Mobile Search - Below Logo */}
+        <div className="lg:hidden absolute top-full left-0 right-0 px-6 py-3 bg-gray-50">
+          <Tippy
+            placement="bottom"
+            trigger="click"
+            interactive={true}
+            render={(attrs) => (
+              <div className="box bg-white shadow-lg rounded-lg" tabIndex="-1" {...attrs}>
+                <Search search={search.toLowerCase().split(" ")} />
+              </div>
+            )}
+          >
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Tìm kiếm sản phẩm..."
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+                value={search}
+                onChange={(e) => handleOnchange(e)}
+                onKeyDown={handleKeyDown}
+              />
+              <IoMdSearch className="absolute top-3 left-3 text-xl text-gray-400" />
+            </div>
+          </Tippy>
+        </div>
+
         {/*search input */}
         <Tippy
           placement="bottom"
@@ -145,58 +171,24 @@ function Navbar() {
           </div>
         </div>
       </div>
-      {/*lower navbar */}
-      <div className="bg-primary py-2 text-center justify-center">
-
-        {/* sreach bar from sm to md */}
-        <Tippy
-          placement="bottom"
-          trigger="click"
-          interactive={true}
-          render={(attrs) => (
-            <div className="box bg-white" tabIndex="-1" {...attrs}>
-              <Search search={search.toLowerCase().split(" ")} />
-            </div>
-          )}
-        >
-          <div className="flex justify-center items-center lg:hidden relative group">
-            <input
-              type="text"
-              placeholder="Tìm kiếm sản phẩm... "
-              className="input-search"
-              value={search}
-              onChange={(e) => handleOnchange(e)}
-              onKeyDown={handleKeyDown}
-            />
+      {/* Mobile Menu Dropdown */}
+      {ismenu && (
+        <div className="lg:hidden bg-white border-t border-gray-200 shadow-lg">
+          <div className="px-6 py-4">
+            <p className="text-xs font-bold text-gray-500 mb-3 uppercase">Tài Khoản</p>
+            {titles_2.map((title_2, index) => (
+              <Link
+                key={index}
+                to={title_2.link}
+                className="block py-3 text-gray-700 hover:text-primary hover:bg-gray-50 rounded transition-colors font-medium"
+                onClick={() => setIsmenu(false)}
+              >
+                {title_2.title}
+              </Link>
+            ))}
           </div>
-        </Tippy>
-      </div>
-      {
-        <div
-          className={`absolute block justify-around items-start w-full 
-                    transition-all transform duration-500 ease-in-out
-                    h-auto bg-gray-50 top-[45px] ${ismenu
-              ? " opacity-100  translate-x-0"
-              : " opacity-0 translate-x-full"
-            } lg:hidden z-10`}
-        >
-
-          <ul className="font-Montserrat font-semibold py-2 text-xs text-red-500 hover:bg-gray-50 w-full text-center uppercase md:text-xl">
-            Tài Khoản
-            {titles_2.map((title_2, index) => {
-              return (
-                <li
-                  key={index}
-                  className=" font-Montserrat font-semibold text-center uppercase text-gray-500 hover:text-white hover:bg-primary/50 py-2 transition-all duration-500 ease-in-out md:text-lg md:py-5"
-                  onClick={() => setIsmenu(!ismenu)}
-                >
-                  <Link to={title_2.link}>{title_2.title}</Link>
-                </li>
-              );
-            })}
-          </ul>
         </div>
-      }
+      )}
     </div>
   );
 }
