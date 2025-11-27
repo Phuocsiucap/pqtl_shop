@@ -8,10 +8,14 @@ const ProductEditModal = ({ product, closeModal, onSave, onError }) => {
     name: product?.name || "",
     stockQuantity: product?.stockQuantity || "",
     price: product?.price || "",
+    costPrice: product?.costPrice || "",
     description: product?.description || "",
     specifications: product?.specifications || "",
     brand: product?.brand || "",
     category: product?.category || "",
+    manufacturingDate: product?.manufacturingDate || "",
+    expiryDate: product?.expiryDate || "",
+    batchNumber: product?.batchNumber || "",
     image: null,
   });
   const [imagePreview, setImagePreview] = useState(
@@ -71,11 +75,26 @@ const ProductEditModal = ({ product, closeModal, onSave, onError }) => {
     }
     
     if (!formData.price || formData.price === "" || parseFloat(formData.price) <= 0) {
-      newErrors.price = "Giá phải là số dương";
+      newErrors.price = "Giá bán phải là số dương";
+    }
+    
+    if (formData.costPrice && parseFloat(formData.costPrice) < 0) {
+      newErrors.costPrice = "Giá nhập phải là số không âm";
+    }
+    
+    if (formData.costPrice && formData.price && parseFloat(formData.costPrice) >= parseFloat(formData.price)) {
+      newErrors.costPrice = "Giá nhập phải nhỏ hơn giá bán";
     }
     
     if (!formData.category || formData.category === "") {
       newErrors.category = "Vui lòng chọn danh mục";
+    }
+    
+    // Validate ngày sản xuất và hạn sử dụng
+    if (formData.manufacturingDate && formData.expiryDate) {
+      if (new Date(formData.manufacturingDate) >= new Date(formData.expiryDate)) {
+        newErrors.expiryDate = "Hạn sử dụng phải sau ngày sản xuất";
+      }
     }
 
     setErrors(newErrors);
@@ -127,9 +146,21 @@ const ProductEditModal = ({ product, closeModal, onSave, onError }) => {
       formDataToSend.append("goodName", formData.name);
       formDataToSend.append("amount", formData.stockQuantity.toString());
       formDataToSend.append("price", formData.price.toString());
+      formDataToSend.append("costPrice", formData.costPrice ? formData.costPrice.toString() : "0");
       formDataToSend.append("specifications", formData.specifications || formData.description || "");
       formDataToSend.append("brand", formData.brand);
       formDataToSend.append("category", formData.category);
+      
+      // Thêm ngày sản xuất và hạn sử dụng
+      if (formData.manufacturingDate) {
+        formDataToSend.append("manufacturingDate", formData.manufacturingDate);
+      }
+      if (formData.expiryDate) {
+        formDataToSend.append("expiryDate", formData.expiryDate);
+      }
+      if (formData.batchNumber) {
+        formDataToSend.append("batchNumber", formData.batchNumber);
+      }
 
       if (formData.image) {
         formDataToSend.append("image", formData.image);
@@ -299,6 +330,33 @@ const ProductEditModal = ({ product, closeModal, onSave, onError }) => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Giá nhập (VNĐ)
+                </label>
+                <input
+                  type="number"
+                  name="costPrice"
+                  value={formData.costPrice}
+                  onChange={handleChange}
+                  min="0"
+                  step="1000"
+                  className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    errors.costPrice ? "border-red-500" : "border-gray-300"
+                  }`}
+                  placeholder="0"
+                />
+                {errors.costPrice && (
+                  <p className="mt-1 text-sm text-red-600">{errors.costPrice}</p>
+                )}
+                {formData.price && formData.costPrice && parseFloat(formData.costPrice) < parseFloat(formData.price) && (
+                  <p className="mt-1 text-sm text-green-600">
+                    Lợi nhuận: {(parseFloat(formData.price) - parseFloat(formData.costPrice)).toLocaleString('vi-VN')} ₫ 
+                    ({(((parseFloat(formData.price) - parseFloat(formData.costPrice)) / parseFloat(formData.price)) * 100).toFixed(1)}%)
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Thương hiệu
                 </label>
                 <select
@@ -315,7 +373,9 @@ const ProductEditModal = ({ product, closeModal, onSave, onError }) => {
                   ))}
                 </select>
               </div>
+            </div>
 
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Danh mục <span className="text-red-500">*</span>
@@ -338,6 +398,73 @@ const ProductEditModal = ({ product, closeModal, onSave, onError }) => {
                 {errors.category && (
                   <p className="mt-1 text-sm text-red-600">{errors.category}</p>
                 )}
+              </div>
+            </div>
+            
+            {/* Ngày sản xuất và Hạn sử dụng */}
+            <div className="border-t pt-4 mt-4">
+              <h3 className="font-semibold text-gray-700 mb-3">📅 Thông tin sản xuất & Hạn sử dụng</h3>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Ngày sản xuất (NSX)
+                  </label>
+                  <input
+                    type="date"
+                    name="manufacturingDate"
+                    value={formData.manufacturingDate}
+                    onChange={handleChange}
+                    max={new Date().toISOString().split('T')[0]}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Hạn sử dụng (HSD)
+                  </label>
+                  <input
+                    type="date"
+                    name="expiryDate"
+                    value={formData.expiryDate}
+                    onChange={handleChange}
+                    min={formData.manufacturingDate || undefined}
+                    className={`w-full px-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      errors.expiryDate ? "border-red-500" : "border-gray-300"
+                    }`}
+                  />
+                  {errors.expiryDate && (
+                    <p className="mt-1 text-sm text-red-600">{errors.expiryDate}</p>
+                  )}
+                  {formData.expiryDate && (
+                    <p className={`mt-1 text-sm ${
+                      new Date(formData.expiryDate) < new Date()
+                        ? 'text-red-600 font-bold'
+                        : Math.ceil((new Date(formData.expiryDate) - new Date()) / (1000 * 60 * 60 * 24)) <= 30
+                          ? 'text-orange-600'
+                          : 'text-green-600'
+                    }`}>
+                      {new Date(formData.expiryDate) < new Date()
+                        ? '⚠️ ĐÃ HẾT HẠN'
+                        : `Còn ${Math.ceil((new Date(formData.expiryDate) - new Date()) / (1000 * 60 * 60 * 24))} ngày`
+                      }
+                    </p>
+                  )}
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Số lô sản xuất
+                  </label>
+                  <input
+                    type="text"
+                    name="batchNumber"
+                    value={formData.batchNumber}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="VD: LOT20241127"
+                  />
+                </div>
               </div>
             </div>
 

@@ -6,6 +6,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
@@ -27,9 +28,20 @@ public class User {
     @Field("is_active")
     private Boolean isActive = true;
     private List<Address> addresses;  
-    private String role ;
+    private String role;
     private boolean verified = false;
     
     // Thêm trường fullName - cần thiết cho admin API hiển thị tên người dùng
     private String fullName;
+    
+    // Thời gian đăng nhập gần nhất
+    @Field("last_login")
+    private LocalDateTime lastLogin;
+    
+    // Thời gian tạo tài khoản
+    @Field("created_at")
+    private LocalDateTime createdAt;
+    
+    // Số điện thoại
+    private String phone;
 }

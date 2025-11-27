@@ -250,6 +250,55 @@ function ProductDetail() {
                         </p>
                         <p className="text-gray-500">Đã bán: {product.soldQuantity}</p>
                     </div>
+                    
+                    {/* Thông tin hạn sử dụng */}
+                    {product.expiryDate && (
+                        <div className="mt-4 p-3 rounded-lg border">
+                            <h4 className="font-semibold text-gray-700 mb-2">📅 Thông tin sản phẩm</h4>
+                            <div className="grid grid-cols-2 gap-2 text-sm">
+                                {product.manufacturingDate && (
+                                    <div>
+                                        <span className="text-gray-500">Ngày SX:</span>
+                                        <span className="ml-2 font-medium">{product.manufacturingDate}</span>
+                                    </div>
+                                )}
+                                <div>
+                                    <span className="text-gray-500">Hạn SD:</span>
+                                    <span className={`ml-2 font-medium ${
+                                        new Date(product.expiryDate) < new Date() ? 'text-red-600' :
+                                        Math.ceil((new Date(product.expiryDate) - new Date()) / (1000 * 60 * 60 * 24)) <= 30 
+                                            ? 'text-orange-600' : 'text-green-600'
+                                    }`}>
+                                        {product.expiryDate}
+                                        {new Date(product.expiryDate) >= new Date() && (
+                                            <span className="ml-1">
+                                                ({Math.ceil((new Date(product.expiryDate) - new Date()) / (1000 * 60 * 60 * 24))} ngày)
+                                            </span>
+                                        )}
+                                    </span>
+                                </div>
+                                {product.batchNumber && (
+                                    <div>
+                                        <span className="text-gray-500">Số lô:</span>
+                                        <span className="ml-2 font-medium">{product.batchNumber}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Badge thanh lý */}
+                    {product.isClearance && (
+                        <div className="mt-4 p-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg">
+                            <div className="flex items-center gap-2">
+                                <span className="text-2xl">🏷️</span>
+                                <div>
+                                    <p className="font-bold">ĐANG THANH LÝ</p>
+                                    <p className="text-sm">Giảm {product.clearanceDiscount}% - Sản phẩm còn hạn sử dụng ngắn</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Quantity Selector */}
                     {product.stockQuantity > 0 && (
