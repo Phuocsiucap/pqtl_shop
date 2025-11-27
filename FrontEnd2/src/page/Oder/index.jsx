@@ -134,12 +134,24 @@ function Order({ }) {
     const shippingAddress = `${Address.name}, ${Address.phone}, ${Address.city}, ${Address.addressct}`;
 
     const payload = {
-      items: orderData.itemsToOrder.map((item) => ({
-        productId: item.productId,
-        productName: item.productName,
-        quantity: item.qty,
-        price: item.price - (item.discount || 0), // Send the actual price paid (after discount)
-      })),
+      items: orderData.itemsToOrder.map((item) => {
+        // Tính giá cuối cùng: ưu tiên thanh lý > giảm giá > giá gốc
+        let finalItemPrice;
+        if (item.isClearance && item.clearanceDiscount > 0) {
+          finalItemPrice = item.price * (1 - item.clearanceDiscount / 100);
+        } else {
+          finalItemPrice = item.price - (item.discount || 0);
+        }
+        
+        return {
+          productId: item.productId,
+          productName: item.productName,
+          quantity: item.qty,
+          price: Math.round(finalItemPrice), // Send the actual price paid (after discount/clearance)
+          isClearance: item.isClearance || false,
+          clearanceDiscount: item.clearanceDiscount || 0,
+        };
+      }),
       totalPrice: orderData.totalPrice,
       discount: orderData.selectedVoucher ? orderData.selectedVoucher.voucher.discountValue : 0,
       shippingFee: 25000, // tuỳ logic
@@ -263,18 +275,43 @@ function Order({ }) {
                   </div>
                   <div className="basis-[60%] md:basis-[40%] flex items-center text-[8px] md:text-xs lg:text-base justify-between mx-2">
                     {/* giá cả */}
-                    <p className="text-red-500 font-semibold">
-                      {PricetoString(item.price.toString().split(".")[0])}
-                    </p>
+                    <div className="flex flex-col">
+                      {/* Badge thanh lý */}
+                      {item.isClearance && (
+                        <span className="text-purple-600 text-[8px] md:text-xs font-medium">
+                          🏷️ -{item.clearanceDiscount}%
+                        </span>
+                      )}
+                      {/* Giá gốc nếu có giảm */}
+                      {(item.isClearance || item.discount > 0) && (
+                        <p className="text-gray-400 line-through text-[8px] md:text-xs">
+                          {PricetoString(item.price.toString().split(".")[0])}
+                        </p>
+                      )}
+                      {/* Giá cuối cùng */}
+                      <p className={`font-semibold ${item.isClearance ? 'text-purple-600' : 'text-red-500'}`}>
+                        {PricetoString(
+                          Math.round(
+                            item.isClearance && item.clearanceDiscount > 0
+                              ? item.price * (1 - item.clearanceDiscount / 100)
+                              : item.price - (item.discount || 0)
+                          ).toString().split(".")[0]
+                        )}
+                      </p>
+                    </div>
                     {/* số lượng sản phẩm */}
                     <div className="font-bold">
                       <p className="">{item.qty}</p>
                     </div>
                     {/* thành tiền */}
-                    <div className="text-red-500 font-semibold">
+                    <div className={`font-semibold ${item.isClearance ? 'text-purple-600' : 'text-red-500'}`}>
                       <p>
                         {PricetoString(
-                          parseInt(item.price.toString().split(".")[0]) * item.qty
+                          Math.round(
+                            (item.isClearance && item.clearanceDiscount > 0
+                              ? item.price * (1 - item.clearanceDiscount / 100)
+                              : item.price - (item.discount || 0)) * item.qty
+                          )
                         )}
                         đ
                       </p>

@@ -10,7 +10,18 @@ function ProductCard({ product }) {
     const [isAdding, setIsAdding] = useState(false);
     
     const rating = Math.round(product.rating || 0);
-    const computedFinalPrice = product.finalPrice ?? (product.price - (product.discount || 0));
+    
+    // Tính giá cuối cùng: ưu tiên giá thanh lý > giá giảm > giá gốc
+    const getClearancePrice = () => {
+        if (product.isClearance && product.clearanceDiscount > 0) {
+            return product.price * (1 - product.clearanceDiscount / 100);
+        }
+        return null;
+    };
+    
+    const clearancePrice = getClearancePrice();
+    const discountedPrice = product.discount > 0 ? product.price - product.discount : null;
+    const computedFinalPrice = clearancePrice || discountedPrice || product.finalPrice || product.price;
 
     const handleAddToCart = async (e) => {
         e.preventDefault(); // Ngăn chặn navigation khi click vào button
@@ -55,8 +66,10 @@ function ProductCard({ product }) {
                 image: product.image || '',
                 price: product.price,
                 discount: product.discount || 0,
+                isClearance: product.isClearance || false,
+                clearanceDiscount: product.clearanceDiscount || 0,
                 qty: 1,
-                total: total
+                total: Math.round(total)
             };
 
             console.log("Sending cart item:", cartItem);
@@ -134,11 +147,27 @@ function ProductCard({ product }) {
                 </div>
 
                 {/* Price */}
-                <div className="flex items-center mb-3 flex-shrink-0">
-                    {product.discount > 0 && (
-                        <span className="text-xs text-gray-400 line-through mr-2">{product.price?.toLocaleString()} VND</span>
+                <div className="flex flex-col mb-3 flex-shrink-0">
+                    {/* Clearance badge */}
+                    {product.isClearance && (
+                        <span className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded-full w-fit mb-1">
+                            🏷️ Thanh lý -{product.clearanceDiscount}%
+                        </span>
                     )}
-                    <span className="text-lg font-bold text-red-600">{computedFinalPrice?.toLocaleString()} VND</span>
+                    {/* Near expiry warning */}
+                    {product.isNearExpiry && !product.isClearance && (
+                        <span className="text-xs bg-orange-500 text-white px-2 py-0.5 rounded-full w-fit mb-1">
+                            ⏰ Sắp hết hạn
+                        </span>
+                    )}
+                    <div className="flex items-center">
+                        {(product.isClearance || product.discount > 0) && (
+                            <span className="text-xs text-gray-400 line-through mr-2">{product.price?.toLocaleString()} VND</span>
+                        )}
+                        <span className={`text-lg font-bold ${product.isClearance ? 'text-purple-600' : 'text-red-600'}`}>
+                            {Math.round(computedFinalPrice)?.toLocaleString()} VND
+                        </span>
+                    </div>
                 </div>
 
                 {/* Add to Cart Button - Push to bottom */}

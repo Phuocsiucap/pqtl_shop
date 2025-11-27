@@ -154,10 +154,13 @@ const ClearanceProducts = () => {
                 {/* Image */}
                 <div className="relative overflow-hidden">
                   <img
-                    src={product.image ? `${request}${product.image}` : "/placeholder.png"}
-                    alt={product.name}
-                    className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
-                    onError={(e) => { e.target.src = "/placeholder.png"; }}
+                    src={product.image ? `${request}${product.image}` : "https://via.placeholder.com/300x192?text=No+Image"}
+                    alt={product.name || "Product"}
+                    className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300 bg-gray-100"
+                    onError={(e) => { 
+                      e.target.onerror = null;
+                      e.target.src = "https://via.placeholder.com/300x192?text=No+Image"; 
+                    }}
                   />
                   <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity"></div>
                 </div>

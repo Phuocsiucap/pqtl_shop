@@ -261,10 +261,13 @@ const ClearanceManager = () => {
               <td className="px-4 py-3">
                 <div className="flex items-center gap-3">
                   <img
-                    src={product.image ? `${request}${product.image}` : "/placeholder.png"}
-                    alt={product.name}
-                    className="w-12 h-12 object-cover rounded-md"
-                    onError={(e) => { e.target.src = "/placeholder.png"; }}
+                    src={product.image ? `${request}${product.image}` : "https://via.placeholder.com/48x48?text=No+Image"}
+                    alt={product.name || "Product"}
+                    className="w-12 h-12 object-cover rounded-md bg-gray-100"
+                    onError={(e) => { 
+                      e.target.onerror = null;
+                      e.target.src = "https://via.placeholder.com/48x48?text=No+Image"; 
+                    }}
                   />
                   <div>
                     <p className="font-medium text-gray-800">{product.name}</p>

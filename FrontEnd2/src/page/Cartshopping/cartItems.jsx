@@ -108,7 +108,27 @@ function CartItem({
       <div className="basis-[60%] flex items-center text-[8px] md:text-xs lg:text-base px-2 justify-around">
         {/* /* giá cả */ }
         <div className="flex flex-col items-start">
-          {item.discount ? (
+          {/* Kiểm tra thanh lý trước */}
+          {item.isClearance && item.clearanceDiscount > 0 ? (
+            <>
+              {/* Badge thanh lý */}
+              <span className="text-purple-600 text-[8px] md:text-xs font-medium mb-1">
+                🏷️ Thanh lý -{item.clearanceDiscount}%
+              </span>
+              {/* Giá cũ */}
+              <p className="text-gray-500 line-through text-xs md:text-sm">
+                {PricetoString(item.price.toString().split(".")[0])}
+              </p>
+              {/* Giá thanh lý */}
+              <p className="text-purple-600 font-semibold">
+                {PricetoString(
+                  Math.round(item.price * (1 - item.clearanceDiscount / 100))
+                    .toString()
+                    .split(".")[0]
+                )}
+              </p>
+            </>
+          ) : item.discount ? (
             <>
               {/* Giá cũ */}
               <p className="text-gray-500 line-through text-xs md:text-sm">

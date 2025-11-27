@@ -122,18 +122,20 @@ const AddProductModal = ({ closeModal, onSave, onError }) => {
     setLoading(true);
     try {
       const formData = new FormData();
-      formData.append("good", JSON.stringify({
-        goodName: newProduct.goodName,
-        amount: newProduct.amount,
-        price: newProduct.price,
-        costPrice: newProduct.costPrice,
+      // Map frontend fields to backend Product model fields
+      const productData = {
+        name: newProduct.goodName,                    // goodName -> name
+        stockQuantity: parseInt(newProduct.amount),   // amount -> stockQuantity
+        price: parseFloat(newProduct.price),
+        costPrice: parseFloat(newProduct.costPrice),
         specifications: newProduct.specifications,
         brand: newProduct.brand,
         category: newProduct.category,
-        manufacturingDate: newProduct.manufacturingDate,
-        expiryDate: newProduct.expiryDate,
-        batchNumber: newProduct.batchNumber,
-      }));
+        manufacturingDate: newProduct.manufacturingDate || null,
+        expiryDate: newProduct.expiryDate || null,
+        batchNumber: newProduct.batchNumber || null,
+      };
+      formData.append("good", JSON.stringify(productData));
       
       // Thêm ảnh vào FormData
       if (newProduct.image) {
@@ -148,11 +150,32 @@ const AddProductModal = ({ closeModal, onSave, onError }) => {
             Authorization: `Bearer ${access_token}`,
             "Content-Type": "multipart/form-data",
           },
-          withCredentials: true,
+         
         }
       );
-      
+      console.log(response);
       if (response.status === 200 || response.status === 201) {
+        // Thông báo thành công
+        alert("Thêm sản phẩm thành công!");
+        
+        // Reset form data
+        setNewProduct({
+          goodName: "",
+          amount: "",
+          price: "",
+          costPrice: "",
+          specifications: "",
+          brand: "",
+          category: "",
+          manufacturingDate: "",
+          expiryDate: "",
+          batchNumber: "",
+          image: null,
+        });
+        setImagePreview(null);
+        setErrors({});
+        
+        // Callback to parent
         onSave && onSave();
       }
     } catch (e) {

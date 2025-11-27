@@ -3,13 +3,17 @@ import { request1 } from "../../../utils/request";
 import { getCSRFTokenFromCookie } from "../../../Component/Token/getCSRFToken";
 const ProductEditModal = ({ product, closeModal, saveProductChanges }) => {
   const [formData, setFormData] = useState({
-    goodName: product.goodName,
-    amount: product.amount,
-    price: product.price,
+    goodName: product.name || product.goodName || "",           // Map from backend 'name' field
+    amount: product.stockQuantity || product.amount || 0,        // Map from backend 'stockQuantity' field
+    price: product.price || 0,
+    costPrice: product.costPrice || 0,
     image: product.image,
     brand: product.brand || "",
     category: product.category || "",
-    specifications: product.specifications || "", // Thêm specifications vào formData
+    specifications: product.specifications || "",
+    manufacturingDate: product.manufacturingDate || "",
+    expiryDate: product.expiryDate || "",
+    batchNumber: product.batchNumber || "",
     imageFile: null,
   });
   const access_token = getCSRFTokenFromCookie("access_token_admin");
@@ -69,15 +73,27 @@ const ProductEditModal = ({ product, closeModal, saveProductChanges }) => {
   ];
   const handeOnclickSave = async () => {
     const formDataToSend = new FormData();
-    formDataToSend.append("goodName", formData.goodName);
-    formDataToSend.append("amount", formData.amount);
+    formDataToSend.append("goodName", formData.goodName);  // Backend expects 'goodName' and maps to 'name'
+    formDataToSend.append("amount", formData.amount);      // Backend expects 'amount' and maps to 'stockQuantity'
     formDataToSend.append("price", formData.price);
+    formDataToSend.append("costPrice", formData.costPrice);
     formDataToSend.append("brand", formData.brand);
     formDataToSend.append("category", formData.category);
     formDataToSend.append("specifications", formData.specifications);
+    
+    // Add new fields for expiry management
+    if (formData.manufacturingDate) {
+      formDataToSend.append("manufacturingDate", formData.manufacturingDate);
+    }
+    if (formData.expiryDate) {
+      formDataToSend.append("expiryDate", formData.expiryDate);
+    }
+    if (formData.batchNumber) {
+      formDataToSend.append("batchNumber", formData.batchNumber);
+    }
 
     if (formData.imageFile) {
-      formDataToSend.append("image", formData.imageFile); // Add the file here
+      formDataToSend.append("image", formData.imageFile);
     }
     try {
       const response = await request1.put(`v1/admin/goods/${product.id}/`, formDataToSend, {
@@ -126,15 +142,27 @@ const ProductEditModal = ({ product, closeModal, saveProductChanges }) => {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-semibold">Giá</label>
-            <input
-              type="number"
-              name="price"
-              value={formData.price}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border rounded-md"
-            />
+          <div className="flex space-x-4">
+            <div className="flex-1">
+              <label className="block text-sm font-semibold">Giá bán</label>
+              <input
+                type="number"
+                name="price"
+                value={formData.price}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border rounded-md"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-sm font-semibold">Giá nhập</label>
+              <input
+                type="number"
+                name="costPrice"
+                value={formData.costPrice}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border rounded-md"
+              />
+            </div>
           </div>
 
           <div className="flex space-x-4">
@@ -181,10 +209,45 @@ const ProductEditModal = ({ product, closeModal, saveProductChanges }) => {
               name="specifications"
               value={formData.specifications}
               onChange={handleChange}
-              rows="4"
+              rows="3"
               className="w-full px-4 py-2 border rounded-md"
               placeholder="Nhập thông tin về nguồn gốc, cách bảo quản, đặc điểm nông sản..."
             />
+          </div>
+
+          {/* Ngày sản xuất, Hạn sử dụng, Số lô */}
+          <div className="flex space-x-4">
+            <div className="flex-1">
+              <label className="block text-sm font-semibold">Ngày sản xuất (NSX)</label>
+              <input
+                type="date"
+                name="manufacturingDate"
+                value={formData.manufacturingDate}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border rounded-md"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-sm font-semibold">Hạn sử dụng (HSD)</label>
+              <input
+                type="date"
+                name="expiryDate"
+                value={formData.expiryDate}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border rounded-md"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-sm font-semibold">Số lô</label>
+              <input
+                type="text"
+                name="batchNumber"
+                value={formData.batchNumber}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border rounded-md"
+                placeholder="VD: LOT001"
+              />
+            </div>
           </div>
 
           <div>
