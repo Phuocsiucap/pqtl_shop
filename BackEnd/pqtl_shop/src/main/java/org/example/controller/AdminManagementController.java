@@ -96,9 +96,10 @@ public class AdminManagementController {
     @PostMapping("/goods/")
     public ResponseEntity<?> createProduct(
             @RequestParam("good") String goodJson,
-            @RequestParam(value = "image", required = false) MultipartFile imageFile) {
+            @RequestParam(value = "image", required = false) MultipartFile imageFile,
+            @RequestParam(value = "additionalImages", required = false) MultipartFile[] additionalImages) {
         try {
-            Product product = adminService.createProduct(goodJson, imageFile);
+            Product product = adminService.createProduct(goodJson, imageFile, additionalImages);
             return ResponseEntity.status(HttpStatus.CREATED).body(product);
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -126,11 +127,22 @@ public class AdminManagementController {
             @RequestParam(value = "manufacturingDate", required = false) String manufacturingDate,
             @RequestParam(value = "expiryDate", required = false) String expiryDate,
             @RequestParam(value = "batchNumber", required = false) String batchNumber,
-            @RequestParam(value = "image", required = false) MultipartFile imageFile) {
+            
+            @RequestParam(value = "description", required = false) String description,
+            @RequestParam(value = "origin", required = false) String origin,
+            @RequestParam(value = "isBestSeller", required = false) Boolean isBestSeller,
+            @RequestParam(value = "isSeasonal", required = false) Boolean isSeasonal,
+            @RequestParam(value = "isClearance", required = false) Boolean isClearance,
+            @RequestParam(value = "clearanceDiscount", required = false) Double clearanceDiscount,
+            
+            @RequestParam(value = "image", required = false) MultipartFile imageFile,
+            @RequestParam(value = "additionalImages", required = false) MultipartFile[] additionalImages) {
         try {
             Product product = adminService.updateProduct(id, goodName, amount, price, 
                     costPrice, specifications, brand, category,
-                    manufacturingDate, expiryDate, batchNumber, imageFile);
+                    manufacturingDate, expiryDate, batchNumber,
+                    description, origin, isBestSeller, isSeasonal, isClearance, clearanceDiscount,
+                    imageFile, additionalImages);
             return ResponseEntity.ok(product);
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)

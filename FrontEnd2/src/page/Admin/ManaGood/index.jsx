@@ -210,10 +210,10 @@ const ProductList = () => {
     setIsAddProductModalOpen(false);
   };
 
-  const handleProductSaved = () => {
+  const handleProductSaved = (message = "Thao tác thành công") => {
     closeModal();
     fetchProducts(); // Refresh list
-    showToast("Thao tác thành công", "success");
+    showToast(message, "success");
   };
 
   // Pagination
@@ -480,14 +480,14 @@ const ProductList = () => {
         <ProductEditModal
           product={selectedProduct}
           closeModal={closeModal}
-          onSave={handleProductSaved}
+          onSave={() => handleProductSaved("Cập nhật sản phẩm thành công")}
           onError={(msg) => showToast(msg, "error")}
         />
       )}
       {isAddProductModalOpen && (
         <AddProductModal
           closeModal={closeModal}
-          onSave={handleProductSaved}
+          onSave={() => handleProductSaved("Thêm sản phẩm thành công")}
           onError={(msg) => showToast(msg, "error")}
         />
       )}

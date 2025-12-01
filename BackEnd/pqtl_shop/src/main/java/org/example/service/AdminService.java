@@ -1,6 +1,7 @@
 package org.example.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.example.model.Order;
 import org.example.model.Product;
 import org.example.model.login.User;
@@ -34,8 +35,8 @@ public class AdminService {
     @Autowired
     private OrderRepository orderRepository;
 
-    // Đường dẫn lưu ảnh
-    private static final String UPLOAD_DIR = "uploads/products/";
+    @Autowired
+    private CloudinaryService cloudinaryService;
 
     // ==================== AUTHENTICATION ====================
     /**
@@ -43,28 +44,28 @@ public class AdminService {
      */
     public Map<String, Object> adminLogin(String username, String password) throws Exception {
         Optional<User> user = userRepository.findByUsername(username);
-        
+
         if (user.isEmpty()) {
             throw new Exception("Tài khoản không tồn tại");
         }
-        
+
         User adminUser = user.get();
-        
+
         // Kiểm tra password (trong thực tế nên dùng BCryptPasswordEncoder)
         if (!adminUser.getPassword().equals(password)) {
             throw new Exception("Mật khẩu không chính xác");
         }
-        
+
         // Kiểm tra quyền admin
         if (adminUser.getRole() == null || !adminUser.getRole().equals("ADMIN")) {
             throw new Exception("Người dùng không có quyền admin");
         }
-        
+
         Map<String, Object> response = new HashMap<>();
         response.put("accessToken", "token_" + adminUser.getId());
         response.put("refreshToken", "refresh_" + adminUser.getId());
         response.put("user", adminUser);
-        
+
         return response;
     }
 
@@ -97,15 +98,32 @@ public class AdminService {
     /**
      * Tạo sản phẩm mới với upload ảnh
      */
-    public Product createProduct(String goodJson, MultipartFile imageFile) throws IOException {
+    public Product createProduct(String goodJson, MultipartFile imageFile, MultipartFile[] additionalImages) throws IOException {
         // Parse JSON từ request
         ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
         Product product = mapper.readValue(goodJson, Product.class);
         
-        // Xử lý upload ảnh
+        // Xử lý upload ảnh chính
         if (imageFile != null && !imageFile.isEmpty()) {
-            String imagePath = saveImage(imageFile);
-            product.setImage(imagePath);
+            Map uploadResult = cloudinaryService.uploadFile(imageFile);
+            String imageUrl = cloudinaryService.getImageUrl(uploadResult);
+            product.setImage(imageUrl);
+        }
+
+        // Xử lý upload ảnh phụ
+        if (additionalImages != null && additionalImages.length > 0) {
+            List<String> additionalImagePaths = new ArrayList<>();
+            for (MultipartFile file : additionalImages) {
+                if (file != null && !file.isEmpty()) {
+                    Map uploadResult = cloudinaryService.uploadFile(file);
+                    String imageUrl = cloudinaryService.getImageUrl(uploadResult);
+                    if (imageUrl != null) {
+                        additionalImagePaths.add(imageUrl);
+                    }
+                }
+            }
+            product.setAdditionalImages(additionalImagePaths);
         }
         
         // Gán giá trị mặc định
@@ -116,49 +134,6 @@ public class AdminService {
         return productRepository.save(product);
     }
 
-    /**
-     * Cập nhật sản phẩm
-     */
-    public Product updateProduct(String id, String goodName, String amount, String price,
-                                 String costPrice, String specifications, String brand, String category,
-                                 String manufacturingDate, String expiryDate, String batchNumber,
-                                 MultipartFile imageFile) throws IOException {
-        Optional<Product> productOpt = productRepository.findById(id);
-        
-        if (productOpt.isEmpty()) {
-            throw new IllegalArgumentException("Sản phẩm không tồn tại");
-        }
-        
-        Product product = productOpt.get();
-        
-        // Cập nhật các trường
-        if (goodName != null && !goodName.isEmpty()) {
-            product.setName(goodName);
-        }
-        if (amount != null && !amount.isEmpty()) {
-            product.setStockQuantity(Integer.parseInt(amount));
-        }
-        if (price != null && !price.isEmpty()) {
-            product.setPrice(Double.parseDouble(price));
-        }
-        if (costPrice != null && !costPrice.isEmpty()) {
-            product.setCostPrice(Double.parseDouble(costPrice));
-        }
-        if (specifications != null && !specifications.isEmpty()) {
-            product.setSpecifications(specifications);
-        }
-        if (brand != null && !brand.isEmpty()) {
-            product.setBrand(brand);
-        }
-        if (category != null && !category.isEmpty()) {
-            product.setCategory(category);
-        }
-        
-        // Cập nhật ngày sản xuất và hạn sử dụng
-        if (manufacturingDate != null && !manufacturingDate.isEmpty()) {
-            product.setManufacturingDate(LocalDate.parse(manufacturingDate));
-        }
-        if (expiryDate != null && !expiryDate.isEmpty()) {
             product.setExpiryDate(LocalDate.parse(expiryDate));
         }
         if (batchNumber != null && !batchNumber.isEmpty()) {
@@ -170,8 +145,28 @@ public class AdminService {
         
         // Xử lý upload ảnh mới
         if (imageFile != null && !imageFile.isEmpty()) {
-            String imagePath = saveImage(imageFile);
-            product.setImage(imagePath);
+            Map uploadResult = cloudinaryService.uploadFile(imageFile);
+            String imageUrl = cloudinaryService.getImageUrl(uploadResult);
+            product.setImage(imageUrl);
+        }
+
+        // Xử lý upload ảnh phụ mới (nếu có)
+        if (additionalImages != null && additionalImages.length > 0) {
+            List<String> currentImages = product.getAdditionalImages();
+            if (currentImages == null) {
+                currentImages = new ArrayList<>();
+            }
+            
+            for (MultipartFile file : additionalImages) {
+                if (file != null && !file.isEmpty()) {
+                    Map uploadResult = cloudinaryService.uploadFile(file);
+                    String imageUrl = cloudinaryService.getImageUrl(uploadResult);
+                    if (imageUrl != null) {
+                        currentImages.add(imageUrl);
+                    }
+                }
+            }
+            product.setAdditionalImages(currentImages);
         }
         
         return productRepository.save(product);
@@ -187,23 +182,7 @@ public class AdminService {
         productRepository.deleteById(productId);
     }
 
-    /**
-     * Lưu ảnh vào thư mục
-     */
-    private String saveImage(MultipartFile imageFile) throws IOException {
-        // Tạo thư mục nếu chưa tồn tại
-        Path uploadPath = Paths.get(UPLOAD_DIR);
-        Files.createDirectories(uploadPath);
-        
-        // Tạo tên file duy nhất
-        String fileName = System.currentTimeMillis() + "_" + imageFile.getOriginalFilename();
-        Path filePath = uploadPath.resolve(fileName);
-        
-        // Lưu file
-        Files.copy(imageFile.getInputStream(), filePath);
-        
-        return fileName;
-    }
+
 
     // ==================== ORDER MANAGEMENT ====================
     /**
