@@ -34,7 +34,7 @@ public class Product {
     
     // Thêm các trường cần thiết cho admin API
     private String brand;           // Thương hiệu - cần thiết cho quản lý sản phẩm
-    private String specifications;  // Thông số kỹ thuật - cần thiết cho chi tiết sản phẩm
+    private String specifications;  // Thông số kỹ thuật - cần thiết cho chi tiết sản phẩm/
 
     // --- Bổ sung cho User Stories ---
 
