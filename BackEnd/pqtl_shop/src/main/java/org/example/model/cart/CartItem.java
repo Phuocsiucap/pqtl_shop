@@ -15,5 +15,26 @@ public class CartItem {
     private double price;
     private double discount;
     private int qty;
-    private double total;  // (price - discount) * qty
+    private double total;  // (price - discount) * qty or clearance price * qty
+    
+    // Thanh lý
+    private Boolean isClearance = false;
+    private Double clearanceDiscount = 0.0;
+    
+    /**
+     * Tính giá cuối cùng của sản phẩm (ưu tiên: thanh lý > giảm giá > giá gốc)
+     */
+    public double getFinalPrice() {
+        if (isClearance != null && isClearance && clearanceDiscount != null && clearanceDiscount > 0) {
+            return price * (1 - clearanceDiscount / 100);
+        }
+        return price - discount;
+    }
+    
+    /**
+     * Tính tổng tiền
+     */
+    public double calculateTotal() {
+        return getFinalPrice() * qty;
+    }
 }

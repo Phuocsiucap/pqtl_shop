@@ -1,6 +1,8 @@
 package org.example.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.example.model.Order;
 import org.example.model.Product;
 import org.example.model.login.User;
@@ -100,6 +102,8 @@ public class AdminService {
     public Product createProduct(String goodJson, MultipartFile imageFile) throws IOException {
         // Parse JSON từ request
         ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         Product product = mapper.readValue(goodJson, Product.class);
         
         // Xử lý upload ảnh
@@ -112,6 +116,9 @@ public class AdminService {
         if (product.getStockQuantity() == 0) {
             product.setStockQuantity(0);
         }
+        
+        // Cập nhật trạng thái hết hạn nếu có
+        product.updateExpiryStatus();
         
         return productRepository.save(product);
     }

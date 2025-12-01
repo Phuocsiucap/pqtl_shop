@@ -175,7 +175,6 @@ const AddProductModal = ({ closeModal, onSave, onError }) => {
         setImagePreview(null);
         setErrors({});
         
-        // Callback to parent
         onSave && onSave();
       }
     } catch (e) {
