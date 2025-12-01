@@ -2,7 +2,7 @@ import React, { useState, useEffect, memo } from "react";
 import { request1, getFullImageUrl } from "../../../utils/request";
 import { getCSRFTokenFromCookie } from "../../../Component/Token/getCSRFToken";
 import { getCategories } from "../../../api/category";
-import { FaTimes, FaCloudUploadAlt, FaSave, FaTrash } from "react-icons/fa";
+import { FaTimes, FaCloudUploadAlt, FaSave, FaTrash, FaPlus } from "react-icons/fa";
 
 // Memoized Image Uploader Component
 const ImageUploader = memo(({ imagePreview, onImageChange, onRemoveImage }) => {
@@ -66,6 +66,9 @@ const ProductEditModal = ({ product: initialProduct, closeModal, onSave, onError
     });
 
     const [imagePreview, setImagePreview] = useState(null);
+    const [additionalImages, setAdditionalImages] = useState([]); // File objects for new images
+    const [additionalImagePreviews, setAdditionalImagePreviews] = useState([]); // Preview URLs
+    const [existingAdditionalImages, setExistingAdditionalImages] = useState([]); // Existing image URLs from server
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
@@ -101,6 +104,11 @@ const ProductEditModal = ({ product: initialProduct, closeModal, onSave, onError
 
             if (initialProduct.image) {
                 setImagePreview(getFullImageUrl(initialProduct.image));
+            }
+
+            // Load existing additional images
+            if (initialProduct.additionalImages && Array.isArray(initialProduct.additionalImages)) {
+                setExistingAdditionalImages(initialProduct.additionalImages.map(img => getFullImageUrl(img)));
             }
         }
     }, [initialProduct]);
@@ -160,6 +168,43 @@ const ProductEditModal = ({ product: initialProduct, closeModal, onSave, onError
     const handleRemoveImage = () => {
         setImagePreview(null);
         setProduct(prev => ({ ...prev, image: null }));
+    };
+
+    // Handle additional images selection
+    const handleAdditionalImagesChange = React.useCallback((e) => {
+        const files = Array.from(e.target.files);
+        const currentTotal = additionalImages.length + existingAdditionalImages.length;
+        const availableSlots = 5 - currentTotal;
+
+        if (files.length > availableSlots) {
+            alert(`Bạn chỉ có thể thêm tối đa ${availableSlots} ảnh nữa (tổng tối đa 5 ảnh)`);
+            return;
+        }
+
+        const newPreviews = [];
+        files.forEach(file => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                newPreviews.push(reader.result);
+                if (newPreviews.length === files.length) {
+                    setAdditionalImagePreviews(prev => [...prev, ...newPreviews]);
+                }
+            };
+            reader.readAsDataURL(file);
+        });
+
+        setAdditionalImages(prev => [...prev, ...files]);
+    }, [additionalImages.length, existingAdditionalImages.length]);
+
+    // Remove new additional image (not yet uploaded)
+    const handleRemoveAdditionalImage = (index) => {
+        setAdditionalImages(prev => prev.filter((_, i) => i !== index));
+        setAdditionalImagePreviews(prev => prev.filter((_, i) => i !== index));
+    };
+
+    // Remove existing additional image from server
+    const handleRemoveExistingImage = (index) => {
+        setExistingAdditionalImages(prev => prev.filter((_, i) => i !== index));
     };
 
     const validate = () => {
@@ -252,6 +297,11 @@ const ProductEditModal = ({ product: initialProduct, closeModal, onSave, onError
             if (product.image) {
                 formData.append("image", product.image);
             }
+
+            // Append new additional images
+            additionalImages.forEach((file) => {
+                formData.append("additionalImages", file);
+            });
 
             // Note: The URL in old modal was `v1/admin/goods/${product.id}/`
             const response = await request1.put(
@@ -549,11 +599,88 @@ const ProductEditModal = ({ product: initialProduct, closeModal, onSave, onError
                             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
                                 <h3 className="text-lg font-semibold mb-4 text-gray-700 border-b pb-2">Hình Ảnh</h3>
                                 <div className="space-y-4">
-                                    <ImageUploader
-                                        imagePreview={imagePreview}
-                                        onImageChange={handleImageChange}
-                                        onRemoveImage={handleRemoveImage}
-                                    />
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Ảnh chính</label>
+                                        <ImageUploader
+                                            imagePreview={imagePreview}
+                                            onImageChange={handleImageChange}
+                                            onRemoveImage={handleRemoveImage}
+                                        />
+                                    </div>
+
+                                    {/* Additional Images */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Ảnh bổ sung ({existingAdditionalImages.length + additionalImages.length}/5)
+                                        </label>
+
+                                        {/* Existing Images Grid */}
+                                        {existingAdditionalImages.length > 0 && (
+                                            <div className="mb-3">
+                                                <p className="text-xs text-gray-500 mb-2">Ảnh hiện tại:</p>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    {existingAdditionalImages.map((imageUrl, index) => (
+                                                        <div key={`existing-${index}`} className="relative group">
+                                                            <img
+                                                                src={imageUrl}
+                                                                alt={`Existing ${index + 1}`}
+                                                                className="w-full h-24 object-cover rounded-lg border border-gray-200"
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleRemoveExistingImage(index)}
+                                                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                            >
+                                                                <FaTrash size={12} />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* New Images Grid */}
+                                        {additionalImagePreviews.length > 0 && (
+                                            <div className="mb-3">
+                                                <p className="text-xs text-gray-500 mb-2">Ảnh mới thêm:</p>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    {additionalImagePreviews.map((preview, index) => (
+                                                        <div key={`new-${index}`} className="relative group">
+                                                            <img
+                                                                src={preview}
+                                                                alt={`New ${index + 1}`}
+                                                                className="w-full h-24 object-cover rounded-lg border border-green-300"
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleRemoveAdditionalImage(index)}
+                                                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                            >
+                                                                <FaTrash size={12} />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Upload Button */}
+                                        {(existingAdditionalImages.length + additionalImages.length) < 5 && (
+                                            <label className="flex items-center justify-center w-full h-20 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
+                                                <div className="flex items-center gap-2 text-gray-500">
+                                                    <FaPlus />
+                                                    <span className="text-sm">Thêm ảnh ({5 - existingAdditionalImages.length - additionalImages.length} còn lại)</span>
+                                                </div>
+                                                <input
+                                                    type="file"
+                                                    className="hidden"
+                                                    accept="image/*"
+                                                    multiple
+                                                    onChange={handleAdditionalImagesChange}
+                                                />
+                                            </label>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
