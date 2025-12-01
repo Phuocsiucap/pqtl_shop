@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { HiPlusSm } from "react-icons/hi";
 import { RiSubtractFill } from "react-icons/ri";
 import { PricetoString } from "../../../Component/Translate_Price";
-import { request1, request } from "../../../utils/request";
+import { request1, request, getFullImageUrl } from "../../../utils/request";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { getCSRFTokenFromCookie } from "../../../Component/Token/getCSRFToken";
@@ -106,8 +106,7 @@ function ImageProduct({ id }) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-7 px-2 py-3 border-t-2 border-solid border-gray-100 rounded-md">
         <div className="group relative overflow-hidden cursor-pointer border-2 border-solid border-gray-50 rounded-md">
           <img
-            src={`${request}${Product.image}`}
-
+            src={getFullImageUrl(Product.image)}
             alt=""
             className="w-[100%] group-hover:scale-110 transition-all duration-500 ease-in-out"
           />

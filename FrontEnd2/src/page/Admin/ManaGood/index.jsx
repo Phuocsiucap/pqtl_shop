@@ -6,7 +6,7 @@ import ProductEditModal from "./ProductEditModal ";
 import AddProductModal from "./AddProductModal";
 import ToastNotification from "../../../components/ToastNotification";
 import ConfirmDialog from "../../../components/ConfirmDialog";
-import { request1, request } from "../../../utils/request";
+import { request1, request, getFullImageUrl } from "../../../utils/request";
 import { getCSRFTokenFromCookie } from "../../../Component/Token/getCSRFToken";
 
 const ProductList = () => {
@@ -355,7 +355,7 @@ const ProductList = () => {
                     >
                       <td className="px-6 py-4">
                         <img
-                          src={product.image ? `${request}${product.image}` : "/placeholder.png"}
+                          src={product.image ? getFullImageUrl(product.image) : "/placeholder.png"}
                           alt={product.name}
                           className="w-16 h-16 object-cover rounded-md border border-gray-200"
                           onError={(e) => {

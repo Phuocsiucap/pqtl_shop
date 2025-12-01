@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { PricetoString } from "../../Component/Translate_Price";
 import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
-import { request1, request } from "../../utils/request";
+import { request1, request, getFullImageUrl } from "../../utils/request";
 import { getCSRFTokenFromCookie } from "../../Component/Token/getCSRFToken";
 import AddressOD from "./AddresOD";
 import PaymentFrom from "./PaymentFrom";
@@ -252,7 +252,7 @@ function Order({ }) {
                   <div className="flex basis-[40%] md:basis-[60%] pl-5">
                     <div className="flex items-center">
                       <img
-                        src={`${request}${item.image}`}
+                        src={getFullImageUrl(item.image)}
                         alt=""
                         className=" w-[50px] h-[50px] lg:w-[150px] lg:h-[150px]"
                       />

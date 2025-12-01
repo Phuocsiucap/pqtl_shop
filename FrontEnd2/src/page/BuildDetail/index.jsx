@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { request1, request } from "../../utils/request";
+import { request1, request, getFullImageUrl } from "../../utils/request";
 import { getCSRFTokenFromCookie } from "../../Component/Token/getCSRFToken";
 import { FaArrowLeft } from "react-icons/fa";
 import { Link } from "react-router-dom";
@@ -188,7 +188,7 @@ function BuildDetail() {
                   <div className="flex justify-around items-center">
                     <div>
                       <img
-                        src={item.image ? `${request}${item.image}` : "/placeholder.png"}
+                        src={item.image ? getFullImageUrl(item.image) : "/placeholder.png"}
                         alt={item.productName || "Product"}
                         className="w-[100px] h-[100px] md:w-[200px] md:h-[200px]"
                       />

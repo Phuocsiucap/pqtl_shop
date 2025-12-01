@@ -32,6 +32,9 @@ public class AdminService {
     private ProductRepository productRepository;
 
     @Autowired
+    private CloudinaryService cloudinaryService;
+
+    @Autowired
     private OrderRepository orderRepository;
 
     @Autowired
@@ -106,8 +109,21 @@ public class AdminService {
         
         // Xử lý upload ảnh
         if (imageFile != null && !imageFile.isEmpty()) {
-            String imagePath = saveImage(imageFile);
-            product.setImage(imagePath);
+            try {
+                Map uploadResult = cloudinaryService.uploadFile(imageFile);
+                String imageUrl = cloudinaryService.getImageUrl(uploadResult);
+                if (imageUrl != null) {
+                    product.setImage(imageUrl);
+                } else {
+                    // Fallback: lưu cục bộ nếu Cloudinary không trả url
+                    String imagePath = saveImage(imageFile);
+                    product.setImage(imagePath);
+                }
+            } catch (IOException ex) {
+                // Nếu upload Cloudinary lỗi, fallback lưu local và tiếp tục
+                String imagePath = saveImage(imageFile);
+                product.setImage(imagePath);
+            }
         }
         
         // Gán giá trị mặc định
@@ -155,8 +171,19 @@ public class AdminService {
         
         // Xử lý upload ảnh mới
         if (imageFile != null && !imageFile.isEmpty()) {
-            String imagePath = saveImage(imageFile);
-            product.setImage(imagePath);
+            try {
+                Map uploadResult = cloudinaryService.uploadFile(imageFile);
+                String imageUrl = cloudinaryService.getImageUrl(uploadResult);
+                if (imageUrl != null) {
+                    product.setImage(imageUrl);
+                } else {
+                    String imagePath = saveImage(imageFile);
+                    product.setImage(imagePath);
+                }
+            } catch (IOException ex) {
+                String imagePath = saveImage(imageFile);
+                product.setImage(imagePath);
+            }
         }
         
         return productRepository.save(product);

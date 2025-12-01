@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { FaEye, FaFire, FaTrophy } from "react-icons/fa";
-import { request1, request } from "../../../utils/request";
+import { request1, request, getFullImageUrl } from "../../../utils/request";
 import { getCSRFTokenFromCookie } from "../../../Component/Token/getCSRFToken";
 
 const BestSellerList = () => {
@@ -138,7 +138,7 @@ const BestSellerList = () => {
                   </td>
                   <td className="px-6 py-4">
                     <img
-                      src={`${request}${product.image}`}
+                      src={getFullImageUrl(product.image)}
                       alt={product.goodName}
                       className="w-20 h-20 object-cover rounded-md shadow-sm"
                     />
@@ -219,7 +219,7 @@ const BestSellerList = () => {
             </div>
             <div className="space-y-4">
               <img
-                src={`${request}${selectedProduct.image}`}
+                src={getFullImageUrl(selectedProduct.image)}
                 alt={selectedProduct.goodName}
                 className="w-full h-64 object-cover rounded-lg"
               />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { request1, request } from "../../../utils/request";
+import { request1, request, getFullImageUrl } from "../../../utils/request";
 import { getCSRFTokenFromCookie } from "../../../Component/Token/getCSRFToken";
 import { getCategories } from "../../../api/category";
 
@@ -15,7 +15,7 @@ const ProductEditModal = ({ product, closeModal, onSave, onError }) => {
         image: null,
     });
     const [imagePreview, setImagePreview] = useState(
-        product?.image ? `${request}${product.image}` : null
+        product?.image ? getFullImageUrl(product.image) : null
     );
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(false);

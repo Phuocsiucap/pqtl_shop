@@ -1,8 +1,28 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, memo } from "react";
 import { request1 } from "../../../utils/request";
 import { getCSRFTokenFromCookie } from "../../../Component/Token/getCSRFToken";
 import { getCategories } from "../../../api/category";
 import { FaTimes, FaCloudUploadAlt, FaPlus, FaTrash } from "react-icons/fa";
+
+// Memoized Image Uploader Component to prevent flickering
+const ImageUploader = memo(({ imagePreview, onImageChange }) => {
+  return (
+    <div className="flex flex-col items-center justify-center w-full">
+      <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 relative overflow-hidden transition-colors">
+        {imagePreview ? (
+          <img src={imagePreview} alt="Preview" className="w-full h-full object-contain" />
+        ) : (
+          <div className="flex flex-col items-center justify-center pt-5 pb-6">
+            <FaCloudUploadAlt className="w-10 h-10 text-gray-400 mb-3" />
+            <p className="mb-2 text-sm text-gray-500"><span className="font-semibold">Click để tải ảnh</span></p>
+            <p className="text-xs text-gray-500">SVG, PNG, JPG or GIF (MAX. 5MB)</p>
+          </div>
+        )}
+        <input type="file" className="hidden" accept="image/*" onChange={onImageChange} />
+      </label>
+    </div>
+  );
+});
 
 const AddProductModal = ({ closeModal, onSave, onError }) => {
   const [product, setProduct] = useState({
@@ -67,7 +87,8 @@ const AddProductModal = ({ closeModal, onSave, onError }) => {
     }
   };
 
-  const handleImageChange = (e) => {
+  // Memoize handleImageChange to avoid re-creating it on every render
+  const handleImageChange = React.useCallback((e) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
@@ -75,7 +96,7 @@ const AddProductModal = ({ closeModal, onSave, onError }) => {
       reader.readAsDataURL(file);
       setProduct((prev) => ({ ...prev, image: file }));
     }
-  };
+  }, []);
 
   const validate = () => {
     const newErrors = {};
@@ -420,20 +441,7 @@ const AddProductModal = ({ closeModal, onSave, onError }) => {
               <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
                 <h3 className="text-lg font-semibold mb-4 text-gray-700 border-b pb-2">Hình Ảnh</h3>
                 <div className="space-y-4">
-                  <div className="flex flex-col items-center justify-center w-full">
-                    <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 relative overflow-hidden">
-                      {imagePreview ? (
-                        <img src={imagePreview} alt="Preview" className="w-full h-full object-contain" />
-                      ) : (
-                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                          <FaCloudUploadAlt className="w-10 h-10 text-gray-400 mb-3" />
-                          <p className="mb-2 text-sm text-gray-500"><span className="font-semibold">Click để tải ảnh</span></p>
-                          <p className="text-xs text-gray-500">SVG, PNG, JPG or GIF (MAX. 5MB)</p>
-                        </div>
-                      )}
-                      <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
-                    </label>
-                  </div>
+                  <ImageUploader imagePreview={imagePreview} onImageChange={handleImageChange} />
                 </div>
               </div>
 
