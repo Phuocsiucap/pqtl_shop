@@ -92,6 +92,10 @@ public class AuthService {
             throw new RuntimeException("Sai mật khẩu");
         }
 
+        // 📅 Cập nhật thời gian đăng nhập cuối
+        user.setLastLogin(java.time.LocalDateTime.now());
+        userRepository.save(user);
+
         // 🪙 Tạo token
         String accessToken = jwtService.generateAccessToken(user.getEmail());
         String refreshToken = jwtService.generateRefreshToken(user.getEmail());

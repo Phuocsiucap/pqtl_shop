@@ -49,13 +49,22 @@ function CartShopping() {
   useEffect(() => {
     let total = cartItems
       .filter((item) => selectedItems.includes(item.productId)) // Lọc các mục được chọn
-      .reduce((sum, item) => sum + (item.price - item.discount)* item.qty, 0); // Tính tổng giá
+      .reduce((sum, item) => {
+        // Tính giá cuối cùng: ưu tiên thanh lý > giảm giá > giá gốc
+        let finalPrice;
+        if (item.isClearance && item.clearanceDiscount > 0) {
+          finalPrice = item.price * (1 - item.clearanceDiscount / 100);
+        } else {
+          finalPrice = item.price - (item.discount || 0);
+        }
+        return sum + finalPrice * item.qty;
+      }, 0); // Tính tổng giá
 
     if (selectedVoucher) {
       total -= (total * selectedVoucher.voucher.discount_percentage) / 100; // Áp dụng giảm giá
     }
   
-    setTotalPrice(total);
+    setTotalPrice(Math.round(total));
     console.log(selectedItems);
   }, [cartItems, selectedItems, selectedVoucher]); // Chạy lại khi giỏ hàng hoặc lựa chọn thay đổi
   

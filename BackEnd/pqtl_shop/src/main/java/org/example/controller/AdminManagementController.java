@@ -96,10 +96,9 @@ public class AdminManagementController {
     @PostMapping("/goods/")
     public ResponseEntity<?> createProduct(
             @RequestParam("good") String goodJson,
-            @RequestParam(value = "image", required = false) MultipartFile imageFile,
-            @RequestParam(value = "additionalImages", required = false) MultipartFile[] additionalImages) {
+            @RequestParam(value = "image", required = false) MultipartFile imageFile) {
         try {
-            Product product = adminService.createProduct(goodJson, imageFile, additionalImages);
+            Product product = adminService.createProduct(goodJson, imageFile);
             return ResponseEntity.status(HttpStatus.CREATED).body(product);
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -117,11 +116,21 @@ public class AdminManagementController {
     @PutMapping("/goods/{id}/")
     public ResponseEntity<?> updateProduct(
             @PathVariable String id,
-            @RequestParam("good") String goodJson,
-            @RequestParam(value = "image", required = false) MultipartFile imageFile,
-            @RequestParam(value = "additionalImages", required = false) MultipartFile[] additionalImages) {
+            @RequestParam(value = "goodName", required = false) String goodName,
+            @RequestParam(value = "amount", required = false) String amount,
+            @RequestParam(value = "price", required = false) String price,
+            @RequestParam(value = "costPrice", required = false) String costPrice,
+            @RequestParam(value = "specifications", required = false) String specifications,
+            @RequestParam(value = "brand", required = false) String brand,
+            @RequestParam(value = "category", required = false) String category,
+            @RequestParam(value = "manufacturingDate", required = false) String manufacturingDate,
+            @RequestParam(value = "expiryDate", required = false) String expiryDate,
+            @RequestParam(value = "batchNumber", required = false) String batchNumber,
+            @RequestParam(value = "image", required = false) MultipartFile imageFile) {
         try {
-            Product product = adminService.updateProduct(id, goodJson, imageFile, additionalImages);
+            Product product = adminService.updateProduct(id, goodName, amount, price, 
+                    costPrice, specifications, brand, category,
+                    manufacturingDate, expiryDate, batchNumber, imageFile);
             return ResponseEntity.ok(product);
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -239,6 +248,276 @@ public class AdminManagementController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Lỗi khi lấy dữ liệu: " + e.getMessage()));
+        }
+    }
+
+    // ==================== BEST SELLER ====================
+    /**
+     * Get best seller products
+     * GET /api/v1/admin/bestsellers/
+     */
+    @GetMapping("/bestsellers/")
+    public ResponseEntity<?> getBestSellers(
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(defaultValue = "month") String period,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+        try {
+            java.time.LocalDateTime start = startDate != null ? java.time.LocalDateTime.parse(startDate) : null;
+            java.time.LocalDateTime end = endDate != null ? java.time.LocalDateTime.parse(endDate) : null;
+            
+            List<Map<String, Object>> bestsellers = adminService.getBestSellerProducts(limit, period, start, end);
+            return ResponseEntity.ok(bestsellers);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Lỗi khi lấy dữ liệu: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Get product revenue stats
+     * GET /api/v1/admin/products/{productId}/revenue/
+     */
+    @GetMapping("/products/{productId}/revenue/")
+    public ResponseEntity<?> getProductRevenueStats(
+            @PathVariable String productId,
+            @RequestParam(defaultValue = "month") String period,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+        try {
+            java.time.LocalDateTime start = startDate != null ? java.time.LocalDateTime.parse(startDate) : null;
+            java.time.LocalDateTime end = endDate != null ? java.time.LocalDateTime.parse(endDate) : null;
+            
+            Map<String, Object> stats = adminService.getProductRevenueStats(productId, period, start, end);
+            if (stats == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("error", "Không tìm thấy sản phẩm"));
+            }
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Lỗi khi lấy dữ liệu: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Get order stats by status
+     * GET /api/v1/admin/orders/stats/
+     */
+    @GetMapping("/orders/stats/")
+    public ResponseEntity<?> getOrderStats() {
+        try {
+            Map<String, Object> stats = adminService.getOrderStatsByStatus();
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Lỗi khi lấy dữ liệu: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Get financial report (profit statistics)
+     * GET /api/v1/admin/financial-report/
+     */
+    @GetMapping("/financial-report/")
+    public ResponseEntity<?> getFinancialReport(
+            @RequestParam(defaultValue = "month") String period,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
+        try {
+            java.time.LocalDateTime start = startDate != null ? java.time.LocalDateTime.parse(startDate) : null;
+            java.time.LocalDateTime end = endDate != null ? java.time.LocalDateTime.parse(endDate) : null;
+            
+            Map<String, Object> report = adminService.getFinancialReport(period, start, end);
+            return ResponseEntity.ok(report);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Lỗi khi lấy báo cáo: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Get top profit products (high and low)
+     * GET /api/v1/admin/products/profit-ranking/
+     */
+    @GetMapping("/products/profit-ranking/")
+    public ResponseEntity<?> getProductsProfitRanking(
+            @RequestParam(defaultValue = "month") String period,
+            @RequestParam(defaultValue = "10") int limit) {
+        try {
+            Map<String, Object> ranking = adminService.getProductsProfitRanking(period, limit);
+            return ResponseEntity.ok(ranking);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Lỗi khi lấy dữ liệu: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Update user (admin only)
+     * PUT /api/v1/admin/users/{id}/
+     */
+    @PutMapping("/users/{id}/")
+    public ResponseEntity<?> updateUser(
+            @PathVariable String id,
+            @RequestBody Map<String, Object> updates,
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            // Lấy admin ID từ token (simplified - trong thực tế cần parse JWT)
+            String adminId = "admin"; // Placeholder - cần lấy từ JWT
+            
+            User user = adminService.updateUser(id, updates, adminId);
+            return ResponseEntity.ok(user);
+        } catch (Exception e) {
+            if (e.getMessage().contains("không có quyền")) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of("error", e.getMessage()));
+            }
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Cập nhật thất bại: " + e.getMessage()));
+        }
+    }
+
+    // ==================== EXPIRY & CLEARANCE MANAGEMENT ====================
+    
+    /**
+     * Lấy thống kê sản phẩm theo trạng thái hết hạn
+     * GET /api/v1/admin/expiry/stats/
+     */
+    @GetMapping("/expiry/stats/")
+    public ResponseEntity<?> getExpiryStatistics() {
+        try {
+            Map<String, Object> stats = adminService.getExpiryStatistics();
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Lỗi khi lấy thống kê: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * Lấy danh sách sản phẩm đã hết hạn
+     * GET /api/v1/admin/expiry/expired/
+     */
+    @GetMapping("/expiry/expired/")
+    public ResponseEntity<?> getExpiredProducts() {
+        try {
+            List<Product> products = adminService.getExpiredProducts();
+            return ResponseEntity.ok(products);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Lỗi khi lấy dữ liệu: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * Lấy danh sách sản phẩm sắp hết hạn
+     * GET /api/v1/admin/expiry/near-expiry/?days=30
+     */
+    @GetMapping("/expiry/near-expiry/")
+    public ResponseEntity<?> getNearExpiryProducts(
+            @RequestParam(defaultValue = "30") int days) {
+        try {
+            List<Product> products = adminService.getNearExpiryProducts(days);
+            return ResponseEntity.ok(products);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Lỗi khi lấy dữ liệu: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * Đánh dấu sản phẩm thanh lý
+     * POST /api/v1/admin/clearance/{id}/
+     */
+    @PostMapping("/clearance/{id}/")
+    public ResponseEntity<?> markProductAsClearance(
+            @PathVariable String id,
+            @RequestParam(defaultValue = "30") Double discount) {
+        try {
+            Product product = adminService.markProductAsClearance(id, discount);
+            return ResponseEntity.ok(product);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Lỗi: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * Hủy đánh dấu thanh lý sản phẩm
+     * DELETE /api/v1/admin/clearance/{id}/
+     */
+    @DeleteMapping("/clearance/{id}/")
+    public ResponseEntity<?> unmarkProductAsClearance(@PathVariable String id) {
+        try {
+            Product product = adminService.unmarkProductAsClearance(id);
+            return ResponseEntity.ok(product);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Lỗi: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * Lấy danh sách sản phẩm đang thanh lý
+     * GET /api/v1/admin/clearance/
+     */
+    @GetMapping("/clearance/")
+    public ResponseEntity<?> getClearanceProducts() {
+        try {
+            List<Product> products = adminService.getClearanceProducts();
+            return ResponseEntity.ok(products);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Lỗi khi lấy dữ liệu: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * Tự động đánh dấu thanh lý cho sản phẩm sắp hết hạn
+     * POST /api/v1/admin/clearance/auto-mark/
+     */
+    @PostMapping("/clearance/auto-mark/")
+    public ResponseEntity<?> autoMarkClearance(
+            @RequestParam(defaultValue = "30") int daysThreshold,
+            @RequestParam(defaultValue = "30") Double discount) {
+        try {
+            Map<String, Object> result = adminService.autoMarkClearanceForNearExpiryProducts(daysThreshold, discount);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Lỗi: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * Xóa/Vô hiệu hóa sản phẩm đã hết hạn
+     * POST /api/v1/admin/expiry/remove-expired/
+     */
+    @PostMapping("/expiry/remove-expired/")
+    public ResponseEntity<?> removeExpiredProducts(
+            @RequestParam(defaultValue = "false") boolean hardDelete) {
+        try {
+            Map<String, Object> result = adminService.removeExpiredProducts(hardDelete);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Lỗi: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * Lấy danh sách sản phẩm theo lô
+     * GET /api/v1/admin/products/batches/
+     */
+    @GetMapping("/products/batches/")
+    public ResponseEntity<?> getProductsByBatch() {
+        try {
+            Map<String, List<Product>> batches = adminService.getProductsByBatch();
+            return ResponseEntity.ok(batches);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Lỗi: " + e.getMessage()));
         }
     }
 }
