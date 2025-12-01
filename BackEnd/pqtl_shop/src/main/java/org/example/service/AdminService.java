@@ -103,11 +103,11 @@ public class AdminService {
     /**
      * Tạo sản phẩm mới với upload ảnh
      */
-    public Product createProduct(String goodJson, MultipartFile imageFile) throws IOException {
+    public Product createProduct(String goodJson, MultipartFile imageFile, MultipartFile[] additionalImages) throws IOException {
         // Parse JSON từ request
         Product product = objectMapper.readValue(goodJson, Product.class);
         
-        // Xử lý upload ảnh
+        // Xử lý upload ảnh chính
         if (imageFile != null && !imageFile.isEmpty()) {
             try {
                 Map uploadResult = cloudinaryService.uploadFile(imageFile);
@@ -129,6 +129,34 @@ public class AdminService {
             }
         }
         
+        // Xử lý upload các ảnh bổ sung
+        if (additionalImages != null && additionalImages.length > 0) {
+            List<String> additionalImageUrls = new ArrayList<>();
+            for (MultipartFile additionalImage : additionalImages) {
+                if (additionalImage != null && !additionalImage.isEmpty()) {
+                    try {
+                        Map uploadResult = cloudinaryService.uploadFile(additionalImage);
+                        System.out.println("Additional Image Cloudinary Upload Result: " + uploadResult);
+                        String imageUrl = cloudinaryService.getImageUrl(uploadResult);
+                        if (imageUrl != null) {
+                            System.out.println("Additional Image Cloudinary URL: " + imageUrl);
+                            additionalImageUrls.add(imageUrl);
+                        } else {
+                            System.out.println("Additional Image Cloudinary URL is null, falling back to local storage");
+                            String imagePath = saveImage(additionalImage);
+                            additionalImageUrls.add(imagePath);
+                        }
+                    } catch (Exception ex) {
+                        System.out.println("Additional Image Cloudinary Upload Failed: " + ex.getMessage());
+                        ex.printStackTrace();
+                        String imagePath = saveImage(additionalImage);
+                        additionalImageUrls.add(imagePath);
+                    }
+                }
+            }
+            product.setAdditionalImages(additionalImageUrls);
+        }
+        
         // Gán giá trị mặc định
         if (product.getStockQuantity() == 0) {
             product.setStockQuantity(0);
@@ -140,10 +168,7 @@ public class AdminService {
     /**
      * Cập nhật sản phẩm
      */
-    /**
-     * Cập nhật sản phẩm
-     */
-    public Product updateProduct(String id, String goodJson, MultipartFile imageFile) throws IOException {
+    public Product updateProduct(String id, String goodJson, MultipartFile imageFile, MultipartFile[] additionalImages) throws IOException {
         Optional<Product> productOpt = productRepository.findById(id);
         
         if (productOpt.isEmpty()) {
@@ -176,9 +201,39 @@ public class AdminService {
         if (updatedData.getIsBestSeller() != null) product.setIsBestSeller(updatedData.getIsBestSeller());
         if (updatedData.getIsSeasonal() != null) product.setIsSeasonal(updatedData.getIsSeasonal());
 
-        // Xử lý upload ảnh mới
+        // Xử lý upload ảnh chính mới
         if (imageFile != null && !imageFile.isEmpty()) {
             try {
+                // Xóa ảnh cũ nếu có
+                String oldImageUrl = product.getImage();
+                if (oldImageUrl != null && oldImageUrl.contains("cloudinary.com")) {
+                    try {
+                        // Extract public ID from URL
+                        int uploadIndex = oldImageUrl.indexOf("upload/");
+                        if (uploadIndex != -1) {
+                            String path = oldImageUrl.substring(uploadIndex + 7); // skip "upload/"
+                            // skip version if present (starts with v and numbers)
+                            if (path.startsWith("v")) {
+                                int slashIndex = path.indexOf("/");
+                                if (slashIndex != -1) {
+                                    path = path.substring(slashIndex + 1);
+                                }
+                            }
+                            // Remove extension
+                            if (path.contains(".")) {
+                                path = path.substring(0, path.lastIndexOf("."));
+                            }
+                            // Decode URL if needed (e.g. spaces)
+                            path = java.net.URLDecoder.decode(path, java.nio.charset.StandardCharsets.UTF_8);
+                            
+                            System.out.println("Deleting old image from Cloudinary, publicId: " + path);
+                            cloudinaryService.deleteFile(path);
+                        }
+                    } catch (Exception e) {
+                        System.err.println("Failed to delete old image: " + e.getMessage());
+                    }
+                }
+
                 Map uploadResult = cloudinaryService.uploadFile(imageFile);
                 System.out.println("Cloudinary Upload Result (Update): " + uploadResult);
                 String imageUrl = cloudinaryService.getImageUrl(uploadResult);
@@ -195,6 +250,64 @@ public class AdminService {
                 String imagePath = saveImage(imageFile);
                 product.setImage(imagePath);
             }
+        }
+        
+        // Xử lý upload các ảnh bổ sung mới
+        if (additionalImages != null && additionalImages.length > 0) {
+            // Xóa các ảnh bổ sung cũ từ Cloudinary nếu có
+            List<String> oldAdditionalImages = product.getAdditionalImages();
+            if (oldAdditionalImages != null && !oldAdditionalImages.isEmpty()) {
+                for (String oldImageUrl : oldAdditionalImages) {
+                    if (oldImageUrl != null && oldImageUrl.contains("cloudinary.com")) {
+                        try {
+                            int uploadIndex = oldImageUrl.indexOf("upload/");
+                            if (uploadIndex != -1) {
+                                String path = oldImageUrl.substring(uploadIndex + 7);
+                                if (path.startsWith("v")) {
+                                    int slashIndex = path.indexOf("/");
+                                    if (slashIndex != -1) {
+                                        path = path.substring(slashIndex + 1);
+                                    }
+                                }
+                                if (path.contains(".")) {
+                                    path = path.substring(0, path.lastIndexOf("."));
+                                }
+                                path = java.net.URLDecoder.decode(path, java.nio.charset.StandardCharsets.UTF_8);
+                                System.out.println("Deleting old additional image from Cloudinary, publicId: " + path);
+                                cloudinaryService.deleteFile(path);
+                            }
+                        } catch (Exception e) {
+                            System.err.println("Failed to delete old additional image: " + e.getMessage());
+                        }
+                    }
+                }
+            }
+            
+            // Upload các ảnh bổ sung mới
+            List<String> additionalImageUrls = new ArrayList<>();
+            for (MultipartFile additionalImage : additionalImages) {
+                if (additionalImage != null && !additionalImage.isEmpty()) {
+                    try {
+                        Map uploadResult = cloudinaryService.uploadFile(additionalImage);
+                        System.out.println("Additional Image Cloudinary Upload Result (Update): " + uploadResult);
+                        String imageUrl = cloudinaryService.getImageUrl(uploadResult);
+                        if (imageUrl != null) {
+                            System.out.println("Additional Image Cloudinary URL (Update): " + imageUrl);
+                            additionalImageUrls.add(imageUrl);
+                        } else {
+                            System.out.println("Additional Image Cloudinary URL is null (Update), falling back to local storage");
+                            String imagePath = saveImage(additionalImage);
+                            additionalImageUrls.add(imagePath);
+                        }
+                    } catch (Exception ex) {
+                        System.out.println("Additional Image Cloudinary Upload Failed (Update): " + ex.getMessage());
+                        ex.printStackTrace();
+                        String imagePath = saveImage(additionalImage);
+                        additionalImageUrls.add(imagePath);
+                    }
+                }
+            }
+            product.setAdditionalImages(additionalImageUrls);
         }
         
         return productRepository.save(product);

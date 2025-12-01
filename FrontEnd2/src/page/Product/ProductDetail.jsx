@@ -34,19 +34,70 @@ const ReviewList = ({ reviews, fetchReviews, productId }) => {
             {/* Pagination controls */}
             {reviews.totalPages > 1 && (
                 <div className="flex justify-center space-x-2 mt-4">
-                    <button 
-                        onClick={() => handlePageChange(reviews.number - 1)} 
+                    <button
+                        onClick={() => handlePageChange(reviews.number - 1)}
                         disabled={reviews.first}
                         className="px-3 py-1 border rounded disabled:opacity-50"
                     >Trước</button>
                     <span>Trang {reviews.number + 1} / {reviews.totalPages}</span>
-                    <button 
-                        onClick={() => handlePageChange(reviews.number + 1)} 
+                    <button
+                        onClick={() => handlePageChange(reviews.number + 1)}
                         disabled={reviews.last}
                         className="px-3 py-1 border rounded disabled:opacity-50"
                     >Sau</button>
                 </div>
             )}
+        </div>
+    );
+};
+// Component hiển thị gallery ảnh sản phẩm
+const ImageGallery = ({ mainImage, additionalImages }) => {
+    const [selectedImage, setSelectedImage] = React.useState(mainImage);
+
+    // Combine main image and additional images
+    const allImages = [mainImage, ...(additionalImages || [])].filter(Boolean);
+
+    React.useEffect(() => {
+        setSelectedImage(mainImage);
+    }, [mainImage]);
+
+    if (allImages.length === 1) {
+        // Only main image, display it directly
+        return (
+            <img src={mainImage} alt="Product" className="w-full h-auto object-cover rounded-lg shadow-lg" />
+        );
+    }
+
+    return (
+        <div className="space-y-4">
+            {/* Main Image Display */}
+            <div className="w-full h-96 bg-gray-100 rounded-lg overflow-hidden">
+                <img
+                    src={selectedImage}
+                    alt="Selected product"
+                    className="w-full h-full object-contain"
+                />
+            </div>
+
+            {/* Thumbnail Gallery */}
+            <div className="grid grid-cols-4 md:grid-cols-5 gap-2">
+                {allImages.map((image, index) => (
+                    <button
+                        key={index}
+                        onClick={() => setSelectedImage(image)}
+                        className={`relative h-20 rounded-lg overflow-hidden border-2 transition-all ${selectedImage === image
+                                ? 'border-primary ring-2 ring-primary ring-offset-2'
+                                : 'border-gray-200 hover:border-gray-400'
+                            }`}
+                    >
+                        <img
+                            src={image}
+                            alt={`Thumbnail ${index + 1}`}
+                            className="w-full h-full object-cover"
+                        />
+                    </button>
+                ))}
+            </div>
         </div>
     );
 };
@@ -61,7 +112,7 @@ const SimilarProducts = ({ products }) => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {products.map((product) => (
                     <div key={product.id} className="border p-3 rounded-lg">
-                        <img src={product.image} alt={product.name} className="w-full h-32 object-cover mb-2"/>
+                        <img src={product.image} alt={product.name} className="w-full h-32 object-cover mb-2" />
                         <h4 className="text-sm font-semibold truncate">{product.name}</h4>
                         <p className="text-primary font-bold">{product.finalPrice.toLocaleString()} VND</p>
                     </div>
@@ -74,7 +125,7 @@ const SimilarProducts = ({ products }) => {
 
 function ProductDetail() {
     // Giả định sử dụng react-router-dom để lấy ID
-    const { id } = useParams(); 
+    const { id } = useParams();
     const navigate = useNavigate();
     const statusUser = useSelector((state) => state.user.status);
     const [isAdding, setIsAdding] = useState(false);
@@ -128,7 +179,7 @@ function ProductDetail() {
 
         // Lấy token mỗi lần gọi API để đảm bảo token luôn mới nhất
         const access_token = getCSRFTokenFromCookie("access_token");
-        
+
         if (!access_token) {
             alert("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
             navigate("/login");
@@ -214,14 +265,12 @@ function ProductDetail() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Cột 1: Hình ảnh */}
                 <div className="lg:col-span-1">
-                    <img src={product.image} alt={product.name} className="w-full h-auto object-cover rounded-lg shadow-lg"/>
-                </div>
-
+                    <ImageGallery mainImage={product.image} additionalImages={product.additionalImages} />                </div>
                 {/* Cột 2: Thông tin chi tiết */}
                 <div className="lg:col-span-2">
                     <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
                     <p className="text-gray-500 mb-4">Danh mục: {product.category}</p>
-                    
+
                     {/* Rating */}
                     <div className="flex items-center mb-4">
                         <span className="text-yellow-500 text-xl mr-2">
@@ -295,7 +344,7 @@ function ProductDetail() {
                     )}
 
                     {/* Add to Cart Button */}
-                    <button 
+                    <button
                         onClick={handleAddToCart}
                         disabled={isAdding || product.stockQuantity <= 0}
                         className="mt-6 w-full lg:w-1/2 py-3 bg-primary text-white font-bold rounded-lg hover:bg-primary-dark transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"

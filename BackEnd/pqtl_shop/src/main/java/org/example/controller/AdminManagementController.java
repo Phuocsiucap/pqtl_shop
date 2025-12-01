@@ -96,9 +96,10 @@ public class AdminManagementController {
     @PostMapping("/goods/")
     public ResponseEntity<?> createProduct(
             @RequestParam("good") String goodJson,
-            @RequestParam(value = "image", required = false) MultipartFile imageFile) {
+            @RequestParam(value = "image", required = false) MultipartFile imageFile,
+            @RequestParam(value = "additionalImages", required = false) MultipartFile[] additionalImages) {
         try {
-            Product product = adminService.createProduct(goodJson, imageFile);
+            Product product = adminService.createProduct(goodJson, imageFile, additionalImages);
             return ResponseEntity.status(HttpStatus.CREATED).body(product);
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -117,9 +118,10 @@ public class AdminManagementController {
     public ResponseEntity<?> updateProduct(
             @PathVariable String id,
             @RequestParam("good") String goodJson,
-            @RequestParam(value = "image", required = false) MultipartFile imageFile) {
+            @RequestParam(value = "image", required = false) MultipartFile imageFile,
+            @RequestParam(value = "additionalImages", required = false) MultipartFile[] additionalImages) {
         try {
-            Product product = adminService.updateProduct(id, goodJson, imageFile);
+            Product product = adminService.updateProduct(id, goodJson, imageFile, additionalImages);
             return ResponseEntity.ok(product);
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)

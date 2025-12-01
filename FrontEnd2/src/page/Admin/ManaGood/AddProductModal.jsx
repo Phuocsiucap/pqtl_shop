@@ -49,6 +49,8 @@ const AddProductModal = ({ closeModal, onSave, onError }) => {
   });
 
   const [imagePreview, setImagePreview] = useState(null);
+  const [additionalImages, setAdditionalImages] = useState([]); // Array of File objects
+  const [additionalImagePreviews, setAdditionalImagePreviews] = useState([]); // Array of preview URLs
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -98,6 +100,42 @@ const AddProductModal = ({ closeModal, onSave, onError }) => {
     }
   }, []);
 
+  // Handler for additional images
+  const handleAdditionalImagesChange = React.useCallback((e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    // Limit to 5 additional images total
+    const currentCount = additionalImages.length;
+    const availableSlots = 5 - currentCount;
+    const filesToAdd = files.slice(0, availableSlots);
+
+    if (files.length > availableSlots) {
+      alert(`Bạn chỉ có thể thêm tối đa ${availableSlots} ảnh nữa (tối đa 5 ảnh bổ sung)`);
+    }
+
+    // Create previews
+    const newPreviews = [];
+    filesToAdd.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        newPreviews.push(reader.result);
+        if (newPreviews.length === filesToAdd.length) {
+          setAdditionalImagePreviews((prev) => [...prev, ...newPreviews]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    setAdditionalImages((prev) => [...prev, ...filesToAdd]);
+  }, [additionalImages.length]);
+
+  // Remove additional image
+  const handleRemoveAdditionalImage = React.useCallback((index) => {
+    setAdditionalImages((prev) => prev.filter((_, i) => i !== index));
+    setAdditionalImagePreviews((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
   const validate = () => {
     const newErrors = {};
     if (!product.name.trim()) newErrors.name = "Tên sản phẩm là bắt buộc";
@@ -138,12 +176,20 @@ const AddProductModal = ({ closeModal, onSave, onError }) => {
         tags: product.tags ? product.tags.split(",").map(s => s.trim()).filter(Boolean) : [],
         certifications: product.certifications ? product.certifications.split(",").map(s => s.trim()).filter(Boolean) : [],
         sizes: product.sizes ? product.sizes.split(",").map(s => s.trim()).filter(Boolean) : [],
-        additionalImages: [] // Placeholder for now as backend controller only takes one image file
       };
 
       formData.append("good", JSON.stringify(productData));
+
+      // Append main image
       if (product.image) {
         formData.append("image", product.image);
+      }
+
+      // Append additional images
+      if (additionalImages.length > 0) {
+        additionalImages.forEach((file) => {
+          formData.append("additionalImages", file);
+        });
       }
 
       const response = await request1.post(
@@ -441,7 +487,56 @@ const AddProductModal = ({ closeModal, onSave, onError }) => {
               <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
                 <h3 className="text-lg font-semibold mb-4 text-gray-700 border-b pb-2">Hình Ảnh</h3>
                 <div className="space-y-4">
-                  <ImageUploader imagePreview={imagePreview} onImageChange={handleImageChange} />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Ảnh chính</label>
+                    <ImageUploader imagePreview={imagePreview} onImageChange={handleImageChange} />
+                  </div>
+
+                  {/* Additional Images */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Ảnh bổ sung ({additionalImages.length}/5)
+                    </label>
+
+                    {/* Image Grid */}
+                    {additionalImagePreviews.length > 0 && (
+                      <div className="grid grid-cols-2 gap-2 mb-3">
+                        {additionalImagePreviews.map((preview, index) => (
+                          <div key={index} className="relative group">
+                            <img
+                              src={preview}
+                              alt={`Additional ${index + 1}`}
+                              className="w-full h-24 object-cover rounded-lg border border-gray-200"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveAdditionalImage(index)}
+                              className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <FaTrash size={12} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Upload Button */}
+                    {additionalImages.length < 5 && (
+                      <label className="flex items-center justify-center w-full h-20 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
+                        <div className="flex items-center gap-2 text-gray-500">
+                          <FaPlus />
+                          <span className="text-sm">Thêm ảnh ({5 - additionalImages.length} còn lại)</span>
+                        </div>
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept="image/*"
+                          multiple
+                          onChange={handleAdditionalImagesChange}
+                        />
+                      </label>
+                    )}
+                  </div>
                 </div>
               </div>
 

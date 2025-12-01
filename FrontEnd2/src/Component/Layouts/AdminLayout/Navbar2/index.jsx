@@ -40,7 +40,7 @@ const Sidebar1 = () => {
       <div className="p-6 border-b">
         <Link to={"/admin"}>
           <h1 className="text-3xl font-extrabold text-primary tracking-wide">
-            PHDTECH
+            PQTLSHOP
           </h1>
         </Link>
       </div>
