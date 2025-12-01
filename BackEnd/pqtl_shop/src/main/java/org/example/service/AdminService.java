@@ -111,16 +111,19 @@ public class AdminService {
         if (imageFile != null && !imageFile.isEmpty()) {
             try {
                 Map uploadResult = cloudinaryService.uploadFile(imageFile);
+                System.out.println("Cloudinary Upload Result: " + uploadResult);
                 String imageUrl = cloudinaryService.getImageUrl(uploadResult);
                 if (imageUrl != null) {
+                    System.out.println("Cloudinary URL: " + imageUrl);
                     product.setImage(imageUrl);
                 } else {
-                    // Fallback: lưu cục bộ nếu Cloudinary không trả url
+                    System.out.println("Cloudinary URL is null, falling back to local storage");
                     String imagePath = saveImage(imageFile);
                     product.setImage(imagePath);
                 }
-            } catch (IOException ex) {
-                // Nếu upload Cloudinary lỗi, fallback lưu local và tiếp tục
+            } catch (Exception ex) {
+                System.out.println("Cloudinary Upload Failed: " + ex.getMessage());
+                ex.printStackTrace();
                 String imagePath = saveImage(imageFile);
                 product.setImage(imagePath);
             }
@@ -173,14 +176,18 @@ public class AdminService {
         if (imageFile != null && !imageFile.isEmpty()) {
             try {
                 Map uploadResult = cloudinaryService.uploadFile(imageFile);
+                System.out.println("Cloudinary Upload Result (Update): " + uploadResult);
                 String imageUrl = cloudinaryService.getImageUrl(uploadResult);
                 if (imageUrl != null) {
                     product.setImage(imageUrl);
                 } else {
+                    System.out.println("Cloudinary URL is null (Update), falling back to local storage");
                     String imagePath = saveImage(imageFile);
                     product.setImage(imagePath);
                 }
-            } catch (IOException ex) {
+            } catch (Exception ex) {
+                System.out.println("Cloudinary Upload Failed (Update): " + ex.getMessage());
+                ex.printStackTrace();
                 String imagePath = saveImage(imageFile);
                 product.setImage(imagePath);
             }
