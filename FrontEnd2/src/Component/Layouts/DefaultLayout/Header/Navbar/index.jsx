@@ -120,6 +120,15 @@ function Navbar() {
               <Link to={"/saleproduct"}>Ưu đãi</Link>
             </button>
           </div>
+          {/* button clearance */}
+          <div className="">
+            <button className="text-md font-Montserrat text-white 
+                        font-bold cursor-pointer py-1 px-3 bg-gradient-to-r from-purple-600 to-pink-500
+                        rounded-md hover:text-yellow-300
+                        " title="Sản phẩm thanh lý">
+              <Link to={"/clearance"}>Thanh lý</Link>
+            </button>
+          </div>
           {/*other button */}
           <div className="hidden lg:flex justify-between items-center gap-x-5 xl:gap-x-10">
             <li className="flex justify-between items-center gap-x-2">
