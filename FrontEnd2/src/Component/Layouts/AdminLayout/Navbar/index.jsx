@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FaUsers, FaMoneyBillWave, FaBoxOpen, FaShoppingCart } from "react-icons/fa"; // Import icons
+import { FaUsers, FaMoneyBillWave, FaBoxOpen, FaShoppingCart, FaTicketAlt } from "react-icons/fa"; // Import icons
 import { Link } from "react-router-dom";
 import { IoMdMenu } from "react-icons/io";
 const Sidebar = () => {
@@ -10,6 +10,7 @@ const Sidebar = () => {
     { link:"/admin/manageuser", label: "Quản lý người dùng", icon: <FaUsers /> },
     { link:"/admin/managegood", label: "Quản lý sản phẩm", icon: <FaBoxOpen /> },
     { link:"/admin/managebill", label: "Quản lý đơn hàng", icon: <FaShoppingCart /> },
+    { link:"/admin/managevoucher", label: "Quản lý Voucher", icon: <FaTicketAlt /> },
   ];
 
   return (

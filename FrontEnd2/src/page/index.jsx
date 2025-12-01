@@ -18,8 +18,12 @@ import ManagementUser from "./Admin/ManaUser"
 import ManagementBill from "./Admin/ManaBill"
 import DetailModal from "./Admin/ManaBill/DetailModal"
 import ManagementGood from "./Admin/ManaGood/indes"
+import ManagementVoucher from "./Admin/ManaVoucher"
 import LoginForm from "./Admin/LoginAdmin"
 import BestSellerList from "./Admin/BestSeller"
+import FinancialReport from "./Admin/FinancialReport"
+import ClearanceManager from "./Admin/ClearanceManager"
+import ClearanceProducts from "./ClearanceProducts"
 import OAuth2RedirectHandler from "./OAuth2RedirectHandler";
 
 const PublicPage = [
@@ -32,6 +36,7 @@ const PublicPage = [
     { path: "/about", component: About, layout: Defaultlayout },
     { path: "/profile", component: Profile, layout: Defaultlayout },
     { path: "/saleproduct", component: SaleProducts, layout: Defaultlayout },
+    { path: "/clearance", component: ClearanceProducts, layout: Defaultlayout },
     { path: "/order", component: Order, layout: Defaultlayout },
     { path: "/buildDetail/:id", component: BuildDetail, layout: Defaultlayout },
     { path: "/login", component: Login, layout: null },
@@ -44,6 +49,9 @@ const PublicPage = [
     { path: "/admin/managebill", component: ManagementBill, layout: AdminLayout },
     { path: "/admin/managebill/billdetail", component: DetailModal, layout: AdminLayout },
     { path: "/admin/bestseller", component: BestSellerList, layout: AdminLayout },
+    { path: "/admin/financial-report", component: FinancialReport, layout: AdminLayout },
+    { path: "/admin/clearance", component: ClearanceManager, layout: AdminLayout },
+    { path: "/admin/managevoucher", component: ManagementVoucher, layout: AdminLayout },
     { path: "/oauth2/success", component: OAuth2RedirectHandler, layout: null },
 
 ]

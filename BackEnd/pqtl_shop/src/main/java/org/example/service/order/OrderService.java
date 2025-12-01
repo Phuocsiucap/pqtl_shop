@@ -3,6 +3,8 @@ package org.example.service.order;
 import lombok.RequiredArgsConstructor;
 import org.example.model.Order;
 import org.example.model.OrderItem;
+import org.example.model.Product;
+import org.example.repository.ProductRepository;
 import org.example.repository.order.OrderRepository;
 import org.example.service.CartService;
 import org.springframework.stereotype.Service;
@@ -18,6 +20,7 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final CartService cartService;
+    private final ProductRepository productRepository;
 
     // 🟢 Tạo đơn hàng mới
     public Order createOrder(Order order) {
@@ -30,9 +33,24 @@ public class OrderService {
         order.setOrderStatus("Đã xác nhận");
         order.setPaymentStatus("Chưa thanh toán");
 
+        // Lưu costPrice cho mỗi OrderItem từ Product
+        double totalProfit = 0;
+        for (OrderItem item : order.getItems()) {
+            Optional<Product> productOpt = productRepository.findById(item.getProductId());
+            if (productOpt.isPresent()) {
+                Product product = productOpt.get();
+                item.setCostPrice(product.getCostPrice());
+                // Tính lợi nhuận: (giá bán - giảm giá - giá nhập) * số lượng
+                double itemProfit = (item.getPrice() - item.getDiscount() - product.getCostPrice()) * item.getQuantity();
+                totalProfit += itemProfit;
+            }
+        }
+        order.setTotalProfit(totalProfit);
+
         // Tính toán finalAmount
         double finalAmount = order.getTotalPrice() - order.getDiscount() + order.getShippingFee();
         order.setFinalAmount(finalAmount);
+        
         // 🧹 Xóa từng sản phẩm trong đơn hàng khỏi giỏ
         for (OrderItem item : order.getItems()) {
             cartService.removeItemFromCart(order.getUserId(), item.getProductId());

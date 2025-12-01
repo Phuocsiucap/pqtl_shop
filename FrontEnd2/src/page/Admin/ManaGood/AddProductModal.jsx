@@ -8,9 +8,13 @@ const AddProductModal = ({ closeModal, onSave, onError }) => {
     goodName: "",
     amount: "",
     price: "",
+    costPrice: "",
     specifications: "",
     brand: "",
     category: "",
+    manufacturingDate: "",
+    expiryDate: "",
+    batchNumber: "",
     image: null,
   });
   const [imagePreview, setImagePreview] = useState(null);
@@ -79,11 +83,30 @@ const AddProductModal = ({ closeModal, onSave, onError }) => {
     }
     
     if (!newProduct.price || newProduct.price === "" || parseFloat(newProduct.price) <= 0) {
-      newErrors.price = "Giá phải là số dương";
+      newErrors.price = "Giá bán phải là số dương";
+    }
+    
+    if (!newProduct.costPrice || newProduct.costPrice === "" || parseFloat(newProduct.costPrice) < 0) {
+      newErrors.costPrice = "Giá nhập phải là số không âm";
+    }
+    
+    if (parseFloat(newProduct.costPrice) >= parseFloat(newProduct.price)) {
+      newErrors.costPrice = "Giá nhập phải nhỏ hơn giá bán";
     }
     
     if (!newProduct.category || newProduct.category === "") {
       newErrors.category = "Vui lòng chọn danh mục";
+    }
+    
+    // Validate ngày sản xuất và hạn sử dụng
+    if (newProduct.manufacturingDate && newProduct.expiryDate) {
+      if (new Date(newProduct.manufacturingDate) >= new Date(newProduct.expiryDate)) {
+        newErrors.expiryDate = "Hạn sử dụng phải sau ngày sản xuất";
+      }
+    }
+    
+    if (newProduct.expiryDate && new Date(newProduct.expiryDate) < new Date()) {
+      newErrors.expiryDate = "Hạn sử dụng không thể là ngày trong quá khứ";
     }
 
     setErrors(newErrors);
@@ -99,14 +122,20 @@ const AddProductModal = ({ closeModal, onSave, onError }) => {
     setLoading(true);
     try {
       const formData = new FormData();
-      formData.append("good", JSON.stringify({
-        goodName: newProduct.goodName,
-        amount: newProduct.amount,
-        price: newProduct.price,
+      // Map frontend fields to backend Product model fields
+      const productData = {
+        name: newProduct.goodName,                    // goodName -> name
+        stockQuantity: parseInt(newProduct.amount),   // amount -> stockQuantity
+        price: parseFloat(newProduct.price),
+        costPrice: parseFloat(newProduct.costPrice),
         specifications: newProduct.specifications,
         brand: newProduct.brand,
         category: newProduct.category,
-      }));
+        manufacturingDate: newProduct.manufacturingDate || null,
+        expiryDate: newProduct.expiryDate || null,
+        batchNumber: newProduct.batchNumber || null,
+      };
+      formData.append("good", JSON.stringify(productData));
       
       // Thêm ảnh vào FormData
       if (newProduct.image) {
@@ -121,11 +150,31 @@ const AddProductModal = ({ closeModal, onSave, onError }) => {
             Authorization: `Bearer ${access_token}`,
             "Content-Type": "multipart/form-data",
           },
-          withCredentials: true,
+         
         }
       );
-      
+      console.log(response);
       if (response.status === 200 || response.status === 201) {
+        // Thông báo thành công
+        alert("Thêm sản phẩm thành công!");
+        
+        // Reset form data
+        setNewProduct({
+          goodName: "",
+          amount: "",
+          price: "",
+          costPrice: "",
+          specifications: "",
+          brand: "",
+          category: "",
+          manufacturingDate: "",
+          expiryDate: "",
+          batchNumber: "",
+          image: null,
+        });
+        setImagePreview(null);
+        setErrors({});
+        
         onSave && onSave();
       }
     } catch (e) {
@@ -225,6 +274,33 @@ const AddProductModal = ({ closeModal, onSave, onError }) => {
               )}
             </div>
 
+            <div className="col-span-1">
+              <label className="block mb-2">Giá nhập (VNĐ) <span className="text-red-500">*</span></label>
+              <input
+                type="number"
+                value={newProduct.costPrice}
+                onChange={(e) => {
+                  setNewProduct({ ...newProduct, costPrice: e.target.value });
+                  if (errors.costPrice) setErrors({ ...errors, costPrice: "" });
+                }}
+                min="0"
+                step="1000"
+                className={`w-full px-4 py-2 border rounded-md ${
+                  errors.costPrice ? "border-red-500" : "border-gray-300"
+                }`}
+                placeholder="0"
+              />
+              {errors.costPrice && (
+                <p className="mt-1 text-sm text-red-600">{errors.costPrice}</p>
+              )}
+              {newProduct.price && newProduct.costPrice && parseFloat(newProduct.costPrice) < parseFloat(newProduct.price) && (
+                <p className="mt-1 text-sm text-green-600">
+                  Lợi nhuận: {(parseFloat(newProduct.price) - parseFloat(newProduct.costPrice)).toLocaleString('vi-VN')} ₫ 
+                  ({(((parseFloat(newProduct.price) - parseFloat(newProduct.costPrice)) / parseFloat(newProduct.price)) * 100).toFixed(1)}%)
+                </p>
+              )}
+            </div>
+
             <div className="col-span-2">
               <label className="block mb-2">Thông tin sản phẩm / Đặc điểm</label>
               <textarea
@@ -281,6 +357,65 @@ const AddProductModal = ({ closeModal, onSave, onError }) => {
               {errors.category && (
                 <p className="mt-1 text-sm text-red-600">{errors.category}</p>
               )}
+            </div>
+            
+            {/* Ngày sản xuất và Hạn sử dụng */}
+            <div className="col-span-2 border-t pt-4 mt-2">
+              <h3 className="font-semibold text-gray-700 mb-3">📅 Thông tin sản xuất & Hạn sử dụng</h3>
+            </div>
+            
+            <div className="col-span-1">
+              <label className="block mb-2">Ngày sản xuất (NSX)</label>
+              <input
+                type="date"
+                value={newProduct.manufacturingDate}
+                onChange={(e) =>
+                  setNewProduct({ ...newProduct, manufacturingDate: e.target.value })
+                }
+                max={new Date().toISOString().split('T')[0]}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md"
+              />
+            </div>
+            
+            <div className="col-span-1">
+              <label className="block mb-2">Hạn sử dụng (HSD)</label>
+              <input
+                type="date"
+                value={newProduct.expiryDate}
+                onChange={(e) => {
+                  setNewProduct({ ...newProduct, expiryDate: e.target.value });
+                  if (errors.expiryDate) setErrors({ ...errors, expiryDate: "" });
+                }}
+                min={newProduct.manufacturingDate || new Date().toISOString().split('T')[0]}
+                className={`w-full px-4 py-2 border rounded-md ${
+                  errors.expiryDate ? "border-red-500" : "border-gray-300"
+                }`}
+              />
+              {errors.expiryDate && (
+                <p className="mt-1 text-sm text-red-600">{errors.expiryDate}</p>
+              )}
+              {newProduct.expiryDate && (
+                <p className={`mt-1 text-sm ${
+                  Math.ceil((new Date(newProduct.expiryDate) - new Date()) / (1000 * 60 * 60 * 24)) <= 30
+                    ? 'text-orange-600'
+                    : 'text-green-600'
+                }`}>
+                  Còn {Math.ceil((new Date(newProduct.expiryDate) - new Date()) / (1000 * 60 * 60 * 24))} ngày
+                </p>
+              )}
+            </div>
+            
+            <div className="col-span-1">
+              <label className="block mb-2">Số lô sản xuất</label>
+              <input
+                type="text"
+                value={newProduct.batchNumber}
+                onChange={(e) =>
+                  setNewProduct({ ...newProduct, batchNumber: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-md"
+                placeholder="VD: LOT20241127"
+              />
             </div>
           </div>
 

@@ -137,8 +137,13 @@ function ProductDetail() {
 
         setIsAdding(true);
         try {
-            // Tính toán giá cuối cùng
-            const finalPrice = product.price - (product.discount || 0);
+            // Tính toán giá cuối cùng (ưu tiên: thanh lý > giảm giá > giá gốc)
+            let finalPrice;
+            if (product.isClearance && product.clearanceDiscount > 0) {
+                finalPrice = product.price * (1 - product.clearanceDiscount / 100);
+            } else {
+                finalPrice = product.price - (product.discount || 0);
+            }
             const total = finalPrice * quantity;
 
             // Format dữ liệu theo yêu cầu của backend CartItem
@@ -148,6 +153,8 @@ function ProductDetail() {
                 image: product.image || '',
                 price: product.price,
                 discount: product.discount || 0,
+                isClearance: product.isClearance || false,
+                clearanceDiscount: product.clearanceDiscount || 0,
                 qty: quantity,
                 total: total
             };
@@ -233,10 +240,32 @@ function ProductDetail() {
 
                     {/* Price */}
                     <div className="mb-6">
-                        {product.discount > 0 && (
+                        {/* Clearance badge */}
+                        {product.isClearance && (
+                            <span className="inline-block bg-purple-600 text-white px-3 py-1 rounded-full text-sm mb-2">
+                                🏷️ Thanh lý -{product.clearanceDiscount}%
+                            </span>
+                        )}
+                        {/* Near expiry warning */}
+                        {product.isNearExpiry && !product.isClearance && (
+                            <span className="inline-block bg-orange-500 text-white px-3 py-1 rounded-full text-sm mb-2">
+                                ⏰ Sắp hết hạn
+                            </span>
+                        )}
+                        
+                        {/* Original price (if discounted or clearance) */}
+                        {(product.isClearance || product.discount > 0) && (
                             <p className="text-xl text-gray-400 line-through">{product.price.toLocaleString()} VND</p>
                         )}
-                        <p className="text-4xl font-extrabold text-red-600">{product.finalPrice.toLocaleString()} VND</p>
+                        
+                        {/* Final price */}
+                        {product.isClearance && product.clearanceDiscount > 0 ? (
+                            <p className="text-4xl font-extrabold text-purple-600">
+                                {Math.round(product.price * (1 - product.clearanceDiscount / 100)).toLocaleString()} VND
+                            </p>
+                        ) : (
+                            <p className="text-4xl font-extrabold text-red-600">{product.finalPrice.toLocaleString()} VND</p>
+                        )}
                     </div>
 
                     {/* Description */}
@@ -250,6 +279,55 @@ function ProductDetail() {
                         </p>
                         <p className="text-gray-500">Đã bán: {product.soldQuantity}</p>
                     </div>
+                    
+                    {/* Thông tin hạn sử dụng */}
+                    {product.expiryDate && (
+                        <div className="mt-4 p-3 rounded-lg border">
+                            <h4 className="font-semibold text-gray-700 mb-2">📅 Thông tin sản phẩm</h4>
+                            <div className="grid grid-cols-2 gap-2 text-sm">
+                                {product.manufacturingDate && (
+                                    <div>
+                                        <span className="text-gray-500">Ngày SX:</span>
+                                        <span className="ml-2 font-medium">{product.manufacturingDate}</span>
+                                    </div>
+                                )}
+                                <div>
+                                    <span className="text-gray-500">Hạn SD:</span>
+                                    <span className={`ml-2 font-medium ${
+                                        new Date(product.expiryDate) < new Date() ? 'text-red-600' :
+                                        Math.ceil((new Date(product.expiryDate) - new Date()) / (1000 * 60 * 60 * 24)) <= 30 
+                                            ? 'text-orange-600' : 'text-green-600'
+                                    }`}>
+                                        {product.expiryDate}
+                                        {new Date(product.expiryDate) >= new Date() && (
+                                            <span className="ml-1">
+                                                ({Math.ceil((new Date(product.expiryDate) - new Date()) / (1000 * 60 * 60 * 24))} ngày)
+                                            </span>
+                                        )}
+                                    </span>
+                                </div>
+                                {product.batchNumber && (
+                                    <div>
+                                        <span className="text-gray-500">Số lô:</span>
+                                        <span className="ml-2 font-medium">{product.batchNumber}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Badge thanh lý */}
+                    {product.isClearance && (
+                        <div className="mt-4 p-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg">
+                            <div className="flex items-center gap-2">
+                                <span className="text-2xl">🏷️</span>
+                                <div>
+                                    <p className="font-bold">ĐANG THANH LÝ</p>
+                                    <p className="text-sm">Giảm {product.clearanceDiscount}% - Sản phẩm còn hạn sử dụng ngắn</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Quantity Selector */}
                     {product.stockQuantity > 0 && (

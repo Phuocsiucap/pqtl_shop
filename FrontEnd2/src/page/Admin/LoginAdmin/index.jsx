@@ -5,7 +5,9 @@ import Cookies from "js-cookie";
 const LoginForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate=useNavigate();
+
   const handleSubmit = async(e) => {
     e.preventDefault();
     console.log("Email:", email);
@@ -16,6 +18,7 @@ const LoginForm = () => {
         alert("Điền đầy đủ thông tin đăng nhập")
         return;
       }
+      setLoading(true);
       // admin/login/
       const response=await request1.post("auth/login",{
         username:email,
@@ -23,16 +26,21 @@ const LoginForm = () => {
       })
       console.log(response.data.access_token);
       if (response.status === 200) {
-        alert("Đăng nhập thành công");
         Cookies.set("access_token_admin", response.data.accessToken, { expires: 7, path: "/" });
         Cookies.set("refresh_token_admin", response.data.refreshToken, { expires: 7, path: "/" });
+        
+        // lastLogin đã được cập nhật tự động trong backend khi login thành công
+        
+        alert("Đăng nhập thành công");
         navigate("/admin")
       }
     }
     catch(e){
       console.log("Lỗi ",e)
+      alert("Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!");
+    } finally {
+      setLoading(false);
     }
-
   };
 
   return (

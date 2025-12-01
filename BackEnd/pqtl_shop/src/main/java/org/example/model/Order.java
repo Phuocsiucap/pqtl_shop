@@ -14,10 +14,11 @@ public class Order {
 
     private String userId;                    // ID người dùng (liên kết với bảng User)
     private List<OrderItem> items;            // Danh sách sản phẩm trong đơn hàng
-    private double totalPrice;                // Tổng tiền trước giảm giá
+    private double totalPrice;                // Tổng tiền trước giảm giá (doanh thu)
     private double discount;                  // Mức giảm giá (nếu có)
     private double shippingFee;               // Phí vận chuyển
     private double finalAmount;               // Tổng cuối cùng phải trả = totalPrice - discount + shippingFee
+    private double totalProfit;               // Tổng lợi nhuận của đơn hàng = sum((giá bán - giá nhập) * quantity)
 
     private String shippingAddress;           // Địa chỉ giao hàng
     private String shippingMethod;            // Phương thức giao hàng: "Nhanh", "Tiết kiệm", "Tiêu chuẩn"
@@ -35,4 +36,14 @@ public class Order {
     private String order_id;
     // Thêm shipping_status - cần thiết cho admin API quản lý trạng thái giao hàng
     private String shipping_status = "Chờ xác nhận";  // Giá trị mặc định
+    
+    // Tính lợi nhuận từ các items (nếu totalProfit chưa được set)
+    public double getTotalProfit() {
+        if (totalProfit > 0 || items == null) {
+            return totalProfit;
+        }
+        return items.stream()
+                .mapToDouble(OrderItem::getProfit)
+                .sum();
+    }
 }

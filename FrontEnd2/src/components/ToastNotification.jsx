@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CheckCircleIcon, XCircleIcon, XMarkIcon } from '@heroicons/react/24/solid';
+import { FaCheckCircle, FaTimesCircle, FaTimes } from 'react-icons/fa';
 
 const ToastNotification = ({ message, type = 'success', isVisible, onClose }) => {
   useEffect(() => {
@@ -25,16 +25,16 @@ const ToastNotification = ({ message, type = 'success', isVisible, onClose }) =>
         }`}
       >
         {type === 'success' ? (
-          <CheckCircleIcon className="w-6 h-6" />
+          <FaCheckCircle className="w-6 h-6" />
         ) : (
-          <XCircleIcon className="w-6 h-6" />
+          <FaTimesCircle className="w-6 h-6" />
         )}
         <span className="flex-1">{message}</span>
         <button
           onClick={onClose}
           className="ml-2 hover:opacity-80 transition-opacity"
         >
-          <XMarkIcon className="w-5 h-5" />
+          <FaTimes className="w-5 h-5" />
         </button>
       </div>
     </div>

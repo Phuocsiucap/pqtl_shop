@@ -1,6 +1,8 @@
 package org.example.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.example.model.Order;
 import org.example.model.Product;
 import org.example.model.login.User;
@@ -100,6 +102,8 @@ public class AdminService {
     public Product createProduct(String goodJson, MultipartFile imageFile) throws IOException {
         // Parse JSON từ request
         ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         Product product = mapper.readValue(goodJson, Product.class);
         
         // Xử lý upload ảnh
@@ -113,6 +117,9 @@ public class AdminService {
             product.setStockQuantity(0);
         }
         
+        // Cập nhật trạng thái hết hạn nếu có
+        product.updateExpiryStatus();
+        
         return productRepository.save(product);
     }
 
@@ -120,7 +127,8 @@ public class AdminService {
      * Cập nhật sản phẩm
      */
     public Product updateProduct(String id, String goodName, String amount, String price,
-                                 String specifications, String brand, String category,
+                                 String costPrice, String specifications, String brand, String category,
+                                 String manufacturingDate, String expiryDate, String batchNumber,
                                  MultipartFile imageFile) throws IOException {
         Optional<Product> productOpt = productRepository.findById(id);
         
@@ -140,6 +148,9 @@ public class AdminService {
         if (price != null && !price.isEmpty()) {
             product.setPrice(Double.parseDouble(price));
         }
+        if (costPrice != null && !costPrice.isEmpty()) {
+            product.setCostPrice(Double.parseDouble(costPrice));
+        }
         if (specifications != null && !specifications.isEmpty()) {
             product.setSpecifications(specifications);
         }
@@ -147,9 +158,22 @@ public class AdminService {
             product.setBrand(brand);
         }
         if (category != null && !category.isEmpty()) {
-            // setCategory() được tự động generate bởi Lombok @Data annotation
             product.setCategory(category);
         }
+        
+        // Cập nhật ngày sản xuất và hạn sử dụng
+        if (manufacturingDate != null && !manufacturingDate.isEmpty()) {
+            product.setManufacturingDate(LocalDate.parse(manufacturingDate));
+        }
+        if (expiryDate != null && !expiryDate.isEmpty()) {
+            product.setExpiryDate(LocalDate.parse(expiryDate));
+        }
+        if (batchNumber != null && !batchNumber.isEmpty()) {
+            product.setBatchNumber(batchNumber);
+        }
+        
+        // Cập nhật trạng thái hết hạn
+        product.updateExpiryStatus();
         
         // Xử lý upload ảnh mới
         if (imageFile != null && !imageFile.isEmpty()) {
@@ -330,5 +354,709 @@ public class AdminService {
         }
         
         return result;
+    }
+
+    // ==================== BEST SELLER ====================
+    /**
+     * Lấy danh sách sản phẩm bán chạy với thống kê
+     */
+    public List<Map<String, Object>> getBestSellerProducts(int limit, String period, LocalDateTime startDate, LocalDateTime endDate) {
+        List<Order> allOrders = orderRepository.findAll();
+        
+        // Xác định khoảng thời gian
+        LocalDateTime filterStart;
+        LocalDateTime filterEnd = LocalDateTime.now();
+        
+        if (startDate != null && endDate != null) {
+            filterStart = startDate;
+            filterEnd = endDate;
+        } else {
+            switch (period != null ? period : "month") {
+                case "week":
+                    filterStart = LocalDateTime.now().minusWeeks(1);
+                    break;
+                case "year":
+                    filterStart = LocalDateTime.now().minusYears(1);
+                    break;
+                case "month":
+                default:
+                    filterStart = LocalDateTime.now().minusMonths(1);
+                    break;
+            }
+        }
+        
+        final LocalDateTime finalStart = filterStart;
+        final LocalDateTime finalEnd = filterEnd;
+        
+        // Lọc đơn hàng trong khoảng thời gian và đã giao
+        List<Order> filteredOrders = allOrders.stream()
+                .filter(order -> order.getOrderDate() != null 
+                        && order.getOrderDate().isAfter(finalStart) 
+                        && order.getOrderDate().isBefore(finalEnd)
+                        && "Đã giao".equals(order.getShipping_status()))
+                .collect(Collectors.toList());
+        
+        // Thống kê theo sản phẩm
+        Map<String, Map<String, Object>> productStats = new HashMap<>();
+        
+        for (Order order : filteredOrders) {
+            if (order.getItems() != null) {
+                for (var item : order.getItems()) {
+                    String productId = item.getProductId();
+                    Map<String, Object> stats = productStats.getOrDefault(productId, new HashMap<>());
+                    
+                    int currentQty = (int) stats.getOrDefault("soldQuantity", 0);
+                    double currentRevenue = (double) stats.getOrDefault("revenue", 0.0);
+                    double currentProfit = (double) stats.getOrDefault("profit", 0.0);
+                    int currentOrders = (int) stats.getOrDefault("orderCount", 0);
+                    
+                    // Tính doanh thu và lợi nhuận
+                    double itemRevenue = (item.getPrice() - item.getDiscount()) * item.getQuantity();
+                    double itemProfit = item.getProfit(); // (giá bán - giảm giá - giá nhập) * số lượng
+                    
+                    stats.put("productId", productId);
+                    stats.put("productName", item.getProductName());
+                    stats.put("productImage", item.getImage());
+                    stats.put("price", item.getPrice());
+                    stats.put("costPrice", item.getCostPrice());
+                    stats.put("soldQuantity", currentQty + item.getQuantity());
+                    stats.put("revenue", currentRevenue + itemRevenue);
+                    stats.put("profit", currentProfit + itemProfit);
+                    stats.put("orderCount", currentOrders + 1);
+                    
+                    productStats.put(productId, stats);
+                }
+            }
+        }
+        
+        // Sắp xếp theo số lượng bán và lấy top
+        return productStats.values().stream()
+                .sorted((a, b) -> Integer.compare(
+                        (int) b.getOrDefault("soldQuantity", 0),
+                        (int) a.getOrDefault("soldQuantity", 0)))
+                .limit(limit)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Lấy thống kê doanh thu của một sản phẩm theo thời gian
+     */
+    public Map<String, Object> getProductRevenueStats(String productId, String period, LocalDateTime startDate, LocalDateTime endDate) {
+        List<Order> allOrders = orderRepository.findAll();
+        Optional<Product> productOpt = productRepository.findById(productId);
+        
+        // Không yêu cầu product phải tồn tại (có thể đã bị xóa nhưng vẫn có trong order history)
+        Product product = productOpt.orElse(null);
+        
+        // Lấy thông tin từ order items nếu product không tồn tại
+        String productName = null;
+        String productImage = null;
+        double productPrice = 0;
+        double productCostPrice = 0;
+        
+        if (product != null) {
+            productName = product.getName();
+            productImage = product.getImage();
+            productPrice = product.getPrice();
+            productCostPrice = product.getCostPrice();
+        }
+        
+        // Xác định khoảng thời gian
+        LocalDateTime filterStart;
+        LocalDateTime filterEnd = LocalDateTime.now();
+        
+        if (startDate != null && endDate != null) {
+            filterStart = startDate;
+            filterEnd = endDate;
+        } else {
+            switch (period != null ? period : "month") {
+                case "week":
+                    filterStart = LocalDateTime.now().minusWeeks(1);
+                    break;
+                case "year":
+                    filterStart = LocalDateTime.now().minusYears(1);
+                    break;
+                case "month":
+                default:
+                    filterStart = LocalDateTime.now().minusMonths(1);
+                    break;
+            }
+        }
+        
+        final LocalDateTime finalStart = filterStart;
+        final LocalDateTime finalEnd = filterEnd;
+        
+        // Lọc đơn hàng có chứa sản phẩm này
+        List<Order> relevantOrders = allOrders.stream()
+                .filter(order -> order.getOrderDate() != null 
+                        && order.getOrderDate().isAfter(finalStart) 
+                        && order.getOrderDate().isBefore(finalEnd)
+                        && "Đã giao".equals(order.getShipping_status())
+                        && order.getItems() != null
+                        && order.getItems().stream().anyMatch(item -> productId.equals(item.getProductId())))
+                .collect(Collectors.toList());
+        
+        // Nếu không có đơn hàng nào thì trả về kết quả rỗng
+        if (relevantOrders.isEmpty()) {
+            Map<String, Object> emptyResult = new HashMap<>();
+            emptyResult.put("productId", productId);
+            emptyResult.put("productName", productName);
+            emptyResult.put("productImage", productImage);
+            emptyResult.put("totalSold", 0);
+            emptyResult.put("totalRevenue", 0.0);
+            emptyResult.put("totalProfit", 0.0);
+            emptyResult.put("orderCount", 0);
+            emptyResult.put("avgPrice", productPrice);
+            emptyResult.put("costPrice", productCostPrice);
+            emptyResult.put("dailyStats", new ArrayList<>());
+            emptyResult.put("period", period);
+            return emptyResult;
+        }
+        
+        // Thống kê theo ngày
+        Map<LocalDate, Map<String, Object>> dailyStats = new TreeMap<>();
+        int totalSold = 0;
+        double totalRevenue = 0;
+        double totalProfit = 0;
+        double totalPrice = 0;
+        double totalCostPrice = 0;
+        int priceCount = 0;
+        
+        for (Order order : relevantOrders) {
+            LocalDate orderDate = order.getOrderDate().toLocalDate();
+            
+            for (var item : order.getItems()) {
+                if (productId.equals(item.getProductId())) {
+                    // Lấy thông tin product từ order item nếu chưa có
+                    if (productName == null) {
+                        productName = item.getProductName();
+                    }
+                    if (productImage == null) {
+                        productImage = item.getImage();
+                    }
+                    
+                    Map<String, Object> dayStats = dailyStats.getOrDefault(orderDate, new HashMap<>());
+                    
+                    int daySold = (int) dayStats.getOrDefault("sold", 0) + item.getQuantity();
+                    double itemRevenue = (item.getPrice() - item.getDiscount()) * item.getQuantity();
+                    double itemProfit = item.getProfit();
+                    double dayRevenue = (double) dayStats.getOrDefault("revenue", 0.0) + itemRevenue;
+                    double dayProfit = (double) dayStats.getOrDefault("profit", 0.0) + itemProfit;
+                    
+                    dayStats.put("date", orderDate.toString());
+                    dayStats.put("sold", daySold);
+                    dayStats.put("revenue", dayRevenue);
+                    dayStats.put("profit", dayProfit);
+                    
+                    dailyStats.put(orderDate, dayStats);
+                    
+                    totalSold += item.getQuantity();
+                    totalRevenue += itemRevenue;
+                    totalProfit += itemProfit;
+                    totalPrice += item.getPrice();
+                    totalCostPrice += item.getCostPrice();
+                    priceCount++;
+                }
+            }
+        }
+        
+        double avgPrice = priceCount > 0 ? totalPrice / priceCount : 0;
+        double avgCostPrice = priceCount > 0 ? totalCostPrice / priceCount : 0;
+        
+        // Tạo chartData
+        List<String> labels = new ArrayList<>();
+        List<Double> revenueValues = new ArrayList<>();
+        List<Double> profitValues = new ArrayList<>();
+        for (Map.Entry<LocalDate, Map<String, Object>> entry : dailyStats.entrySet()) {
+            labels.add(entry.getKey().toString());
+            revenueValues.add((Double) entry.getValue().get("revenue"));
+            profitValues.add((Double) entry.getValue().get("profit"));
+        }
+        
+        Map<String, Object> chartData = new HashMap<>();
+        chartData.put("labels", labels);
+        chartData.put("values", revenueValues);
+        chartData.put("profitValues", profitValues);
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("productId", productId);
+        result.put("productName", productName);
+        result.put("productImage", productImage);
+        result.put("totalSold", totalSold);
+        result.put("totalRevenue", totalRevenue);
+        result.put("totalProfit", totalProfit);
+        result.put("orderCount", relevantOrders.size());
+        result.put("avgPrice", avgPrice);
+        result.put("avgCostPrice", avgCostPrice);
+        result.put("dailyStats", new ArrayList<>(dailyStats.values()));
+        result.put("chartData", chartData);
+        result.put("period", period);
+        result.put("startDate", finalStart.toString());
+        result.put("endDate", finalEnd.toString());
+        
+        return result;
+    }
+
+    /**
+     * Cập nhật user (chỉ admin mới được phép)
+     */
+    public User updateUser(String userId, Map<String, Object> updates, String adminUserId) throws Exception {
+        // Kiểm tra quyền admin
+        Optional<User> adminOpt = userRepository.findById(adminUserId);
+        if (adminOpt.isEmpty() || !"ADMIN".equals(adminOpt.get().getRole())) {
+            throw new Exception("Bạn không có quyền thực hiện thao tác này");
+        }
+        
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty()) {
+            throw new Exception("Người dùng không tồn tại");
+        }
+        
+        User user = userOpt.get();
+        
+        if (updates.containsKey("role")) {
+            user.setRole((String) updates.get("role"));
+        }
+        if (updates.containsKey("isActive")) {
+            user.setIsActive((Boolean) updates.get("isActive"));
+        }
+        if (updates.containsKey("fullName")) {
+            user.setFullName((String) updates.get("fullName"));
+        }
+        if (updates.containsKey("phone")) {
+            user.setPhone((String) updates.get("phone"));
+        }
+        
+        return userRepository.save(user);
+    }
+
+    /**
+     * Lấy thống kê đơn hàng theo trạng thái
+     */
+    public Map<String, Object> getOrderStatsByStatus() {
+        List<Order> allOrders = orderRepository.findAll();
+        
+        Map<String, Long> statusCounts = allOrders.stream()
+                .collect(Collectors.groupingBy(
+                        order -> order.getShipping_status() != null ? order.getShipping_status() : "Chờ xác nhận",
+                        Collectors.counting()
+                ));
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("total", allOrders.size());
+        result.put("choXacNhan", statusCounts.getOrDefault("Chờ xác nhận", 0L));
+        result.put("daXacNhan", statusCounts.getOrDefault("Đã xác nhận", 0L));
+        result.put("dangGiao", statusCounts.getOrDefault("Đang giao", 0L));
+        result.put("daGiao", statusCounts.getOrDefault("Đã giao", 0L));
+        result.put("daHuy", statusCounts.getOrDefault("Đã hủy", 0L));
+        
+        return result;
+    }
+
+    /**
+     * Lấy báo cáo tài chính (doanh thu, lợi nhuận theo thời gian)
+     */
+    public Map<String, Object> getFinancialReport(String period, LocalDateTime startDate, LocalDateTime endDate) {
+        List<Order> allOrders = orderRepository.findAll();
+        
+        // Xác định khoảng thời gian
+        LocalDateTime filterStart;
+        LocalDateTime filterEnd = LocalDateTime.now();
+        
+        if (startDate != null && endDate != null) {
+            filterStart = startDate;
+            filterEnd = endDate;
+        } else {
+            switch (period != null ? period : "month") {
+                case "week":
+                    filterStart = LocalDateTime.now().minusWeeks(1);
+                    break;
+                case "year":
+                    filterStart = LocalDateTime.now().minusYears(1);
+                    break;
+                case "month":
+                default:
+                    filterStart = LocalDateTime.now().minusMonths(1);
+                    break;
+            }
+        }
+        
+        final LocalDateTime finalStart = filterStart;
+        final LocalDateTime finalEnd = filterEnd;
+        
+        // Lọc đơn hàng đã giao trong khoảng thời gian
+        List<Order> completedOrders = allOrders.stream()
+                .filter(order -> order.getOrderDate() != null 
+                        && order.getOrderDate().isAfter(finalStart) 
+                        && order.getOrderDate().isBefore(finalEnd)
+                        && "Đã giao".equals(order.getShipping_status()))
+                .collect(Collectors.toList());
+        
+        // Thống kê theo ngày/tháng
+        Map<String, Map<String, Object>> periodStats = new TreeMap<>();
+        double totalRevenue = 0;
+        double totalProfit = 0;
+        double totalCost = 0;
+        int totalOrders = completedOrders.size();
+        int totalItems = 0;
+        
+        for (Order order : completedOrders) {
+            String periodKey;
+            if ("year".equals(period)) {
+                periodKey = order.getOrderDate().toLocalDate().withDayOfMonth(1).toString(); // Group by month
+            } else {
+                periodKey = order.getOrderDate().toLocalDate().toString(); // Group by day
+            }
+            
+            Map<String, Object> stats = periodStats.getOrDefault(periodKey, new HashMap<>());
+            
+            double orderRevenue = order.getFinalAmount();
+            double orderProfit = order.getTotalProfit();
+            double orderCost = 0;
+            int orderItems = 0;
+            
+            if (order.getItems() != null) {
+                for (var item : order.getItems()) {
+                    orderCost += item.getCostPrice() * item.getQuantity();
+                    orderItems += item.getQuantity();
+                }
+            }
+            
+            stats.put("date", periodKey);
+            stats.put("revenue", (double) stats.getOrDefault("revenue", 0.0) + orderRevenue);
+            stats.put("profit", (double) stats.getOrDefault("profit", 0.0) + orderProfit);
+            stats.put("cost", (double) stats.getOrDefault("cost", 0.0) + orderCost);
+            stats.put("orders", (int) stats.getOrDefault("orders", 0) + 1);
+            stats.put("items", (int) stats.getOrDefault("items", 0) + orderItems);
+            
+            periodStats.put(periodKey, stats);
+            
+            totalRevenue += orderRevenue;
+            totalProfit += orderProfit;
+            totalCost += orderCost;
+            totalItems += orderItems;
+        }
+        
+        // Tạo chart data
+        List<String> labels = new ArrayList<>();
+        List<Double> revenueValues = new ArrayList<>();
+        List<Double> profitValues = new ArrayList<>();
+        List<Double> costValues = new ArrayList<>();
+        
+        for (Map.Entry<String, Map<String, Object>> entry : periodStats.entrySet()) {
+            labels.add(entry.getKey());
+            revenueValues.add((Double) entry.getValue().get("revenue"));
+            profitValues.add((Double) entry.getValue().get("profit"));
+            costValues.add((Double) entry.getValue().get("cost"));
+        }
+        
+        Map<String, Object> chartData = new HashMap<>();
+        chartData.put("labels", labels);
+        chartData.put("revenue", revenueValues);
+        chartData.put("profit", profitValues);
+        chartData.put("cost", costValues);
+        
+        // Tính tỷ lệ lợi nhuận
+        double profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("period", period);
+        result.put("startDate", finalStart.toString());
+        result.put("endDate", finalEnd.toString());
+        result.put("totalRevenue", totalRevenue);
+        result.put("totalProfit", totalProfit);
+        result.put("totalCost", totalCost);
+        result.put("profitMargin", profitMargin);
+        result.put("totalOrders", totalOrders);
+        result.put("totalItems", totalItems);
+        result.put("avgOrderValue", totalOrders > 0 ? totalRevenue / totalOrders : 0);
+        result.put("avgProfitPerOrder", totalOrders > 0 ? totalProfit / totalOrders : 0);
+        result.put("periodStats", new ArrayList<>(periodStats.values()));
+        result.put("chartData", chartData);
+        
+        return result;
+    }
+
+    /**
+     * Lấy xếp hạng sản phẩm theo lợi nhuận (cao nhất và thấp nhất)
+     */
+    public Map<String, Object> getProductsProfitRanking(String period, int limit) {
+        List<Order> allOrders = orderRepository.findAll();
+        
+        // Xác định khoảng thời gian
+        LocalDateTime filterStart;
+        LocalDateTime filterEnd = LocalDateTime.now();
+        
+        switch (period != null ? period : "month") {
+            case "week":
+                filterStart = LocalDateTime.now().minusWeeks(1);
+                break;
+            case "year":
+                filterStart = LocalDateTime.now().minusYears(1);
+                break;
+            case "month":
+            default:
+                filterStart = LocalDateTime.now().minusMonths(1);
+                break;
+        }
+        
+        final LocalDateTime finalStart = filterStart;
+        final LocalDateTime finalEnd = filterEnd;
+        
+        // Lọc đơn hàng đã giao
+        List<Order> completedOrders = allOrders.stream()
+                .filter(order -> order.getOrderDate() != null 
+                        && order.getOrderDate().isAfter(finalStart) 
+                        && order.getOrderDate().isBefore(finalEnd)
+                        && "Đã giao".equals(order.getShipping_status()))
+                .collect(Collectors.toList());
+        
+        // Thống kê theo sản phẩm
+        Map<String, Map<String, Object>> productStats = new HashMap<>();
+        
+        for (Order order : completedOrders) {
+            if (order.getItems() != null) {
+                for (var item : order.getItems()) {
+                    String productId = item.getProductId();
+                    Map<String, Object> stats = productStats.getOrDefault(productId, new HashMap<>());
+                    
+                    double itemRevenue = (item.getPrice() - item.getDiscount()) * item.getQuantity();
+                    double itemProfit = item.getProfit();
+                    double itemCost = item.getCostPrice() * item.getQuantity();
+                    
+                    stats.put("productId", productId);
+                    stats.put("productName", item.getProductName());
+                    stats.put("productImage", item.getImage());
+                    stats.put("price", item.getPrice());
+                    stats.put("costPrice", item.getCostPrice());
+                    stats.put("soldQuantity", (int) stats.getOrDefault("soldQuantity", 0) + item.getQuantity());
+                    stats.put("revenue", (double) stats.getOrDefault("revenue", 0.0) + itemRevenue);
+                    stats.put("profit", (double) stats.getOrDefault("profit", 0.0) + itemProfit);
+                    stats.put("cost", (double) stats.getOrDefault("cost", 0.0) + itemCost);
+                    stats.put("orderCount", (int) stats.getOrDefault("orderCount", 0) + 1);
+                    
+                    // Tính biên lợi nhuận
+                    double totalRev = (double) stats.get("revenue");
+                    double totalProf = (double) stats.get("profit");
+                    stats.put("profitMargin", totalRev > 0 ? (totalProf / totalRev) * 100 : 0);
+                    
+                    productStats.put(productId, stats);
+                }
+            }
+        }
+        
+        List<Map<String, Object>> allProducts = new ArrayList<>(productStats.values());
+        
+        // Top lợi nhuận cao nhất
+        List<Map<String, Object>> topHighProfit = allProducts.stream()
+                .sorted((a, b) -> Double.compare(
+                        (double) b.getOrDefault("profit", 0.0),
+                        (double) a.getOrDefault("profit", 0.0)))
+                .limit(limit)
+                .collect(Collectors.toList());
+        
+        // Top lợi nhuận thấp nhất (hoặc lỗ)
+        List<Map<String, Object>> topLowProfit = allProducts.stream()
+                .sorted((a, b) -> Double.compare(
+                        (double) a.getOrDefault("profit", 0.0),
+                        (double) b.getOrDefault("profit", 0.0)))
+                .limit(limit)
+                .collect(Collectors.toList());
+        
+        // Top biên lợi nhuận cao nhất
+        List<Map<String, Object>> topHighMargin = allProducts.stream()
+                .sorted((a, b) -> Double.compare(
+                        (double) b.getOrDefault("profitMargin", 0.0),
+                        (double) a.getOrDefault("profitMargin", 0.0)))
+                .limit(limit)
+                .collect(Collectors.toList());
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("period", period);
+        result.put("topHighProfit", topHighProfit);
+        result.put("topLowProfit", topLowProfit);
+        result.put("topHighMargin", topHighMargin);
+        result.put("totalProducts", allProducts.size());
+        
+        return result;
+    }
+
+    // ==================== EXPIRY & CLEARANCE MANAGEMENT ====================
+    
+    /**
+     * Cập nhật trạng thái hết hạn cho tất cả sản phẩm
+     */
+    public void updateAllProductExpiryStatus() {
+        List<Product> products = productRepository.findAll();
+        for (Product product : products) {
+            product.updateExpiryStatus();
+            productRepository.save(product);
+        }
+    }
+    
+    /**
+     * Lấy danh sách sản phẩm đã hết hạn
+     */
+    public List<Product> getExpiredProducts() {
+        updateAllProductExpiryStatus();
+        return productRepository.findAll().stream()
+                .filter(p -> p.getExpiryDate() != null && p.checkExpired())
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * Lấy danh sách sản phẩm sắp hết hạn
+     */
+    public List<Product> getNearExpiryProducts(int daysThreshold) {
+        updateAllProductExpiryStatus();
+        return productRepository.findAll().stream()
+                .filter(p -> p.getExpiryDate() != null && p.checkNearExpiry(daysThreshold))
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * Lấy thống kê sản phẩm theo trạng thái hết hạn
+     */
+    public Map<String, Object> getExpiryStatistics() {
+        updateAllProductExpiryStatus();
+        List<Product> allProducts = productRepository.findAll();
+        
+        long expiredCount = allProducts.stream()
+                .filter(p -> p.getExpiryDate() != null && p.checkExpired())
+                .count();
+        
+        long nearExpiry7Days = allProducts.stream()
+                .filter(p -> p.getExpiryDate() != null && p.checkNearExpiry(7))
+                .count();
+        
+        long nearExpiry30Days = allProducts.stream()
+                .filter(p -> p.getExpiryDate() != null && p.checkNearExpiry(30))
+                .count();
+        
+        long noExpiryDateCount = allProducts.stream()
+                .filter(p -> p.getExpiryDate() == null)
+                .count();
+        
+        long validCount = allProducts.stream()
+                .filter(p -> p.getExpiryDate() != null && !p.checkExpired() && !p.checkNearExpiry(30))
+                .count();
+        
+        long clearanceCount = allProducts.stream()
+                .filter(p -> p.getIsClearance() != null && p.getIsClearance())
+                .count();
+        
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("total", allProducts.size());
+        stats.put("expired", expiredCount);
+        stats.put("nearExpiry7Days", nearExpiry7Days);
+        stats.put("nearExpiry30Days", nearExpiry30Days);
+        stats.put("noExpiryDate", noExpiryDateCount);
+        stats.put("valid", validCount);
+        stats.put("clearance", clearanceCount);
+        
+        return stats;
+    }
+    
+    /**
+     * Đánh dấu sản phẩm thanh lý
+     */
+    public Product markProductAsClearance(String productId, Double clearanceDiscount) throws Exception {
+        Optional<Product> productOpt = productRepository.findById(productId);
+        
+        if (productOpt.isEmpty()) {
+            throw new Exception("Sản phẩm không tồn tại");
+        }
+        
+        Product product = productOpt.get();
+        product.setIsClearance(true);
+        product.setClearanceDiscount(clearanceDiscount != null ? clearanceDiscount : 30.0);
+        
+        return productRepository.save(product);
+    }
+    
+    /**
+     * Hủy đánh dấu thanh lý sản phẩm
+     */
+    public Product unmarkProductAsClearance(String productId) throws Exception {
+        Optional<Product> productOpt = productRepository.findById(productId);
+        
+        if (productOpt.isEmpty()) {
+            throw new Exception("Sản phẩm không tồn tại");
+        }
+        
+        Product product = productOpt.get();
+        product.setIsClearance(false);
+        product.setClearanceDiscount(null);
+        
+        return productRepository.save(product);
+    }
+    
+    /**
+     * Lấy danh sách sản phẩm đang thanh lý
+     */
+    public List<Product> getClearanceProducts() {
+        return productRepository.findAll().stream()
+                .filter(p -> p.getIsClearance() != null && p.getIsClearance())
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * Tự động đánh dấu thanh lý cho sản phẩm sắp hết hạn
+     */
+    public Map<String, Object> autoMarkClearanceForNearExpiryProducts(int daysThreshold, Double clearanceDiscount) {
+        List<Product> nearExpiryProducts = getNearExpiryProducts(daysThreshold);
+        int markedCount = 0;
+        
+        for (Product product : nearExpiryProducts) {
+            if (product.getIsClearance() == null || !product.getIsClearance()) {
+                product.setIsClearance(true);
+                product.setClearanceDiscount(clearanceDiscount != null ? clearanceDiscount : 30.0);
+                productRepository.save(product);
+                markedCount++;
+            }
+        }
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("totalNearExpiry", nearExpiryProducts.size());
+        result.put("markedAsClearance", markedCount);
+        
+        return result;
+    }
+    
+    /**
+     * Xóa sản phẩm đã hết hạn (chuyển sang inactive hoặc xóa)
+     */
+    public Map<String, Object> removeExpiredProducts(boolean hardDelete) throws Exception {
+        List<Product> expiredProducts = getExpiredProducts();
+        int removedCount = 0;
+        
+        for (Product product : expiredProducts) {
+            if (hardDelete) {
+                productRepository.deleteById(product.getId());
+            } else {
+                product.setStockQuantity(0);
+                product.setIsExpired(true);
+                productRepository.save(product);
+            }
+            removedCount++;
+        }
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("totalExpired", expiredProducts.size());
+        result.put("removed", removedCount);
+        result.put("hardDelete", hardDelete);
+        
+        return result;
+    }
+    
+    /**
+     * Lấy danh sách chi tiết sản phẩm theo lô
+     */
+    public Map<String, List<Product>> getProductsByBatch() {
+        List<Product> allProducts = productRepository.findAll();
+        
+        return allProducts.stream()
+                .filter(p -> p.getBatchNumber() != null && !p.getBatchNumber().isEmpty())
+                .collect(Collectors.groupingBy(Product::getBatchNumber));
     }
 }

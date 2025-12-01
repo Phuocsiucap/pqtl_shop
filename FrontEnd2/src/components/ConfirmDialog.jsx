@@ -1,4 +1,4 @@
-import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { FaExclamationTriangle } from 'react-icons/fa';
 
 const ConfirmDialog = ({ isOpen, title, message, onConfirm, onCancel, confirmText = 'Xác nhận', cancelText = 'Hủy', type = 'danger' }) => {
   if (!isOpen) return null;
@@ -11,7 +11,7 @@ const ConfirmDialog = ({ isOpen, title, message, onConfirm, onCancel, confirmTex
             <div className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center ${
               type === 'danger' ? 'bg-red-100' : 'bg-blue-100'
             }`}>
-              <ExclamationTriangleIcon className={`w-6 h-6 ${
+              <FaExclamationTriangle className={`w-6 h-6 ${
                 type === 'danger' ? 'text-red-600' : 'text-blue-600'
               }`} />
             </div>
