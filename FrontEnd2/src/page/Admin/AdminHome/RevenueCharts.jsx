@@ -30,9 +30,9 @@ ChartJS.register(
 const RevenueCharts = ({ access_token }) => {
   const [dataMonth, setDataMonth] = useState([]);
   const [dataWeek, setDataWeek] = useState([]);
-  
+
   // Tính toán mảng revenue từ dataMonth theo thứ tự tháng
-  const monthlyRevenueValues = Array.isArray(dataMonth) && dataMonth.length > 0 
+  const monthlyRevenueValues = Array.isArray(dataMonth) && dataMonth.length > 0
     ? dataMonth.map(item => item.revenue || 0)
     : Array(12).fill(0);
 
@@ -40,7 +40,7 @@ const RevenueCharts = ({ access_token }) => {
   const weeklyRevenueValues = Array.isArray(dataWeek) && dataWeek.length > 0
     ? dataWeek.map(item => item.revenue || 0)
     : Array(7).fill(0);
-  
+
   // Dữ liệu mẫu cho doanh thu trong 12 tháng
   const monthlyRevenueData = {
     labels: [

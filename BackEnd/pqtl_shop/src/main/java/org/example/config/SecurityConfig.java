@@ -102,6 +102,8 @@ public class SecurityConfig {
                         ).permitAll()
                         // Cho phép truy cập công khai các API tìm kiếm, chi tiết sản phẩm và trang chủ (GET)
                         .requestMatchers("/api/v1/search/**").permitAll()
+                        .requestMatchers("/api/v1/**").permitAll()
+
                         .requestMatchers("/api/v1/products/**").permitAll()
                         .requestMatchers("/api/v1/homepage/**").permitAll() // Bổ sung cho Homepage
                         .requestMatchers("/api/admin/**").hasAuthority("ADMIN")

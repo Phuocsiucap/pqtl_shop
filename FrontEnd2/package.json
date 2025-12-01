@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@heroicons/react": "^1.0.6",
+    "@heroicons/react": "^2.0.18",
     "@tippyjs/react": "^4.2.6",
     "axios": "^1.7.7",
     "chart.js": "^4.4.7",

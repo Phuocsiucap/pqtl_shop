@@ -17,7 +17,7 @@ import AdminHome from "./Admin/AdminHome"
 import ManagementUser from "./Admin/ManaUser"
 import ManagementBill from "./Admin/ManaBill"
 import DetailModal from "./Admin/ManaBill/DetailModal"
-import ManagementGood from "./Admin/ManaGood/indes"
+import ManagementGood from "./Admin/ManaGood"
 import LoginForm from "./Admin/LoginAdmin"
 import BestSellerList from "./Admin/BestSeller"
 import OAuth2RedirectHandler from "./OAuth2RedirectHandler";

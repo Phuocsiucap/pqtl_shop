@@ -1,18 +1,19 @@
 import React, { useState } from "react";
 import { request1 } from "../../../utils/request";
 import { getCSRFTokenFromCookie } from "../../../Component/Token/getCSRFToken";
-const ProductEditModal = ({ product, closeModal, saveProductChanges }) => {
+const ProductEditModal = ({ product, closeModal, onSave }) => {
   const [formData, setFormData] = useState({
-    goodName: product.goodName,
-    amount: product.amount,
-    price: product.price,
-    image: product.image,
+    goodName: product.name || product.goodName || "", // Handle both name and goodName
+    amount: product.stockQuantity || product.amount || "",
+    price: product.price || "",
+    image: product.image || "",
     brand: product.brand || "",
     category: product.category || "",
-    specifications: product.specifications || "", // Thêm specifications vào formData
+    specifications: product.specifications || "",
     imageFile: null,
   });
   const access_token = getCSRFTokenFromCookie("access_token_admin");
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({ ...prevData, [name]: value }));
@@ -28,17 +29,37 @@ const ProductEditModal = ({ product, closeModal, saveProductChanges }) => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const formDataToSend = new FormData();
+    formDataToSend.append("goodName", formData.goodName);
+    formDataToSend.append("amount", formData.amount);
+    formDataToSend.append("price", formData.price);
+    formDataToSend.append("brand", formData.brand);
+    formDataToSend.append("category", formData.category);
+    formDataToSend.append("specifications", formData.specifications);
+
     if (formData.imageFile) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        saveProductChanges({ ...formData, imageUrl: reader.result });
-      };
-      reader.readAsDataURL(formData.imageFile);
-    } else {
-      saveProductChanges(formData);
+      formDataToSend.append("image", formData.imageFile);
+    }
+
+    try {
+      const response = await request1.put(`v1/admin/goods/${product.id}/`, formDataToSend, {
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+          "Content-Type": "multipart/form-data",
+        },
+        withCredentials: true,
+      });
+
+      if (response.status === 200) {
+        // alert("Sửa thành công"); // Removed alert
+        onSave && onSave();
+      }
+    } catch (e) {
+      // alert("Lỗi khi sửa"); // Removed alert
+      console.log("Lỗi ", e);
     }
   };
 
@@ -67,36 +88,7 @@ const ProductEditModal = ({ product, closeModal, saveProductChanges }) => {
     { id: 9, name: "Nông Trại Xanh" },
     { id: 10, name: "Khác" },
   ];
-  const handeOnclickSave = async () => {
-    const formDataToSend = new FormData();
-    formDataToSend.append("goodName", formData.goodName);
-    formDataToSend.append("amount", formData.amount);
-    formDataToSend.append("price", formData.price);
-    formDataToSend.append("brand", formData.brand);
-    formDataToSend.append("category", formData.category);
-    formDataToSend.append("specifications", formData.specifications);
 
-    if (formData.imageFile) {
-      formDataToSend.append("image", formData.imageFile); // Add the file here
-    }
-    try {
-      const response = await request1.put(`v1/admin/goods/${product.id}/`, formDataToSend, {
-        headers: {
-          Authorization: `Bearer ${access_token}`, // Đảm bảo token đúng
-          "Content-Type": "multipart/form-data",
-        },
-        withCredentials: true, // Cho phép gửi cookie
-      });
-      console.log(response);
-      if (response.status === 200) {
-        alert("Sửa thành công");
-        closeModal();
-      }
-    } catch (e) {
-      alert("Lỗi khi sửa");
-      console.log("Lỗi ", e);
-    }
-  };
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 bg-gray-900 bg-opacity-50">
       <div className="bg-white rounded-lg p-6 w-[600px]">
@@ -111,7 +103,6 @@ const ProductEditModal = ({ product, closeModal, saveProductChanges }) => {
               value={formData.goodName}
               onChange={handleChange}
               className="w-full px-4 py-2 border rounded-md"
-
             />
           </div>
 
@@ -206,11 +197,11 @@ const ProductEditModal = ({ product, closeModal, saveProductChanges }) => {
             <button
               type="submit"
               className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 transition-colors"
-              onClick={() => handeOnclickSave()}
             >
               Lưu
             </button>
             <button
+              type="button"
               onClick={closeModal}
               className="bg-red-600 text-white px-6 py-2 rounded-md ml-4 hover:bg-red-700 transition-colors"
             >

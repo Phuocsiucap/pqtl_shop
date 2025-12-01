@@ -34,6 +34,9 @@ public class AdminService {
     @Autowired
     private OrderRepository orderRepository;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     // Đường dẫn lưu ảnh
     private static final String UPLOAD_DIR = "uploads/products/";
 
@@ -99,8 +102,7 @@ public class AdminService {
      */
     public Product createProduct(String goodJson, MultipartFile imageFile) throws IOException {
         // Parse JSON từ request
-        ObjectMapper mapper = new ObjectMapper();
-        Product product = mapper.readValue(goodJson, Product.class);
+        Product product = objectMapper.readValue(goodJson, Product.class);
         
         // Xử lý upload ảnh
         if (imageFile != null && !imageFile.isEmpty()) {
@@ -187,6 +189,8 @@ public class AdminService {
         
         return fileName;
     }
+
+
 
     // ==================== ORDER MANAGEMENT ====================
     /**

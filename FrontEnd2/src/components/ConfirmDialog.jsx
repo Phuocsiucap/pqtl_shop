@@ -8,12 +8,10 @@ const ConfirmDialog = ({ isOpen, title, message, onConfirm, onCancel, confirmTex
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
         <div className="p-6">
           <div className="flex items-center gap-4 mb-4">
-            <div className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center ${
-              type === 'danger' ? 'bg-red-100' : 'bg-blue-100'
-            }`}>
-              <ExclamationTriangleIcon className={`w-6 h-6 ${
-                type === 'danger' ? 'text-red-600' : 'text-blue-600'
-              }`} />
+            <div className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center ${type === 'danger' ? 'bg-red-100' : 'bg-blue-100'
+              }`}>
+              <ExclamationTriangleIcon className={`w-6 h-6 ${type === 'danger' ? 'text-red-600' : 'text-blue-600'
+                }`} />
             </div>
             <div className="flex-1">
               <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
@@ -29,11 +27,10 @@ const ConfirmDialog = ({ isOpen, title, message, onConfirm, onCancel, confirmTex
             </button>
             <button
               onClick={onConfirm}
-              className={`px-4 py-2 text-white rounded-md transition-colors ${
-                type === 'danger'
+              className={`px-4 py-2 text-white rounded-md transition-colors ${type === 'danger'
                   ? 'bg-red-600 hover:bg-red-700'
                   : 'bg-blue-600 hover:bg-blue-700'
-              }`}
+                }`}
             >
               {confirmText}
             </button>

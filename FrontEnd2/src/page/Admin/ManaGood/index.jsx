@@ -12,7 +12,7 @@ import { getCSRFTokenFromCookie } from "../../../Component/Token/getCSRFToken";
 const ProductList = () => {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
-  
+
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,17 +21,17 @@ const ProductList = () => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
-  
+
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 10;
-  
+
   // Search & Filter
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [categories, setCategories] = useState([]);
-  
+
   // Toast & Confirm
   const [toast, setToast] = useState({ isVisible: false, message: "", type: "success" });
   const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, productId: null, productName: "" });
@@ -135,7 +135,7 @@ const ProductList = () => {
 
     // Filter by category - exact match
     if (categoryFilter) {
-      filtered = filtered.filter(product => 
+      filtered = filtered.filter(product =>
         product.category && product.category.trim() === categoryFilter.trim()
       );
     }
@@ -301,7 +301,7 @@ const ProductList = () => {
           <div className="text-sm text-gray-600">
             {categoryFilter ? (
               <span>
-                Hiển thị <strong>{currentProducts.length}</strong> / <strong>{filteredProducts.length}</strong> sản phẩm 
+                Hiển thị <strong>{currentProducts.length}</strong> / <strong>{filteredProducts.length}</strong> sản phẩm
                 trong danh mục <strong className="text-blue-600">"{categoryFilter}"</strong>
               </span>
             ) : (
@@ -350,9 +350,8 @@ const ProductList = () => {
                   {currentProducts.map((product, index) => (
                     <tr
                       key={product.id}
-                      className={`hover:bg-gray-50 border-b transition-colors ${
-                        index % 2 === 0 ? "bg-white" : "bg-gray-50"
-                      }`}
+                      className={`hover:bg-gray-50 border-b transition-colors ${index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                        }`}
                     >
                       <td className="px-6 py-4">
                         <img
@@ -376,11 +375,10 @@ const ProductList = () => {
                       <td className="px-6 py-4">{product.stockQuantity || 0}</td>
                       <td className="px-6 py-4 text-center">
                         <span
-                          className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                            (product.stockQuantity || 0) > 0
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
-                          }`}
+                          className={`px-3 py-1 rounded-full text-xs font-semibold ${(product.stockQuantity || 0) > 0
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                            }`}
                         >
                           {(product.stockQuantity || 0) > 0 ? "Đang bán" : "Ngừng bán"}
                         </span>
@@ -426,11 +424,10 @@ const ProductList = () => {
                   <button
                     onClick={() => paginate(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className={`px-4 py-2 rounded-md transition-colors ${
-                      currentPage === 1
-                        ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                        : "bg-blue-600 text-white hover:bg-blue-700"
-                    }`}
+                    className={`px-4 py-2 rounded-md transition-colors ${currentPage === 1
+                      ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                      : "bg-blue-600 text-white hover:bg-blue-700"
+                      }`}
                   >
                     Trước
                   </button>
@@ -445,11 +442,10 @@ const ProductList = () => {
                         <button
                           key={page}
                           onClick={() => paginate(page)}
-                          className={`px-4 py-2 rounded-md transition-colors ${
-                            currentPage === page
-                              ? "bg-blue-600 text-white"
-                              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                          }`}
+                          className={`px-4 py-2 rounded-md transition-colors ${currentPage === page
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                            }`}
                         >
                           {page}
                         </button>
@@ -462,11 +458,10 @@ const ProductList = () => {
                   <button
                     onClick={() => paginate(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className={`px-4 py-2 rounded-md transition-colors ${
-                      currentPage === totalPages
-                        ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                        : "bg-blue-600 text-white hover:bg-blue-700"
-                    }`}
+                    className={`px-4 py-2 rounded-md transition-colors ${currentPage === totalPages
+                      ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                      : "bg-blue-600 text-white hover:bg-blue-700"
+                      }`}
                   >
                     Sau
                   </button>
