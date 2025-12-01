@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FaChartLine, FaUsers, FaBoxOpen, FaFileInvoice, FaBook, FaFire } from "react-icons/fa"; 
+import { FaChartLine, FaUsers, FaBoxOpen, FaFileInvoice, FaBook, FaFire } from "react-icons/fa";
 import { FaUser } from "react-icons/fa";
 import { IoLogOut } from "react-icons/io5";
 import { BiCategory } from "react-icons/bi";
@@ -35,13 +35,13 @@ const Sidebar1 = () => {
   };
 
   return (
-    <div className="bg-white shadow-lg font-Montserrat rounded-lg overflow-hidden h-screen">
+    <div className="bg-white shadow-lg font-Montserrat rounded-lg overflow-y-auto h-full">
       {/* Logo */}
       <div className="p-6 border-b">
         <Link to={"/admin"}>
-            <h1 className="text-3xl font-extrabold text-primary tracking-wide">
+          <h1 className="text-3xl font-extrabold text-primary tracking-wide">
             PHDTECH
-            </h1>
+          </h1>
         </Link>
       </div>
 
@@ -60,8 +60,8 @@ const Sidebar1 = () => {
               key={index}
               to={item.link}
               className={`ml-4 flex items-center space-x-2 py-2 px-4 rounded-lg cursor-pointer transition-all duration-300 ease-in-out 
-                ${activeMenu === item.link 
-                  ? "bg-blue-100 text-blue-600" 
+                ${activeMenu === item.link
+                  ? "bg-blue-100 text-blue-600"
                   : "text-gray-700 hover:bg-blue-50"}`}
               onClick={() => setActiveMenu(item.link)} // Set active menu item
             >
@@ -87,8 +87,8 @@ const Sidebar1 = () => {
               key={index}
               to={item.link}
               className={`ml-4 flex items-center space-x-2 py-2 px-4 rounded-lg cursor-pointer transition-all duration-300 ease-in-out 
-                ${activeMenu === item.link 
-                  ? "bg-blue-100 text-blue-600" 
+                ${activeMenu === item.link
+                  ? "bg-blue-100 text-blue-600"
                   : "text-gray-700 hover:bg-blue-50 "}`}
               onClick={() => setActiveMenu(item.link)} // Set active menu item
             >
