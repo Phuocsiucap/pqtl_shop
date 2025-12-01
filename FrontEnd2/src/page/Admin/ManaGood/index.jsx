@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { FaEye, FaEdit, FaTrashAlt, FaSearch, FaPlus } from "react-icons/fa";
 import ProductDetailModal from "./ProductDetailModal ";
-import ProductEditModal from "./ProductEditModal ";
+import ProductEditModal from "./ProductEditModal";
 import AddProductModal from "./AddProductModal";
 import ToastNotification from "../../../components/ToastNotification";
 import ConfirmDialog from "../../../components/ConfirmDialog";

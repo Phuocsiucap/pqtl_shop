@@ -140,9 +140,10 @@ public class AdminService {
     /**
      * Cập nhật sản phẩm
      */
-    public Product updateProduct(String id, String goodName, String amount, String price,
-                                 String specifications, String brand, String category,
-                                 MultipartFile imageFile) throws IOException {
+    /**
+     * Cập nhật sản phẩm
+     */
+    public Product updateProduct(String id, String goodJson, MultipartFile imageFile) throws IOException {
         Optional<Product> productOpt = productRepository.findById(id);
         
         if (productOpt.isEmpty()) {
@@ -151,27 +152,30 @@ public class AdminService {
         
         Product product = productOpt.get();
         
-        // Cập nhật các trường
-        if (goodName != null && !goodName.isEmpty()) {
-            product.setName(goodName);
-        }
-        if (amount != null && !amount.isEmpty()) {
-            product.setStockQuantity(Integer.parseInt(amount));
-        }
-        if (price != null && !price.isEmpty()) {
-            product.setPrice(Double.parseDouble(price));
-        }
-        if (specifications != null && !specifications.isEmpty()) {
-            product.setSpecifications(specifications);
-        }
-        if (brand != null && !brand.isEmpty()) {
-            product.setBrand(brand);
-        }
-        if (category != null && !category.isEmpty()) {
-            // setCategory() được tự động generate bởi Lombok @Data annotation
-            product.setCategory(category);
-        }
+        // Parse JSON từ request
+        Product updatedData = objectMapper.readValue(goodJson, Product.class);
         
+        // Cập nhật các trường
+        if (updatedData.getName() != null) product.setName(updatedData.getName());
+        if (updatedData.getStockQuantity() >= 0) product.setStockQuantity(updatedData.getStockQuantity());
+        if (updatedData.getPrice() >= 0) product.setPrice(updatedData.getPrice());
+        if (updatedData.getDescription() != null) product.setDescription(updatedData.getDescription());
+        if (updatedData.getSpecifications() != null) product.setSpecifications(updatedData.getSpecifications());
+        if (updatedData.getBrand() != null) product.setBrand(updatedData.getBrand());
+        if (updatedData.getCategory() != null) product.setCategory(updatedData.getCategory());
+        if (updatedData.getSubCategory() != null) product.setSubCategory(updatedData.getSubCategory());
+        if (updatedData.getDiscount() >= 0) product.setDiscount(updatedData.getDiscount());
+        if (updatedData.getLowStockThreshold() >= 0) product.setLowStockThreshold(updatedData.getLowStockThreshold());
+        if (updatedData.getStatus() != null) product.setStatus(updatedData.getStatus());
+        if (updatedData.getOrigin() != null) product.setOrigin(updatedData.getOrigin());
+        if (updatedData.getManufacturingDate() != null) product.setManufacturingDate(updatedData.getManufacturingDate());
+        if (updatedData.getExpiryDate() != null) product.setExpiryDate(updatedData.getExpiryDate());
+        if (updatedData.getTags() != null) product.setTags(updatedData.getTags());
+        if (updatedData.getCertifications() != null) product.setCertifications(updatedData.getCertifications());
+        if (updatedData.getSizes() != null) product.setSizes(updatedData.getSizes());
+        if (updatedData.getIsBestSeller() != null) product.setIsBestSeller(updatedData.getIsBestSeller());
+        if (updatedData.getIsSeasonal() != null) product.setIsSeasonal(updatedData.getIsSeasonal());
+
         // Xử lý upload ảnh mới
         if (imageFile != null && !imageFile.isEmpty()) {
             try {
