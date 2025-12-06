@@ -134,25 +134,58 @@ public class AdminService {
         return productRepository.save(product);
     }
 
-            product.setExpiryDate(LocalDate.parse(expiryDate));
+    /**
+     * Cập nhật sản phẩm
+     */
+    public Product updateProduct(String id, String goodJson, MultipartFile imageFile, MultipartFile[] additionalImages) throws Exception {
+        Optional<Product> productOpt = productRepository.findById(id);
+        if (productOpt.isEmpty()) {
+            throw new Exception("Sản phẩm không tồn tại");
         }
-        if (batchNumber != null && !batchNumber.isEmpty()) {
-            product.setBatchNumber(batchNumber);
-        }
-        
+        Product existingProduct = productOpt.get();
+
+        // Parse JSON
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+        Product updateData = mapper.readValue(goodJson, Product.class);
+
+        // Update fields
+        existingProduct.setName(updateData.getName());
+        existingProduct.setStockQuantity(updateData.getStockQuantity());
+        existingProduct.setPrice(updateData.getPrice());
+        existingProduct.setCostPrice(updateData.getCostPrice());
+        existingProduct.setDiscount(updateData.getDiscount());
+        existingProduct.setCategory(updateData.getCategory());
+        existingProduct.setBrand(updateData.getBrand());
+        existingProduct.setOrigin(updateData.getOrigin());
+        existingProduct.setDescription(updateData.getDescription());
+        existingProduct.setSpecifications(updateData.getSpecifications());
+        existingProduct.setBatchNumber(updateData.getBatchNumber());
+        existingProduct.setManufacturingDate(updateData.getManufacturingDate());
+        existingProduct.setExpiryDate(updateData.getExpiryDate());
+        existingProduct.setIsBestSeller(updateData.getIsBestSeller());
+        existingProduct.setIsSeasonal(updateData.getIsSeasonal());
+        existingProduct.setIsClearance(updateData.getIsClearance());
+        existingProduct.setClearanceDiscount(updateData.getClearanceDiscount());
+
         // Cập nhật trạng thái hết hạn
-        product.updateExpiryStatus();
-        
+        existingProduct.updateExpiryStatus();
+
         // Xử lý upload ảnh mới
         if (imageFile != null && !imageFile.isEmpty()) {
             Map uploadResult = cloudinaryService.uploadFile(imageFile);
             String imageUrl = cloudinaryService.getImageUrl(uploadResult);
-            product.setImage(imageUrl);
+            existingProduct.setImage(imageUrl);
+        }
+
+        // Cập nhật danh sách ảnh phụ từ JSON (để hỗ trợ xóa ảnh)
+        if (updateData.getAdditionalImages() != null) {
+            existingProduct.setAdditionalImages(updateData.getAdditionalImages());
         }
 
         // Xử lý upload ảnh phụ mới (nếu có)
         if (additionalImages != null && additionalImages.length > 0) {
-            List<String> currentImages = product.getAdditionalImages();
+            List<String> currentImages = existingProduct.getAdditionalImages();
             if (currentImages == null) {
                 currentImages = new ArrayList<>();
             }
@@ -166,10 +199,10 @@ public class AdminService {
                     }
                 }
             }
-            product.setAdditionalImages(currentImages);
+            existingProduct.setAdditionalImages(currentImages);
         }
         
-        return productRepository.save(product);
+        return productRepository.save(existingProduct);
     }
 
     /**

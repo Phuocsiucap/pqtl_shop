@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { request1, request } from "../../../utils/request";
 import { getCSRFTokenFromCookie } from "../../../Component/Token/getCSRFToken";
 import { getCategories } from "../../../api/category";
-import { FaPlus, FaTimes, FaCloudUploadAlt } from "react-icons/fa";
+import { FaPlus, FaTimes, FaCloudUploadAlt, FaImage } from "react-icons/fa";
 
 const ProductEditModal = ({ product: initialProduct, closeModal, onSave, onError }) => {
     // Initial State - mapped from initialProduct prop
@@ -128,6 +128,10 @@ const ProductEditModal = ({ product: initialProduct, closeModal, onSave, onError
         setAdditionalImagePreviews(prev => prev.filter((_, i) => i !== index));
     };
 
+    const handleRemoveExistingImage = (index) => {
+        setExistingAdditionalImages(prev => prev.filter((_, i) => i !== index));
+    };
+
     // Note: Removing existing images is not fully supported by backend updateProduct yet (it only appends).
     // But we can hide them from UI to simulate removal if we were to implement deletion logic later.
     // For now, we just keep them visible.
@@ -167,27 +171,34 @@ const ProductEditModal = ({ product: initialProduct, closeModal, onSave, onError
         try {
             const formDataToSend = new FormData();
 
-            // Map UI fields to Backend API parameters for updateProduct
-            formDataToSend.append("goodName", product.goodName);
-            formDataToSend.append("amount", product.stockQuantity);
-            formDataToSend.append("price", product.price);
-            formDataToSend.append("costPrice", product.costPrice);
-            formDataToSend.append("specifications", product.specifications);
-            formDataToSend.append("brand", product.brand);
-            formDataToSend.append("category", product.category);
-            formDataToSend.append("manufacturingDate", product.manufacturingDate);
-            formDataToSend.append("expiryDate", product.expiryDate);
-            formDataToSend.append("batchNumber", product.batchNumber);
+            // Construct JSON payload matching backend expectations
+            const productPayload = {
+                name: product.goodName,
+                stockQuantity: product.stockQuantity,
+                price: product.price,
+                costPrice: product.costPrice,
+                discount: product.discount,
 
-            // New fields
-            formDataToSend.append("description", product.description);
-            formDataToSend.append("origin", product.origin);
-            formDataToSend.append("isBestSeller", product.isBestSeller);
-            formDataToSend.append("isSeasonal", product.isSeasonal);
-            formDataToSend.append("isClearance", product.isClearance);
-            if (product.isClearance) {
-                formDataToSend.append("clearanceDiscount", product.clearanceDiscount);
-            }
+                category: product.category,
+                brand: product.brand,
+                origin: product.origin,
+
+                description: product.description,
+                specifications: product.specifications,
+
+                batchNumber: product.batchNumber,
+                manufacturingDate: product.manufacturingDate,
+                expiryDate: product.expiryDate,
+
+                isBestSeller: product.isBestSeller,
+                isSeasonal: product.isSeasonal,
+                isClearance: product.isClearance,
+                clearanceDiscount: product.isClearance ? product.clearanceDiscount : null,
+
+                additionalImages: existingAdditionalImages, // Send kept existing images
+            };
+
+            formDataToSend.append("good", JSON.stringify(productPayload));
 
             // Main image (only if changed)
             if (product.image) {
@@ -348,6 +359,12 @@ const ProductEditModal = ({ product: initialProduct, closeModal, onSave, onError
                                             {existingAdditionalImages.map((src, idx) => (
                                                 <div key={`exist-${idx}`} className="relative aspect-square border rounded-md overflow-hidden group">
                                                     <img src={src.startsWith('http') ? src : `${request}${src}`} alt={`Sub ${idx}`} className="w-full h-full object-cover" />
+                                                    <button
+                                                        onClick={() => handleRemoveExistingImage(idx)}
+                                                        className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    >
+                                                        <FaTimes size={10} />
+                                                    </button>
                                                 </div>
                                             ))}
 
