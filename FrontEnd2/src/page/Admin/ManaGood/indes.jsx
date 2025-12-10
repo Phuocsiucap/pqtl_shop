@@ -18,6 +18,10 @@ const ProductList = () => {
   const [filterStatus, setFilterStatus] = useState("all"); // all, clearance, nearExpiry, expired, normal
   const [searchTerm, setSearchTerm] = useState("");
   const productsPerPage = 10;
+  
+  // Multiple selection
+  const [selectedProducts, setSelectedProducts] = useState([]);
+  const [selectAll, setSelectAll] = useState(false);
 
   // Format currency
   const formatCurrency = (value) => {
@@ -104,6 +108,74 @@ const ProductList = () => {
     setIsEditModalOpen(false);
     setSelectedProduct(null);
     setIsAddProductModalOpen(false);
+  };
+
+  // Multiple selection handlers
+  const toggleSelectAll = () => {
+    if (selectAll) {
+      setSelectedProducts([]);
+      setSelectAll(false);
+    } else {
+      setSelectedProducts(currentProducts.map(p => p.id));
+      setSelectAll(true);
+    }
+  };
+
+  const toggleSelectProduct = (productId) => {
+    setSelectedProducts(prev => {
+      if (prev.includes(productId)) {
+        const newSelected = prev.filter(id => id !== productId);
+        if (newSelected.length === 0) setSelectAll(false);
+        return newSelected;
+      } else {
+        const newSelected = [...prev, productId];
+        if (newSelected.length === currentProducts.length) setSelectAll(true);
+        return newSelected;
+      }
+    });
+  };
+
+  // Bulk delete products
+  const deleteMultipleProducts = async () => {
+    if (selectedProducts.length === 0) {
+      alert("Vui lòng chọn ít nhất một sản phẩm");
+      return;
+    }
+
+    const confirmDelete = window.confirm(
+      `Bạn có chắc chắn muốn xóa ${selectedProducts.length} sản phẩm đã chọn? Hành động này không thể hoàn tác.`
+    );
+    
+    if (confirmDelete) {
+      try {
+        const response = await request1.post("v1/admin/goods/delete-multiple", 
+          { ids: selectedProducts },
+          {
+            headers: {
+              Authorization: `Bearer ${access_token}`,
+              "Content-Type": "application/json",
+            },
+            withCredentials: true,
+          }
+        );
+        const result = response.data;
+        alert(result.message || `Đã xóa ${result.successCount} sản phẩm`);
+        setSelectedProducts([]);
+        setSelectAll(false);
+        // Refresh products list
+        const refreshResponse = await request1.get("v1/admin/goods/", {
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+            "Content-Type": "application/json",
+          },
+          withCredentials: true,
+        });
+        setProducts(refreshResponse.data);
+      } catch (e) {
+        console.log("Lỗi khi xóa nhiều sản phẩm:", e);
+        alert("Xóa sản phẩm thất bại");
+      }
+    }
   };
 
   // Hàm lưu thay đổi chỉnh sửa sản phẩm
@@ -238,9 +310,16 @@ const ProductList = () => {
   return (
     <div className="p-6 w-full font-medium">
       <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
-        <h2 className="text-2xl font-semibold text-gray-800">
-          Danh sách sản phẩm ({filteredProducts.length})
-        </h2>
+        <div className="flex items-center gap-4">
+          <h2 className="text-2xl font-semibold text-gray-800">
+            Danh sách sản phẩm ({filteredProducts.length})
+          </h2>
+          {selectedProducts.length > 0 && (
+            <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">
+              Đã chọn: {selectedProducts.length}
+            </span>
+          )}
+        </div>
         <div className="flex gap-3">
           {/* Search */}
           <input
@@ -271,6 +350,15 @@ const ProductList = () => {
           >
             + Thêm sản phẩm
           </button>
+
+          {selectedProducts.length > 0 && (
+            <button
+              onClick={deleteMultipleProducts}
+              className="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700 transition-colors flex items-center gap-2"
+            >
+              <FaTrashAlt /> Xóa nhiều sản phẩm ({selectedProducts.length})
+            </button>
+          )}
         </div>
       </div>
 
@@ -278,6 +366,18 @@ const ProductList = () => {
         <table className="min-w-full table-auto border-collapse">
           <thead className="bg-blue-500 text-white whitespace-nowrap">
             <tr>
+              <th className="px-4 py-3 text-center">
+                <div className="flex flex-col items-center gap-1">
+                  <input
+                    type="checkbox"
+                    checked={selectAll && currentProducts.length > 0}
+                    onChange={toggleSelectAll}
+                    className="w-5 h-5 cursor-pointer accent-blue-600 border-2 border-white rounded"
+                    title="Chọn tất cả"
+                  />
+                  <span className="text-xs">Chọn</span>
+                </div>
+              </th>
               <th className="px-4 py-3 text-left">Hình ảnh</th>
               <th className="px-4 py-3 text-left">Tên sản phẩm</th>
               <th className="px-4 py-3 text-center">SL</th>
@@ -298,12 +398,22 @@ const ProductList = () => {
               return (
                 <tr
                   key={product.id}
-                  className={`hover:bg-gray-50 border-b ${product.isClearance ? "bg-purple-50" :
+                  className={`hover:bg-gray-50 border-b ${
+                    selectedProducts.includes(product.id) ? "bg-blue-100" :
+                    product.isClearance ? "bg-purple-50" :
                     days !== null && days <= 0 ? "bg-red-50" :
-                      days !== null && days <= 7 ? "bg-orange-50" :
-                        index % 2 === 0 ? "bg-gray-50" : "bg-white"
-                    }`}
+                    days !== null && days <= 7 ? "bg-orange-50" :
+                    index % 2 === 0 ? "bg-gray-50" : "bg-white"
+                  }`}
                 >
+                  <td className="px-4 py-3 text-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedProducts.includes(product.id)}
+                      onChange={() => toggleSelectProduct(product.id)}
+                      className="w-5 h-5 cursor-pointer accent-blue-600 border-2 border-gray-300 rounded"
+                    />
+                  </td>
                   <td className="px-4 py-3">
                     <img
                       src={product.image || defaultImage}
