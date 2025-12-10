@@ -6,7 +6,6 @@ import { IoLogOut } from "react-icons/io5";
 import { BiCategory } from "react-icons/bi";
 import { FaBookOpen } from "react-icons/fa6";
 import Cookies from "js-cookie"; // Make sure to import Cookies
-import CategorySidebar from "../CategorySidebar";
 
 const Sidebar1 = () => {
   const navigate = useNavigate();
@@ -35,27 +34,28 @@ const Sidebar1 = () => {
   };
 
   return (
-    <div className="bg-white shadow-lg font-Montserrat rounded-lg overflow-hidden h-screen">
+    <div className="bg-white shadow-lg font-Montserrat rounded-lg overflow-hidden h-screen flex flex-col">
       {/* Logo */}
-      <div className="p-6 border-b">
+      <div className="p-6 border-b flex-shrink-0">
         <Link to={"/admin"}>
             <h1 className="text-3xl font-extrabold text-primary tracking-wide">
-            PHDTECH
+            PQTLSHOP
             </h1>
         </Link>
       </div>
 
       {/* Navigation */}
-      <div className="p-6 space-y-6">
+      <div className="p-6 space-y-6 overflow-y-auto flex-1">
         <h3 className="text-blue-600 text-lg font-semibold uppercase tracking-wide">
           Quản trị Admin
         </h3>
-        <ul className="space-y-4 font-medium">
-          <li className="flex items-center space-x-2">
+        <div className="space-y-4 font-medium">
+          <div className="flex items-center space-x-2 mb-3">
             <BiCategory className="text-xl" />
             <span className="font-bold text-lg text-gray-800">Dashboards</span>
-          </li>
-          {menuItems.map((item, index) => (
+          </div>
+          <div className="max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+            {menuItems.map((item, index) => (
             <Link
               key={index}
               to={item.link}
@@ -73,10 +73,8 @@ const Sidebar1 = () => {
               </li>
             </Link>
           ))}
-        </ul>
-
-        {/* Category Quick Access */}
-        <CategorySidebar />
+          </div>
+        </div>
 
         <h3 className="text-blue-600 text-lg font-semibold uppercase tracking-wide mt-8">
           Quản lý tài khoản

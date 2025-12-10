@@ -21,6 +21,10 @@ const ProductList = () => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
+  
+  // Multiple selection
+  const [selectedProducts, setSelectedProducts] = useState([]);
+  const [selectAll, setSelectAll] = useState(false);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -35,6 +39,7 @@ const ProductList = () => {
   // Toast & Confirm
   const [toast, setToast] = useState({ isVisible: false, message: "", type: "success" });
   const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, productId: null, productName: "" });
+  const [confirmDeleteMultiple, setConfirmDeleteMultiple] = useState({ isOpen: false, count: 0 });
 
   // Fetch products
   const fetchProducts = useCallback(async () => {
@@ -203,6 +208,89 @@ const ProductList = () => {
     }
   };
 
+  // Multiple selection handlers
+  const toggleSelectAll = () => {
+    if (selectAll) {
+      setSelectedProducts([]);
+      setSelectAll(false);
+    } else {
+      setSelectedProducts(currentProducts.map(p => p.id));
+      setSelectAll(true);
+    }
+  };
+
+  const toggleSelectProduct = (productId) => {
+    setSelectedProducts(prev => {
+      if (prev.includes(productId)) {
+        const newSelected = prev.filter(id => id !== productId);
+        if (newSelected.length === 0) setSelectAll(false);
+        return newSelected;
+      } else {
+        const newSelected = [...prev, productId];
+        if (newSelected.length === currentProducts.length) setSelectAll(true);
+        return newSelected;
+      }
+    });
+  };
+
+  const handleDeleteMultipleClick = () => {
+    if (selectedProducts.length === 0) {
+      showToast("Vui lòng chọn ít nhất một sản phẩm", "error");
+      return;
+    }
+    setConfirmDeleteMultiple({ isOpen: true, count: selectedProducts.length });
+  };
+
+  const deleteMultipleProducts = async () => {
+    try {
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center gap-4">
+          <h2 className="text-3xl font-bold text-gray-800">Quản lý Sản phẩm</h2>
+          {selectedProducts.length > 0 && (
+            <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">
+              Đã chọn: {selectedProducts.length}
+            </span>
+          )}
+        </div>
+        <div className="flex gap-3">
+          {selectedProducts.length > 0 && (
+            <button
+              onClick={handleDeleteMultipleClick}
+              className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2 shadow-md"
+            >
+              <FaTrashAlt /> Xóa đã chọn ({selectedProducts.length})
+            </button>
+          )}
+          <button
+            onClick={() => setIsAddProductModalOpen(true)}
+            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 shadow-md"
+          >
+            <FaPlus /> Thêm sản phẩm
+          </button>
+        </div>
+      </div>
+      );
+      
+      const result = response.data;
+      showToast(result.message || `Đã xóa ${result.successCount} sản phẩm`, "success");
+      
+      setConfirmDeleteMultiple({ isOpen: false, count: 0 });
+      setSelectedProducts([]);
+      setSelectAll(false);
+      fetchProducts(); // Refresh list
+    } catch (e) {
+      console.log("Lỗi khi xóa nhiều sản phẩm:", e);
+      showToast("Xóa sản phẩm thất bại", "error");
+    }
+  };
+
+  // Clear selection when filter changes
+  useEffect(() => {
+    setSelectedProducts([]);
+    setSelectAll(false);
+  }, [searchTerm, categoryFilter, statusFilter, currentPage]);
+
   const closeModal = () => {
     setIsDetailModalOpen(false);
     setIsEditModalOpen(false);
@@ -317,18 +405,26 @@ const ProductList = () => {
             >
               Xóa bộ lọc
             </button>
-          )}
-        </div>
-      </div>
-
-      {/* Products Table */}
-      <div className="bg-white shadow-lg rounded-lg overflow-hidden">
-        {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          </div>
-        ) : currentProducts.length === 0 ? (
-          <div className="text-center py-20 text-gray-500">
+              <table className="min-w-full table-auto">
+                <thead className="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+                  <tr>
+                    <th className="px-4 py-4 text-center text-sm font-semibold">
+                      <input
+                        type="checkbox"
+                        checked={selectAll && currentProducts.length > 0}
+                        onChange={toggleSelectAll}
+                        className="w-4 h-4 cursor-pointer"
+                      />
+                    </th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">Hình ảnh</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">Tên sản phẩm</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">Danh mục</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">Giá</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">Số lượng</th>
+                    <th className="px-6 py-4 text-center text-sm font-semibold">Trạng thái</th>
+                    <th className="px-6 py-4 text-center text-sm font-semibold">Thao tác</th>
+                  </tr>
+                </thead>="text-center py-20 text-gray-500">
             <p className="text-lg">Không tìm thấy sản phẩm nào</p>
           </div>
         ) : (
@@ -339,13 +435,24 @@ const ProductList = () => {
                   <tr>
                     <th className="px-6 py-4 text-left text-sm font-semibold">Hình ảnh</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold">Tên sản phẩm</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Danh mục</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Giá</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Số lượng</th>
-                    <th className="px-6 py-4 text-center text-sm font-semibold">Trạng thái</th>
-                    <th className="px-6 py-4 text-center text-sm font-semibold">Thao tác</th>
-                  </tr>
-                </thead>
+                  {currentProducts.map((product, index) => (
+                    <tr
+                      key={product.id}
+                      className={`hover:bg-gray-50 border-b transition-colors ${
+                        selectedProducts.includes(product.id) 
+                          ? "bg-blue-50" 
+                          : index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                      }`}
+                    >
+                      <td className="px-4 py-4 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedProducts.includes(product.id)}
+                          onChange={() => toggleSelectProduct(product.id)}
+                          className="w-4 h-4 cursor-pointer"
+                        />
+                      </td>
+                      <td className="px-6 py-4">
                 <tbody className="text-gray-700">
                   {currentProducts.map((product, index) => (
                     <tr
@@ -508,6 +615,18 @@ const ProductList = () => {
         onConfirm={() => deleteProduct(confirmDelete.productId)}
         onCancel={() => setConfirmDelete({ isOpen: false, productId: null, productName: "" })}
         confirmText="Xóa"
+        cancelText="Hủy"
+        type="danger"
+      />
+
+      {/* Confirm Delete Multiple Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDeleteMultiple.isOpen}
+        title="Xác nhận xóa nhiều sản phẩm"
+        message={`Bạn có chắc chắn muốn xóa ${confirmDeleteMultiple.count} sản phẩm đã chọn? Hành động này không thể hoàn tác.`}
+        onConfirm={deleteMultipleProducts}
+        onCancel={() => setConfirmDeleteMultiple({ isOpen: false, count: 0 })}
+        confirmText="Xóa tất cả"
         cancelText="Hủy"
         type="danger"
       />

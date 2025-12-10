@@ -147,6 +147,27 @@ public class AdminManagementController {
         }
     }
 
+    /**
+     * Delete multiple products by IDs
+     * POST /api/v1/admin/goods/delete-multiple
+     */
+    @PostMapping("/goods/delete-multiple")
+    public ResponseEntity<?> deleteMultipleProducts(@RequestBody Map<String, List<String>> request) {
+        try {
+            List<String> ids = request.get("ids");
+            if (ids == null || ids.isEmpty()) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "Danh sách ID không được để trống"));
+            }
+            
+            Map<String, Object> result = adminService.deleteMultipleProducts(ids);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Xóa thất bại: " + e.getMessage()));
+        }
+    }
+
     // ==================== ORDER MANAGEMENT ====================
     /**
      * Get all orders

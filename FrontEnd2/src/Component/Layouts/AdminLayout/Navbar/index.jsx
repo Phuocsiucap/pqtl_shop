@@ -18,7 +18,7 @@ const Sidebar = () => {
       {/* Logo */}
       <div className="text-3xl text-primary font-semibold h-[100px] flex justify-center items-center">
         <p className="mr-10">
-          PHDTECH
+          PQTLSHOP
         </p>
         <IoMdMenu/>
       </div>

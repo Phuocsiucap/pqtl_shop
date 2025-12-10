@@ -215,6 +215,39 @@ public class AdminService {
         productRepository.deleteById(productId);
     }
 
+    /**
+     * Xóa nhiều sản phẩm cùng lúc
+     */
+    public Map<String, Object> deleteMultipleProducts(List<String> productIds) {
+        int successCount = 0;
+        int failCount = 0;
+        List<String> failedIds = new ArrayList<>();
+        
+        for (String productId : productIds) {
+            try {
+                if (productRepository.existsById(productId)) {
+                    productRepository.deleteById(productId);
+                    successCount++;
+                } else {
+                    failCount++;
+                    failedIds.add(productId);
+                }
+            } catch (Exception e) {
+                failCount++;
+                failedIds.add(productId);
+            }
+        }
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("total", productIds.size());
+        result.put("successCount", successCount);
+        result.put("failCount", failCount);
+        result.put("failedIds", failedIds);
+        result.put("message", String.format("Đã xóa thành công %d/%d sản phẩm", successCount, productIds.size()));
+        
+        return result;
+    }
+
 
 
     // ==================== ORDER MANAGEMENT ====================

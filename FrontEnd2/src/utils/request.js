@@ -12,10 +12,19 @@ const token = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0b2x1ZW4zMDAwQGdtYWlsLmNvbSIsImlh
 
 // Trả về URL đầy đủ cho ảnh. Nếu `path` đã là URL tuyệt đối (http/https) thì giữ nguyên,
 // nếu là đường dẫn nội bộ trên server thì thêm tiền tố `request`.
-function getFullImageUrl(path, fallback = '/placeholder.png') {
+function getFullImageUrl(path, fallback = 'https://via.placeholder.com/400x300?text=No+Image') {
     if (!path) return fallback;
     try {
+        // Nếu là URL đầy đủ (http/https), return ngay
         if (/^https?:\/\//i.test(path)) return path;
+        
+        // Nếu là file name cũ (không có http/https), return placeholder
+        // Vì đã chuyển sang Cloudinary, không còn lưu file local
+        if (path.includes('_') || path.match(/\.(jpg|jpeg|png|webp)$/i)) {
+            console.warn('Old file path detected, using placeholder:', path);
+            return fallback;
+        }
+        
         return `${request}${path}`;
     } catch (e) {
         return fallback;
