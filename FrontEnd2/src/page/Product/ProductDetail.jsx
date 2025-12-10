@@ -104,17 +104,104 @@ const ImageGallery = ({ mainImage, additionalImages }) => {
 
 // Component hiển thị sản phẩm tương tự
 const SimilarProducts = ({ products }) => {
+    const navigate = useNavigate();
+    
     if (!products || products.length === 0) return null;
+
+    const handleProductClick = (productId) => {
+        navigate(`/products/${productId}`);
+    };
 
     return (
         <div className="mt-12">
             <h2 className="text-2xl font-bold mb-6">Sản phẩm tương tự</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 {products.map((product) => (
-                    <div key={product.id} className="border p-3 rounded-lg">
-                        <img src={product.image} alt={product.name} className="w-full h-32 object-cover mb-2" />
-                        <h4 className="text-sm font-semibold truncate">{product.name}</h4>
-                        <p className="text-primary font-bold">{product.finalPrice.toLocaleString()} VND</p>
+                    <div 
+                        key={product.id} 
+                        onClick={() => handleProductClick(product.id)}
+                        className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer hover:-translate-y-1"
+                    >
+                        {/* Image Container */}
+                        <div className="relative w-full h-40 bg-gray-100 overflow-hidden">
+                            <img 
+                                src={product.image} 
+                                alt={product.name} 
+                                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" 
+                            />
+                            {/* Stock Badge */}
+                            {product.stockQuantity <= 0 && (
+                                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                                    <span className="text-white font-bold text-lg">Hết hàng</span>
+                                </div>
+                            )}
+                            {/* Clearance Badge */}
+                            {product.isClearance && (
+                                <div className="absolute top-2 right-2 bg-purple-600 text-white px-2 py-1 rounded text-xs font-bold">
+                                    Thanh lý -{product.clearanceDiscount}%
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Info Container */}
+                        <div className="p-3">
+                            {/* Product Name */}
+                            <h4 className="text-sm font-semibold text-gray-800 truncate mb-1">
+                                {product.name}
+                            </h4>
+                            
+                            {/* Category */}
+                            <p className="text-xs text-gray-500 mb-2">
+                                {product.category}
+                            </p>
+
+                            {/* Rating */}
+                            {product.rating && (
+                                <div className="flex items-center mb-2">
+                                    <span className="text-yellow-500 text-xs">
+                                        {'★'.repeat(Math.round(product.rating))}
+                                        {'☆'.repeat(5 - Math.round(product.rating))}
+                                    </span>
+                                    <span className="text-xs text-gray-500 ml-1">({product.reviewCount || 0})</span>
+                                </div>
+                            )}
+
+                            {/* Price */}
+                            <div className="mb-2">
+                                {product.isClearance && product.clearanceDiscount > 0 ? (
+                                    <>
+                                        <p className="text-xs text-gray-400 line-through">
+                                            {product.price.toLocaleString()} VND
+                                        </p>
+                                        <p className="text-lg font-bold text-purple-600">
+                                            {Math.round(product.price * (1 - product.clearanceDiscount / 100)).toLocaleString()} VND
+                                        </p>
+                                    </>
+                                ) : product.discount > 0 ? (
+                                    <>
+                                        <p className="text-xs text-gray-400 line-through">
+                                            {product.price.toLocaleString()} VND
+                                        </p>
+                                        <p className="text-lg font-bold text-red-600">
+                                            {(product.finalPrice || product.price - product.discount).toLocaleString()} VND
+                                        </p>
+                                    </>
+                                ) : (
+                                    <p className="text-lg font-bold text-red-600">
+                                        {product.price.toLocaleString()} VND
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Stock Status */}
+                            <p className="text-xs font-medium">
+                                {product.stockQuantity > 0 ? (
+                                    <span className="text-green-600">Còn {product.stockQuantity} sản phẩm</span>
+                                ) : (
+                                    <span className="text-red-600">Hết hàng</span>
+                                )}
+                            </p>
+                        </div>
                     </div>
                 ))}
             </div>
