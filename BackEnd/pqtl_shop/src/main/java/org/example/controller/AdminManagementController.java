@@ -532,4 +532,20 @@ public class AdminManagementController {
                     .body(Map.of("error", "Lỗi: " + e.getMessage()));
         }
     }
+
+    /**
+     * Add placeholder images to products without images
+     * POST /api/v1/admin/fix-missing-images/
+     * Utility endpoint for maintenance
+     */
+    @PostMapping("/fix-missing-images/")
+    public ResponseEntity<?> fixMissingImages() {
+        try {
+            Map<String, Object> result = adminService.fixMissingImages();
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Lỗi: " + e.getMessage()));
+        }
+    }
 }

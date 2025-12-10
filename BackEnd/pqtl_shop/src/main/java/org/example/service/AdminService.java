@@ -92,7 +92,17 @@ public class AdminService {
      * Lấy tất cả sản phẩm
      */
     public List<Product> getAllProducts() {
-        return productRepository.findAll();
+        List<Product> products = productRepository.findAll();
+        
+        // Ensure all products have an image URL
+        for (Product product : products) {
+            // Debug: log products without image
+            if (product.getImage() == null || product.getImage().isEmpty()) {
+                System.out.println("Product without image: " + product.getName() + " (ID: " + product.getId() + ")");
+            }
+        }
+        
+        return products;
     }
 
     /**
@@ -1096,5 +1106,46 @@ public class AdminService {
         return allProducts.stream()
                 .filter(p -> p.getBatchNumber() != null && !p.getBatchNumber().isEmpty())
                 .collect(Collectors.groupingBy(Product::getBatchNumber));
+    }
+
+    /**
+     * Fix missing images - assign placeholder images from Cloudinary to products without images
+     */
+    public Map<String, Object> fixMissingImages() {
+        List<Product> allProducts = productRepository.findAll();
+        int totalProducts = allProducts.size();
+        int productsWithoutImage = 0;
+        int updated = 0;
+
+        // Sample product images from Cloudinary (you can add more categories)
+        String[] placeholderImages = {
+            "https://res.cloudinary.com/dckjtgddy/image/upload/v1733790960/products/placeholder_fruit.jpg",
+            "https://res.cloudinary.com/dckjtgddy/image/upload/v1733790960/products/placeholder_vegetable.jpg"
+        };
+
+        for (int i = 0; i < allProducts.size(); i++) {
+            Product product = allProducts.get(i);
+            
+            // Check if product has no image
+            if (product.getImage() == null || product.getImage().trim().isEmpty()) {
+                productsWithoutImage++;
+                
+                // Assign a placeholder image based on category
+                String placeholderUrl = placeholderImages[i % placeholderImages.length];
+                product.setImage(placeholderUrl);
+                productRepository.save(product);
+                updated++;
+                
+                System.out.println("Updated product: " + product.getName() + " with placeholder image");
+            }
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("totalProducts", totalProducts);
+        result.put("productsWithoutImage", productsWithoutImage);
+        result.put("updated", updated);
+        result.put("message", "Fixed " + updated + " products with placeholder images");
+
+        return result;
     }
 }
