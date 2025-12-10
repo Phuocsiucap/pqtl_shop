@@ -477,35 +477,14 @@ const ProductList = () => {
                         />
                       </td>
                       <td className="px-6 py-4">
-                        {(() => {
-                          // Lấy ảnh từ product.image, nếu không có thử additionalImages
-                          let imageUrl = "/placeholder.png";
-                          
-                          if (product.image && product.image.trim()) {
-                            imageUrl = getFullImageUrl(product.image);
-                          } else if (product.additionalImages && product.additionalImages.length > 0) {
-                            // Fallback to first additional image
-                            imageUrl = getFullImageUrl(product.additionalImages[0]);
-                            console.log(`Product ${product.name}: Using additionalImages[0]`);
-                          }
-                          
-                          // Debug log
-                          if (product.image || (product.additionalImages && product.additionalImages.length > 0)) {
-                            console.log(`Product ${product.name}: image="${product.image}" additionalImages=${product.additionalImages?.length || 0} -> final url="${imageUrl}"`);
-                          }
-                          
-                          return (
-                            <img
-                              src={imageUrl}
-                              alt={product.name}
-                              className="w-16 h-16 object-cover rounded-md border border-gray-200"
-                              onError={(e) => {
-                                console.error(`Image load error for ${product.name}: ${imageUrl}`);
-                                e.target.src = "/placeholder.png";
-                              }}
-                            />
-                          );
-                        })()}
+                        <img
+                          src={product.image || "/placeholder.png"}
+                          alt={product.name}
+                          className="w-16 h-16 object-cover rounded-md border border-gray-200"
+                          onError={(e) => {
+                            e.target.src = "/placeholder.png";
+                          }}
+                        />
                       </td>
                       <td className="px-6 py-4 font-medium">{product.name || "N/A"}</td>
                       <td className="px-6 py-4">

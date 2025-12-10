@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { FaEye, FaEdit, FaTrashAlt, FaTag, FaFilter, FaExclamationTriangle } from "react-icons/fa";
-import Image from "../../../assets/images/Product_1.png";
+import defaultImage from "../../../assets/images/placeholder.png";
+import placeholderImg from "../../../assets/images/placeholder.png";
 import ProductDetailModal from "./ProductDetailModal ";
 import ProductEditModal from "./ProductEditModal ";
 import AddProductModal from "./AddProductModal";
-import { request1,request } from "../../../utils/request";
+import { request1, request } from "../../../utils/request";
 import { getCSRFTokenFromCookie } from "../../../Component/Token/getCSRFToken";
 const ProductList = () => {
   const [products, setProducts] = useState([]);
@@ -35,7 +36,7 @@ const ProductList = () => {
   // Get status badge
   const getStatusBadge = (product) => {
     const days = getDaysUntilExpiry(product.expiryDate);
-    
+
     if (product.isClearance) {
       return <span className="px-2 py-1 bg-purple-600 text-white text-xs rounded-full">Thanh lý -{product.clearanceDiscount}%</span>;
     }
@@ -73,12 +74,12 @@ const ProductList = () => {
   };
 
   // Hàm xóa sản phẩm
-  const deleteProduct = async(id) => {
+  const deleteProduct = async (id) => {
     const confirmDelete = window.confirm(
       "Bạn có chắc chắn muốn xóa sản phẩm này?"
     );
     if (confirmDelete) {
-      try{
+      try {
         const response = await request1.delete(`v1/admin/goods/${id}/`, {
           headers: {
             Authorization: `Bearer ${access_token}`,
@@ -90,8 +91,8 @@ const ProductList = () => {
         alert("Xóa thành công");
         setProducts(products.filter((product) => product.id !== id));
       }
-      catch(e){
-        console.log("Lỗi ",e)
+      catch (e) {
+        console.log("Lỗi ", e)
         alert("Xóa thất bại")
       }
     }
@@ -139,12 +140,12 @@ const ProductList = () => {
   const filteredProducts = products.filter(product => {
     // Search filter
     const matchSearch = product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       product.category?.toLowerCase().includes(searchTerm.toLowerCase());
-    
+      product.category?.toLowerCase().includes(searchTerm.toLowerCase());
+
     // Status filter
     const days = getDaysUntilExpiry(product.expiryDate);
     let matchStatus = true;
-    
+
     switch (filterStatus) {
       case "clearance":
         matchStatus = product.isClearance === true;
@@ -164,7 +165,7 @@ const ProductList = () => {
       default:
         matchStatus = true;
     }
-    
+
     return matchSearch && matchStatus;
   });
 
@@ -249,7 +250,7 @@ const ProductList = () => {
             onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
             className="px-4 py-2 border rounded-md w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          
+
           {/* Filter */}
           <select
             value={filterStatus}
@@ -263,7 +264,7 @@ const ProductList = () => {
             <option value="sale">💰 Đang giảm giá</option>
             <option value="normal">✅ Bình thường</option>
           </select>
-          
+
           <button
             onClick={() => setIsAddProductModalOpen(true)}
             className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 transition-colors"
@@ -293,143 +294,141 @@ const ProductList = () => {
             {currentProducts.map((product, index) => {
               const days = getDaysUntilExpiry(product.expiryDate);
               const profitMargin = getProfitMargin(product.price, product.costPrice);
-              
+
               return (
-              <tr
-                key={product.id}
-                className={`hover:bg-gray-50 border-b ${
-                  product.isClearance ? "bg-purple-50" :
-                  days !== null && days <= 0 ? "bg-red-50" :
-                  days !== null && days <= 7 ? "bg-orange-50" :
-                  index % 2 === 0 ? "bg-gray-50" : "bg-white"
-                }`}
-              >
-                <td className="px-4 py-3">
-                  <img
-                    src={product.image ? `${request}${product.image}` : "https://via.placeholder.com/56x56?text=No+Image"}
-                    alt={product.name || "Product"}
-                    className="w-14 h-14 object-cover rounded-md bg-gray-100"
-                    onError={(e) => { 
-                      e.target.onerror = null; // Prevent infinite loop
-                      e.target.src = "https://via.placeholder.com/56x56?text=No+Image"; 
-                    }}
-                  />
-                </td>
-                <td className="px-4 py-3">
-                  <div className="max-w-[200px]">
-                    <p className="font-medium truncate">{product.name}</p>
-                    <p className="text-xs text-gray-500">{product.category}</p>
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-center">
-                  <span className={product.stockQuantity <= 10 ? "text-red-600 font-bold" : ""}>
-                    {product.stockQuantity}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-right font-medium">
-                  {product.isClearance ? (
-                    <div>
-                      <span className="line-through text-gray-400 text-xs">{formatCurrency(product.price)}</span>
-                      <br />
-                      <span className="text-purple-600">{formatCurrency(product.price * (1 - (product.clearanceDiscount || 0) / 100))}</span>
+                <tr
+                  key={product.id}
+                  className={`hover:bg-gray-50 border-b ${product.isClearance ? "bg-purple-50" :
+                    days !== null && days <= 0 ? "bg-red-50" :
+                      days !== null && days <= 7 ? "bg-orange-50" :
+                        index % 2 === 0 ? "bg-gray-50" : "bg-white"
+                    }`}
+                >
+                  <td className="px-4 py-3">
+                    <img
+                      src={product.image || defaultImage}
+                      alt={product.name || "Product"}
+                      className="w-14 h-14 object-cover rounded-md bg-gray-100"
+                      onError={(e) => {
+                        e.target.onerror = null; // Prevent infinite loop
+                        e.target.src = defaultImage;
+                      }}
+                    />
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="max-w-[200px]">
+                      <p className="font-medium truncate">{product.name}</p>
+                      <p className="text-xs text-gray-500">{product.category}</p>
                     </div>
-                  ) : product.discount > 0 ? (
-                    <div>
-                      <span className="line-through text-gray-400 text-xs">{formatCurrency(product.price)}</span>
-                      <br />
-                      <span className="text-red-600">{formatCurrency(product.price - product.discount)}</span>
-                    </div>
-                  ) : (
-                    formatCurrency(product.price)
-                  )}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  {product.costPrice ? formatCurrency(product.costPrice) : <span className="text-gray-400">-</span>}
-                </td>
-                <td className="px-4 py-3 text-center">
-                  {profitMargin ? (
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      parseFloat(profitMargin) >= 30 ? "bg-green-100 text-green-700" :
-                      parseFloat(profitMargin) >= 15 ? "bg-yellow-100 text-yellow-700" :
-                      "bg-red-100 text-red-700"
-                    }`}>
-                      {profitMargin}%
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <span className={product.stockQuantity <= 10 ? "text-red-600 font-bold" : ""}>
+                      {product.stockQuantity}
                     </span>
-                  ) : <span className="text-gray-400">-</span>}
-                </td>
-                <td className="px-4 py-3 text-center">
-                  {product.discount > 0 ? (
-                    <span className="text-green-600 font-medium">-{formatCurrency(product.discount)}</span>
-                  ) : <span className="text-gray-400">-</span>}
-                </td>
-                <td className="px-4 py-3 text-center text-xs">
-                  {product.expiryDate ? (
-                    <div>
-                      <p>{product.expiryDate}</p>
-                      {days !== null && (
-                        <p className={
-                          days <= 0 ? "text-red-600 font-bold" :
-                          days <= 7 ? "text-red-500" :
-                          days <= 30 ? "text-orange-500" :
-                          "text-green-500"
-                        }>
-                          {days <= 0 ? "Hết hạn" : `${days} ngày`}
-                        </p>
-                      )}
-                    </div>
-                  ) : <span className="text-gray-400">-</span>}
-                </td>
-                <td className="px-4 py-3 text-center">
-                  {getStatusBadge(product)}
-                </td>
-                <td className="px-4 py-3 text-center">
-                  <div className="flex items-center justify-center gap-2">
-                    <button
-                      onClick={() => viewProductDetails(product)}
-                      className="text-blue-500 hover:text-blue-700 p-1"
-                      title="Xem chi tiết"
-                    >
-                      <FaEye />
-                    </button>
-                    <button
-                      onClick={() => editProduct(product)}
-                      className="text-yellow-500 hover:text-yellow-700 p-1"
-                      title="Chỉnh sửa"
-                    >
-                      <FaEdit />
-                    </button>
+                  </td>
+                  <td className="px-4 py-3 text-right font-medium">
                     {product.isClearance ? (
-                      <button
-                        onClick={() => unmarkClearance(product.id)}
-                        className="text-gray-500 hover:text-gray-700 p-1"
-                        title="Hủy thanh lý"
-                      >
-                        <FaTag />
-                      </button>
+                      <div>
+                        <span className="line-through text-gray-400 text-xs">{formatCurrency(product.price)}</span>
+                        <br />
+                        <span className="text-purple-600">{formatCurrency(product.price * (1 - (product.clearanceDiscount || 0) / 100))}</span>
+                      </div>
+                    ) : product.discount > 0 ? (
+                      <div>
+                        <span className="line-through text-gray-400 text-xs">{formatCurrency(product.price)}</span>
+                        <br />
+                        <span className="text-red-600">{formatCurrency(product.price - product.discount)}</span>
+                      </div>
                     ) : (
-                      <button
-                        onClick={() => {
-                          const discount = prompt("Nhập % giảm giá thanh lý (1-90):", "30");
-                          if (discount && !isNaN(discount) && discount >= 1 && discount <= 90) {
-                            markAsClearance(product.id, parseFloat(discount));
-                          }
-                        }}
-                        className="text-purple-500 hover:text-purple-700 p-1"
-                        title="Đánh dấu thanh lý"
-                      >
-                        <FaTag />
-                      </button>
+                      formatCurrency(product.price)
                     )}
-                    <button
-                      onClick={() => deleteProduct(product.id)}
-                      className="text-red-500 hover:text-red-700 p-1"
-                      title="Xóa"
-                    >
-                      <FaTrashAlt />
-                    </button>
-                  </div>
-                </td>
-              </tr>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    {product.costPrice ? formatCurrency(product.costPrice) : <span className="text-gray-400">-</span>}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    {profitMargin ? (
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${parseFloat(profitMargin) >= 30 ? "bg-green-100 text-green-700" :
+                        parseFloat(profitMargin) >= 15 ? "bg-yellow-100 text-yellow-700" :
+                          "bg-red-100 text-red-700"
+                        }`}>
+                        {profitMargin}%
+                      </span>
+                    ) : <span className="text-gray-400">-</span>}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    {product.discount > 0 ? (
+                      <span className="text-green-600 font-medium">-{formatCurrency(product.discount)}</span>
+                    ) : <span className="text-gray-400">-</span>}
+                  </td>
+                  <td className="px-4 py-3 text-center text-xs">
+                    {product.expiryDate ? (
+                      <div>
+                        <p>{product.expiryDate}</p>
+                        {days !== null && (
+                          <p className={
+                            days <= 0 ? "text-red-600 font-bold" :
+                              days <= 7 ? "text-red-500" :
+                                days <= 30 ? "text-orange-500" :
+                                  "text-green-500"
+                          }>
+                            {days <= 0 ? "Hết hạn" : `${days} ngày`}
+                          </p>
+                        )}
+                      </div>
+                    ) : <span className="text-gray-400">-</span>}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    {getStatusBadge(product)}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        onClick={() => viewProductDetails(product)}
+                        className="text-blue-500 hover:text-blue-700 p-1"
+                        title="Xem chi tiết"
+                      >
+                        <FaEye />
+                      </button>
+                      <button
+                        onClick={() => editProduct(product)}
+                        className="text-yellow-500 hover:text-yellow-700 p-1"
+                        title="Chỉnh sửa"
+                      >
+                        <FaEdit />
+                      </button>
+                      {product.isClearance ? (
+                        <button
+                          onClick={() => unmarkClearance(product.id)}
+                          className="text-gray-500 hover:text-gray-700 p-1"
+                          title="Hủy thanh lý"
+                        >
+                          <FaTag />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            const discount = prompt("Nhập % giảm giá thanh lý (1-90):", "30");
+                            if (discount && !isNaN(discount) && discount >= 1 && discount <= 90) {
+                              markAsClearance(product.id, parseFloat(discount));
+                            }
+                          }}
+                          className="text-purple-500 hover:text-purple-700 p-1"
+                          title="Đánh dấu thanh lý"
+                        >
+                          <FaTag />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => deleteProduct(product.id)}
+                        className="text-red-500 hover:text-red-700 p-1"
+                        title="Xóa"
+                      >
+                        <FaTrashAlt />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
               );
             })}
           </tbody>
