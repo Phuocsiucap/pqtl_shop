@@ -123,13 +123,20 @@ const ProductList = () => {
 
   const toggleSelectProduct = (productId) => {
     setSelectedProducts(prev => {
-      if (prev.includes(productId)) {
+      const isCurrentlySelected = prev.includes(productId);
+      
+      if (isCurrentlySelected) {
+        // Bỏ chọn sản phẩm
         const newSelected = prev.filter(id => id !== productId);
-        if (newSelected.length === 0) setSelectAll(false);
+        setSelectAll(false); // Luôn bỏ selectAll khi bỏ chọn bất kỳ sản phẩm nào
         return newSelected;
       } else {
+        // Chọn sản phẩm
         const newSelected = [...prev, productId];
-        if (newSelected.length === currentProducts.length) setSelectAll(true);
+        // Chỉ set selectAll = true nếu đã chọn đủ tất cả sản phẩm trên trang
+        if (newSelected.length === currentProducts.length) {
+          setSelectAll(true);
+        }
         return newSelected;
       }
     });
