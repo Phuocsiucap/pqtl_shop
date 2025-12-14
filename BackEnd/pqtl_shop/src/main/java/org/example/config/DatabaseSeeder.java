@@ -7,6 +7,7 @@ import org.example.repository.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Profile;
 
 import java.time.Instant;
 import java.util.Arrays;
@@ -17,6 +18,7 @@ import java.util.List;
  * Chạy tự động khi ứng dụng khởi động (chỉ thêm nếu chưa tồn tại)
  */
 @Component
+@Profile("dev")
 public class DatabaseSeeder implements CommandLineRunner {
 
     @Autowired
