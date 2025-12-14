@@ -4,7 +4,7 @@ import { useSelector } from "react-redux";
 import { request1, token } from "../../utils/request";
 import CartItem from "./cartItems";
 import VoucherModal from "./VoucherModels";
-import CartFooter from "./CartFooter";
+import CartFooter from "./cartFooter";
 import { getCSRFTokenFromCookie } from "../../Component/Token/getCSRFToken";
 
 
