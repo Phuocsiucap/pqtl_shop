@@ -39,9 +39,11 @@ public class OrderService {
             Optional<Product> productOpt = productRepository.findById(item.getProductId());
             if (productOpt.isPresent()) {
                 Product product = productOpt.get();
-                item.setCostPrice(product.getCostPrice());
+                // Xử lý costPrice có thể null
+                Double productCostPrice = product.getCostPrice() != null ? product.getCostPrice() : 0.0;
+                item.setCostPrice(productCostPrice);
                 // Tính lợi nhuận: (giá bán - giảm giá - giá nhập) * số lượng
-                double itemProfit = (item.getPrice() - item.getDiscount() - product.getCostPrice()) * item.getQuantity();
+                double itemProfit = (item.getPrice() - item.getDiscount() - productCostPrice) * item.getQuantity();
                 totalProfit += itemProfit;
             }
         }

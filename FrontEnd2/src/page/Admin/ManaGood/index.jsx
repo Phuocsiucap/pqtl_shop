@@ -2,17 +2,18 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { FaEye, FaEdit, FaTrashAlt, FaSearch, FaPlus } from "react-icons/fa";
 import ProductDetailModal from "./ProductDetailModal ";
-import ProductEditModal from "./ProductEditModal ";
+import ProductEditModal from "./ProductEditModal";
 import AddProductModal from "./AddProductModal";
+import FixImagesButton from "./FixImagesButton";
 import ToastNotification from "../../../components/ToastNotification";
 import ConfirmDialog from "../../../components/ConfirmDialog";
-import { request1, request } from "../../../utils/request";
+import { request1, request, getFullImageUrl } from "../../../utils/request";
 import { getCSRFTokenFromCookie } from "../../../Component/Token/getCSRFToken";
 
 const ProductList = () => {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
-  
+
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,20 +22,25 @@ const ProductList = () => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
-  
+
+  // Multiple selection
+  const [selectedProducts, setSelectedProducts] = useState([]);
+  const [selectAll, setSelectAll] = useState(false);
+
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 10;
-  
+
   // Search & Filter
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [categories, setCategories] = useState([]);
-  
+
   // Toast & Confirm
   const [toast, setToast] = useState({ isVisible: false, message: "", type: "success" });
   const [confirmDelete, setConfirmDelete] = useState({ isOpen: false, productId: null, productName: "" });
+  const [confirmDeleteMultiple, setConfirmDeleteMultiple] = useState({ isOpen: false, count: 0 });
 
   // Fetch products
   const fetchProducts = useCallback(async () => {
@@ -48,14 +54,13 @@ const ProductList = () => {
         withCredentials: true,
       });
       setProducts(response.data || []);
-      setFilteredProducts(response.data || []);
     } catch (e) {
       console.log("Lỗi khi lấy danh sách sản phẩm:", e);
       showToast("Không thể tải danh sách sản phẩm", "error");
     } finally {
       setLoading(false);
     }
-  }, [access_token]);
+  }, []);
 
   // Fetch categories from API
   const fetchCategories = useCallback(async () => {
@@ -81,22 +86,29 @@ const ProductList = () => {
         { id: "6", name: "Thực Phẩm Khô" },
       ]);
     }
-  }, [access_token]);
+  }, []);
 
   // Initial load
   useEffect(() => {
     fetchProducts();
     fetchCategories();
-  }, [fetchProducts, fetchCategories]);
+  }, []);
+
+  // Log products when they change (for debugging)
+  useEffect(() => {
+    if (products.length > 0) {
+      console.log('Products loaded:', products);
+      console.log('First product image:', products[0].image);
+    }
+  }, [products]);
 
   // Listen to URL changes and update category filter
   useEffect(() => {
     const categoryFromUrl = searchParams.get("category");
     if (categoryFromUrl) {
       setCategoryFilter(decodeURIComponent(categoryFromUrl));
-      setCurrentPage(1); // Reset to first page when filter changes
+      setCurrentPage(1);
     } else {
-      // If no category in URL, clear filter
       setCategoryFilter("");
     }
   }, [location.search, searchParams]);
@@ -105,7 +117,6 @@ const ProductList = () => {
   const handleCategoryFilterChange = (category) => {
     setCategoryFilter(category);
     setCurrentPage(1);
-    // Update URL
     if (category) {
       setSearchParams({ category: encodeURIComponent(category) });
     } else {
@@ -119,11 +130,16 @@ const ProductList = () => {
     setCategoryFilter("");
     setStatusFilter("all");
     setCurrentPage(1);
-    setSearchParams({}); // Clear URL params
+    setSearchParams({});
   };
 
   // Filter & Search
   useEffect(() => {
+    if (products.length === 0) {
+      setFilteredProducts([]);
+      return;
+    }
+
     let filtered = [...products];
 
     // Search by name
@@ -135,15 +151,14 @@ const ProductList = () => {
 
     // Filter by category - exact match
     if (categoryFilter) {
-      filtered = filtered.filter(product => 
+      filtered = filtered.filter(product =>
         product.category && product.category.trim() === categoryFilter.trim()
       );
     }
 
-    // Filter by status (if status field exists)
+    // Filter by status
     if (statusFilter !== "all") {
       filtered = filtered.filter(product => {
-        // Giả sử status được tính dựa trên stockQuantity hoặc có field status
         if (statusFilter === "active") {
           return product.stockQuantity > 0;
         } else if (statusFilter === "inactive") {
@@ -154,7 +169,7 @@ const ProductList = () => {
     }
 
     setFilteredProducts(filtered);
-    setCurrentPage(1); // Reset to first page when filter changes
+    setCurrentPage(1);
   }, [products, searchTerm, categoryFilter, statusFilter]);
 
   // Toast handler
@@ -187,7 +202,7 @@ const ProductList = () => {
 
   const deleteProduct = async (id) => {
     try {
-      const response = await request1.delete(`v1/admin/goods/${id}/`, {
+      await request1.delete(`v1/admin/goods/${id}/`, {
         headers: {
           Authorization: `Bearer ${access_token}`,
           "Content-Type": "application/json",
@@ -196,12 +211,75 @@ const ProductList = () => {
       });
       showToast("Xóa sản phẩm thành công", "success");
       setConfirmDelete({ isOpen: false, productId: null, productName: "" });
-      fetchProducts(); // Refresh list
+      fetchProducts();
     } catch (e) {
       console.log("Lỗi khi xóa:", e);
       showToast("Xóa sản phẩm thất bại", "error");
     }
   };
+
+  // Multiple selection handlers
+  const toggleSelectAll = () => {
+    if (selectAll) {
+      setSelectedProducts([]);
+      setSelectAll(false);
+    } else {
+      setSelectedProducts(currentProducts.map(p => p.id));
+      setSelectAll(true);
+    }
+  };
+
+  const toggleSelectProduct = (productId) => {
+    setSelectedProducts(prev => {
+      if (prev.includes(productId)) {
+        const newSelected = prev.filter(id => id !== productId);
+        if (newSelected.length === 0) setSelectAll(false);
+        return newSelected;
+      } else {
+        const newSelected = [...prev, productId];
+        if (newSelected.length === currentProducts.length) setSelectAll(true);
+        return newSelected;
+      }
+    });
+  };
+
+  const handleDeleteMultipleClick = () => {
+    if (selectedProducts.length === 0) {
+      showToast("Vui lòng chọn ít nhất một sản phẩm", "error");
+      return;
+    }
+    setConfirmDeleteMultiple({ isOpen: true, count: selectedProducts.length });
+  };
+
+  const deleteMultipleProducts = async () => {
+    try {
+      const response = await request1.delete("v1/admin/goods/batch/", {
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+          "Content-Type": "application/json",
+        },
+        data: { ids: selectedProducts },
+        withCredentials: true,
+      });
+
+      const result = response.data;
+      showToast(result.message || `Đã xóa ${result.successCount} sản phẩm`, "success");
+
+      setConfirmDeleteMultiple({ isOpen: false, count: 0 });
+      setSelectedProducts([]);
+      setSelectAll(false);
+      fetchProducts();
+    } catch (e) {
+      console.log("Lỗi khi xóa nhiều sản phẩm:", e);
+      showToast("Xóa sản phẩm thất bại", "error");
+    }
+  };
+
+  // Clear selection when filter changes
+  useEffect(() => {
+    setSelectedProducts([]);
+    setSelectAll(false);
+  }, [searchTerm, categoryFilter, statusFilter, currentPage]);
 
   const closeModal = () => {
     setIsDetailModalOpen(false);
@@ -210,10 +288,10 @@ const ProductList = () => {
     setIsAddProductModalOpen(false);
   };
 
-  const handleProductSaved = () => {
+  const handleProductSaved = (message = "Thao tác thành công") => {
     closeModal();
-    fetchProducts(); // Refresh list
-    showToast("Thao tác thành công", "success");
+    fetchProducts();
+    showToast(message, "success");
   };
 
   // Pagination
@@ -240,13 +318,30 @@ const ProductList = () => {
     <div className="p-6 w-full font-medium bg-gray-50 min-h-screen">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-3xl font-bold text-gray-800">Quản lý Sản phẩm</h2>
-        <button
-          onClick={() => setIsAddProductModalOpen(true)}
-          className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 shadow-md"
-        >
-          <FaPlus /> Thêm sản phẩm
-        </button>
+        <div className="flex items-center gap-4">
+          <h2 className="text-3xl font-bold text-gray-800">Quản lý Sản phẩm</h2>
+          {selectedProducts.length > 0 && (
+            <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">
+              Đã chọn: {selectedProducts.length}
+            </span>
+          )}
+        </div>
+        <div className="flex gap-3">
+          {selectedProducts.length > 0 && (
+            <button
+              onClick={handleDeleteMultipleClick}
+              className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2 shadow-md"
+            >
+              <FaTrashAlt /> Xóa đã chọn ({selectedProducts.length})
+            </button>
+          )}
+          <button
+            onClick={() => setIsAddProductModalOpen(true)}
+            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 shadow-md"
+          >
+            <FaPlus /> Thêm sản phẩm
+          </button>
+        </div>
       </div>
 
       {/* Search & Filter Bar */}
@@ -301,7 +396,7 @@ const ProductList = () => {
           <div className="text-sm text-gray-600">
             {categoryFilter ? (
               <span>
-                Hiển thị <strong>{currentProducts.length}</strong> / <strong>{filteredProducts.length}</strong> sản phẩm 
+                Hiển thị <strong>{currentProducts.length}</strong> / <strong>{filteredProducts.length}</strong> sản phẩm
                 trong danh mục <strong className="text-blue-600">"{categoryFilter}"</strong>
               </span>
             ) : (
@@ -321,11 +416,21 @@ const ProductList = () => {
         </div>
       </div>
 
-      {/* Products Table */}
-      <div className="bg-white shadow-lg rounded-lg overflow-hidden">
+      {/* Fix Missing Images Section */}
+      <div className="mb-6">
+        <FixImagesButton onSuccess={fetchProducts} />
+      </div>
+
+      {/* Product Table */}
+      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="p-4 border-b border-gray-200 bg-gray-50">
+          <h3 className="font-semibold text-gray-800">Danh sách sản phẩm ({filteredProducts.length})</h3>
+        </div>
+
         {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <div className="text-center py-20 text-gray-500">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
+            <p className="text-lg">Đang tải dữ liệu...</p>
           </div>
         ) : currentProducts.length === 0 ? (
           <div className="text-center py-20 text-gray-500">
@@ -337,6 +442,14 @@ const ProductList = () => {
               <table className="min-w-full table-auto">
                 <thead className="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
                   <tr>
+                    <th className="px-4 py-4 text-center text-sm font-semibold">
+                      <input
+                        type="checkbox"
+                        checked={selectAll && currentProducts.length > 0}
+                        onChange={toggleSelectAll}
+                        className="w-4 h-4 cursor-pointer"
+                      />
+                    </th>
                     <th className="px-6 py-4 text-left text-sm font-semibold">Hình ảnh</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold">Tên sản phẩm</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold">Danh mục</th>
@@ -350,13 +463,22 @@ const ProductList = () => {
                   {currentProducts.map((product, index) => (
                     <tr
                       key={product.id}
-                      className={`hover:bg-gray-50 border-b transition-colors ${
-                        index % 2 === 0 ? "bg-white" : "bg-gray-50"
-                      }`}
+                      className={`hover:bg-gray-50 border-b transition-colors ${selectedProducts.includes(product.id)
+                          ? "bg-blue-50"
+                          : index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                        }`}
                     >
+                      <td className="px-4 py-4 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedProducts.includes(product.id)}
+                          onChange={() => toggleSelectProduct(product.id)}
+                          className="w-4 h-4 cursor-pointer"
+                        />
+                      </td>
                       <td className="px-6 py-4">
                         <img
-                          src={product.image ? `${request}${product.image}` : "/placeholder.png"}
+                          src={product.image || "/placeholder.png"}
                           alt={product.name}
                           className="w-16 h-16 object-cover rounded-md border border-gray-200"
                           onError={(e) => {
@@ -376,11 +498,10 @@ const ProductList = () => {
                       <td className="px-6 py-4">{product.stockQuantity || 0}</td>
                       <td className="px-6 py-4 text-center">
                         <span
-                          className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                            (product.stockQuantity || 0) > 0
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
-                          }`}
+                          className={`px-3 py-1 rounded-full text-xs font-semibold ${(product.stockQuantity || 0) > 0
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                            }`}
                         >
                           {(product.stockQuantity || 0) > 0 ? "Đang bán" : "Ngừng bán"}
                         </span>
@@ -426,11 +547,10 @@ const ProductList = () => {
                   <button
                     onClick={() => paginate(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className={`px-4 py-2 rounded-md transition-colors ${
-                      currentPage === 1
-                        ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                        : "bg-blue-600 text-white hover:bg-blue-700"
-                    }`}
+                    className={`px-4 py-2 rounded-md transition-colors ${currentPage === 1
+                      ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                      : "bg-blue-600 text-white hover:bg-blue-700"
+                      }`}
                   >
                     Trước
                   </button>
@@ -445,11 +565,10 @@ const ProductList = () => {
                         <button
                           key={page}
                           onClick={() => paginate(page)}
-                          className={`px-4 py-2 rounded-md transition-colors ${
-                            currentPage === page
-                              ? "bg-blue-600 text-white"
-                              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                          }`}
+                          className={`px-4 py-2 rounded-md transition-colors ${currentPage === page
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                            }`}
                         >
                           {page}
                         </button>
@@ -462,11 +581,10 @@ const ProductList = () => {
                   <button
                     onClick={() => paginate(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className={`px-4 py-2 rounded-md transition-colors ${
-                      currentPage === totalPages
-                        ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                        : "bg-blue-600 text-white hover:bg-blue-700"
-                    }`}
+                    className={`px-4 py-2 rounded-md transition-colors ${currentPage === totalPages
+                      ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                      : "bg-blue-600 text-white hover:bg-blue-700"
+                      }`}
                   >
                     Sau
                   </button>
@@ -485,14 +603,14 @@ const ProductList = () => {
         <ProductEditModal
           product={selectedProduct}
           closeModal={closeModal}
-          onSave={handleProductSaved}
+          onSave={() => handleProductSaved("Cập nhật sản phẩm thành công")}
           onError={(msg) => showToast(msg, "error")}
         />
       )}
       {isAddProductModalOpen && (
         <AddProductModal
           closeModal={closeModal}
-          onSave={handleProductSaved}
+          onSave={() => handleProductSaved("Thêm sản phẩm thành công")}
           onError={(msg) => showToast(msg, "error")}
         />
       )}
@@ -516,10 +634,20 @@ const ProductList = () => {
         cancelText="Hủy"
         type="danger"
       />
+
+      {/* Confirm Delete Multiple Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDeleteMultiple.isOpen}
+        title="Xác nhận xóa nhiều sản phẩm"
+        message={`Bạn có chắc chắn muốn xóa ${confirmDeleteMultiple.count} sản phẩm đã chọn? Hành động này không thể hoàn tác.`}
+        onConfirm={deleteMultipleProducts}
+        onCancel={() => setConfirmDeleteMultiple({ isOpen: false, count: 0 })}
+        confirmText="Xóa tất cả"
+        cancelText="Hủy"
+        type="danger"
+      />
     </div>
   );
 };
 
 export default ProductList;
-
-

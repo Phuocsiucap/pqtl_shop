@@ -6,8 +6,6 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @Data
@@ -19,8 +17,7 @@ public class Product {
     private String description;
     private String category;
     private String image;
-    private double price;           // Giá bán
-    private double costPrice;       // Giá nhập (giá vốn)
+    private double price;
     private double discount;
     private Double finalPrice;
     private int stockQuantity;
@@ -38,69 +35,49 @@ public class Product {
     // Thêm các trường cần thiết cho admin API
     private String brand;           // Thương hiệu - cần thiết cho quản lý sản phẩm
     private String specifications;  // Thông số kỹ thuật - cần thiết cho chi tiết sản phẩm
+
+    // Các trường mới cho tính năng quản lý nâng cao
+    private Double costPrice;       // Giá nhập
+    private List<String> additionalImages; // Ảnh phụ
     
-    // ==================== NGÀY SẢN XUẤT & HẠN SỬ DỤNG ====================
-    private LocalDate manufacturingDate;    // Ngày sản xuất (NSX)
-    private LocalDate expiryDate;           // Hạn sử dụng (HSD)
-    private Integer shelfLifeDays;          // Thời hạn sử dụng (số ngày)
-    private String batchNumber;             // Số lô sản xuất
-    private Boolean isExpired = false;      // Đã hết hạn chưa
-    private Boolean isNearExpiry = false;   // Sắp hết hạn (< 30 ngày)
-    private Boolean isClearance = false;    // Đang thanh lý
-    private Double clearanceDiscount;       // Giảm giá thanh lý (%)
+    private java.time.LocalDate manufacturingDate; // Ngày sản xuất
+    private java.time.LocalDate expiryDate;        // Hạn sử dụng
+    private String batchNumber;                    // Số lô
     
+    private Boolean isClearance = false;           // Đang thanh lý
+    private Double clearanceDiscount;              // Mức giảm giá thanh lý (%)
+    private Boolean isExpired = false;             // Đã hết hạn
+    private Boolean isNearExpiry = false;          // Sắp hết hạn
+
     public double getFinalPrice() {
+        if (Boolean.TRUE.equals(isClearance) && clearanceDiscount != null) {
+            return price * (1 - clearanceDiscount / 100.0);
+        }
         return finalPrice != null ? finalPrice : price - discount;
     }
-    
-    /**
-     * Kiểm tra sản phẩm đã hết hạn chưa
-     */
+
+    // Helper methods for expiry logic
+    public void updateExpiryStatus() {
+        if (expiryDate == null) return;
+        
+        java.time.LocalDate now = java.time.LocalDate.now();
+        this.isExpired = now.isAfter(expiryDate);
+        
+        // Sắp hết hạn nếu còn dưới 30 ngày (mặc định)
+        long daysUntilExpiry = java.time.temporal.ChronoUnit.DAYS.between(now, expiryDate);
+        this.isNearExpiry = !this.isExpired && daysUntilExpiry <= 30 && daysUntilExpiry >= 0;
+    }
+
     public boolean checkExpired() {
         if (expiryDate == null) return false;
-        return LocalDate.now().isAfter(expiryDate);
+        return java.time.LocalDate.now().isAfter(expiryDate);
     }
-    
-    /**
-     * Kiểm tra sản phẩm sắp hết hạn (mặc định 30 ngày)
-     */
-    public boolean checkNearExpiry() {
-        return checkNearExpiry(30);
-    }
-    
-    /**
-     * Kiểm tra sản phẩm sắp hết hạn với số ngày tùy chọn
-     */
+
     public boolean checkNearExpiry(int daysThreshold) {
         if (expiryDate == null) return false;
-        long daysUntilExpiry = ChronoUnit.DAYS.between(LocalDate.now(), expiryDate);
-        return daysUntilExpiry > 0 && daysUntilExpiry <= daysThreshold;
-    }
-    
-    /**
-     * Lấy số ngày còn lại trước khi hết hạn
-     */
-    public Long getDaysUntilExpiry() {
-        if (expiryDate == null) return null;
-        long days = ChronoUnit.DAYS.between(LocalDate.now(), expiryDate);
-        return days;
-    }
-    
-    /**
-     * Lấy giá sau khi thanh lý
-     */
-    public double getClearancePrice() {
-        if (isClearance != null && isClearance && clearanceDiscount != null) {
-            return getFinalPrice() * (1 - clearanceDiscount / 100);
-        }
-        return getFinalPrice();
-    }
-    
-    /**
-     * Cập nhật trạng thái hết hạn và sắp hết hạn
-     */
-    public void updateExpiryStatus() {
-        this.isExpired = checkExpired();
-        this.isNearExpiry = checkNearExpiry();
+        if (checkExpired()) return false;
+        
+        long daysUntilExpiry = java.time.temporal.ChronoUnit.DAYS.between(java.time.LocalDate.now(), expiryDate);
+        return daysUntilExpiry <= daysThreshold && daysUntilExpiry >= 0;
     }
 }

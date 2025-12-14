@@ -11,12 +11,8 @@ import org.example.repository.login.UserRepository;
 import org.example.repository.order.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -35,9 +31,6 @@ public class AdminService {
 
     @Autowired
     private OrderRepository orderRepository;
-
-    // Đường dẫn lưu ảnh
-    private static final String UPLOAD_DIR = "uploads/products/";
 
     // ==================== AUTHENTICATION ====================
     /**
@@ -90,32 +83,91 @@ public class AdminService {
 
     // ==================== PRODUCT MANAGEMENT ====================
     /**
-     * Lấy tất cả sản phẩm
+     * Lấy tất cả sản phẩm, sắp xếp theo thời gian tạo gần nhất
      */
     public List<Product> getAllProducts() {
-        return productRepository.findAll();
+        List<Product> products = productRepository.findAll();
+        // Sắp xếp theo createdAt giảm dần (mới nhất trước)
+        products.sort((p1, p2) -> {
+            if (p1.getCreatedAt() == null && p2.getCreatedAt() == null) return 0;
+            if (p1.getCreatedAt() == null) return 1;
+            if (p2.getCreatedAt() == null) return -1;
+            return p2.getCreatedAt().compareTo(p1.getCreatedAt());
+        });
+        return products;
     }
 
     /**
-     * Tạo sản phẩm mới với upload ảnh
+     * Tạo sản phẩm mới với URL ảnh (đã upload lên Cloudinary trước)
      */
-    public Product createProduct(String goodJson, MultipartFile imageFile) throws IOException {
-        // Parse JSON từ request
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
-        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        Product product = mapper.readValue(goodJson, Product.class);
+    @SuppressWarnings("unchecked")
+    public Product createProduct(Map<String, Object> productData) {
+        Product product = new Product();
         
-        // Xử lý upload ảnh
-        if (imageFile != null && !imageFile.isEmpty()) {
-            String imagePath = saveImage(imageFile);
-            product.setImage(imagePath);
+        // Set các trường cơ bản
+        product.setName((String) productData.get("name"));
+        product.setDescription((String) productData.get("description"));
+        product.setCategory((String) productData.get("category"));
+        product.setBrand((String) productData.get("brand"));
+        product.setOrigin((String) productData.get("origin"));
+        product.setSpecifications((String) productData.get("specifications"));
+        product.setSubCategory((String) productData.get("subCategory"));
+        product.setBatchNumber((String) productData.get("batchNumber"));
+        
+        // Set URL ảnh (đã upload lên Cloudinary)
+        product.setImage((String) productData.get("image"));
+        
+        // Set ảnh phụ (danh sách URL)
+        if (productData.get("additionalImages") != null) {
+            product.setAdditionalImages((List<String>) productData.get("additionalImages"));
         }
         
-        // Gán giá trị mặc định
-        if (product.getStockQuantity() == 0) {
-            product.setStockQuantity(0);
+        // Set các trường số
+        if (productData.get("price") != null) {
+            product.setPrice(Double.parseDouble(productData.get("price").toString()));
         }
+        if (productData.get("costPrice") != null) {
+            product.setCostPrice(Double.parseDouble(productData.get("costPrice").toString()));
+        }
+        if (productData.get("discount") != null) {
+            product.setDiscount(Double.parseDouble(productData.get("discount").toString()));
+        }
+        if (productData.get("stockQuantity") != null) {
+            product.setStockQuantity(Integer.parseInt(productData.get("stockQuantity").toString()));
+        }
+        
+        // Set finalPrice
+        double price = product.getPrice();
+        double discount = product.getDiscount();
+        product.setFinalPrice(price - discount);
+        
+        // Set các trường ngày
+        if (productData.get("manufacturingDate") != null && !productData.get("manufacturingDate").toString().isEmpty()) {
+            product.setManufacturingDate(LocalDate.parse(productData.get("manufacturingDate").toString()));
+        }
+        if (productData.get("expiryDate") != null && !productData.get("expiryDate").toString().isEmpty()) {
+            product.setExpiryDate(LocalDate.parse(productData.get("expiryDate").toString()));
+        }
+        
+        // Set các trường boolean
+        if (productData.get("isBestSeller") != null) {
+            product.setIsBestSeller(Boolean.parseBoolean(productData.get("isBestSeller").toString()));
+        }
+        if (productData.get("isSeasonal") != null) {
+            product.setIsSeasonal(Boolean.parseBoolean(productData.get("isSeasonal").toString()));
+        }
+        if (productData.get("isClearance") != null) {
+            product.setIsClearance(Boolean.parseBoolean(productData.get("isClearance").toString()));
+        }
+        if (productData.get("clearanceDiscount") != null) {
+            product.setClearanceDiscount(Double.parseDouble(productData.get("clearanceDiscount").toString()));
+        }
+        
+        // Set các giá trị mặc định
+        product.setSoldQuantity(0);
+        product.setRating(0.0);
+        product.setReviewCount(0);
+        product.setCreatedAt(Instant.now());
         
         // Cập nhật trạng thái hết hạn nếu có
         product.updateExpiryStatus();
@@ -124,64 +176,99 @@ public class AdminService {
     }
 
     /**
-     * Cập nhật sản phẩm
+     * Cập nhật sản phẩm với URL ảnh (đã upload lên Cloudinary trước)
      */
-    public Product updateProduct(String id, String goodName, String amount, String price,
-                                 String costPrice, String specifications, String brand, String category,
-                                 String manufacturingDate, String expiryDate, String batchNumber,
-                                 MultipartFile imageFile) throws IOException {
+    @SuppressWarnings("unchecked")
+    public Product updateProduct(String id, Map<String, Object> productData) {
         Optional<Product> productOpt = productRepository.findById(id);
         
         if (productOpt.isEmpty()) {
             throw new IllegalArgumentException("Sản phẩm không tồn tại");
         }
         
-        Product product = productOpt.get();
+        Product existingProduct = productOpt.get();
         
-        // Cập nhật các trường
-        if (goodName != null && !goodName.isEmpty()) {
-            product.setName(goodName);
+        // Cập nhật các trường từ Map
+        if (productData.get("name") != null) {
+            existingProduct.setName((String) productData.get("name"));
         }
-        if (amount != null && !amount.isEmpty()) {
-            product.setStockQuantity(Integer.parseInt(amount));
+        if (productData.get("description") != null) {
+            existingProduct.setDescription((String) productData.get("description"));
         }
-        if (price != null && !price.isEmpty()) {
-            product.setPrice(Double.parseDouble(price));
+        if (productData.get("category") != null) {
+            existingProduct.setCategory((String) productData.get("category"));
         }
-        if (costPrice != null && !costPrice.isEmpty()) {
-            product.setCostPrice(Double.parseDouble(costPrice));
+        if (productData.get("brand") != null) {
+            existingProduct.setBrand((String) productData.get("brand"));
         }
-        if (specifications != null && !specifications.isEmpty()) {
-            product.setSpecifications(specifications);
+        if (productData.get("origin") != null) {
+            existingProduct.setOrigin((String) productData.get("origin"));
         }
-        if (brand != null && !brand.isEmpty()) {
-            product.setBrand(brand);
+        if (productData.get("specifications") != null) {
+            existingProduct.setSpecifications((String) productData.get("specifications"));
         }
-        if (category != null && !category.isEmpty()) {
-            product.setCategory(category);
+        if (productData.get("subCategory") != null) {
+            existingProduct.setSubCategory((String) productData.get("subCategory"));
+        }
+        if (productData.get("batchNumber") != null) {
+            existingProduct.setBatchNumber((String) productData.get("batchNumber"));
         }
         
-        // Cập nhật ngày sản xuất và hạn sử dụng
-        if (manufacturingDate != null && !manufacturingDate.isEmpty()) {
-            product.setManufacturingDate(LocalDate.parse(manufacturingDate));
+        // Cập nhật URL ảnh (nếu có ảnh mới đã upload lên Cloudinary)
+        if (productData.get("image") != null) {
+            existingProduct.setImage((String) productData.get("image"));
         }
-        if (expiryDate != null && !expiryDate.isEmpty()) {
-            product.setExpiryDate(LocalDate.parse(expiryDate));
+        
+        // Cập nhật ảnh phụ
+        if (productData.get("additionalImages") != null) {
+            existingProduct.setAdditionalImages((List<String>) productData.get("additionalImages"));
         }
-        if (batchNumber != null && !batchNumber.isEmpty()) {
-            product.setBatchNumber(batchNumber);
+        
+        // Cập nhật các trường số
+        if (productData.get("price") != null) {
+            existingProduct.setPrice(Double.parseDouble(productData.get("price").toString()));
+        }
+        if (productData.get("costPrice") != null) {
+            existingProduct.setCostPrice(Double.parseDouble(productData.get("costPrice").toString()));
+        }
+        if (productData.get("discount") != null) {
+            existingProduct.setDiscount(Double.parseDouble(productData.get("discount").toString()));
+        }
+        if (productData.get("stockQuantity") != null) {
+            existingProduct.setStockQuantity(Integer.parseInt(productData.get("stockQuantity").toString()));
+        }
+        
+        // Cập nhật finalPrice
+        double price = existingProduct.getPrice();
+        double discount = existingProduct.getDiscount();
+        existingProduct.setFinalPrice(price - discount);
+        
+        // Cập nhật các trường ngày
+        if (productData.get("manufacturingDate") != null && !productData.get("manufacturingDate").toString().isEmpty()) {
+            existingProduct.setManufacturingDate(LocalDate.parse(productData.get("manufacturingDate").toString()));
+        }
+        if (productData.get("expiryDate") != null && !productData.get("expiryDate").toString().isEmpty()) {
+            existingProduct.setExpiryDate(LocalDate.parse(productData.get("expiryDate").toString()));
+        }
+        
+        // Cập nhật các trường boolean
+        if (productData.get("isBestSeller") != null) {
+            existingProduct.setIsBestSeller(Boolean.parseBoolean(productData.get("isBestSeller").toString()));
+        }
+        if (productData.get("isSeasonal") != null) {
+            existingProduct.setIsSeasonal(Boolean.parseBoolean(productData.get("isSeasonal").toString()));
+        }
+        if (productData.get("isClearance") != null) {
+            existingProduct.setIsClearance(Boolean.parseBoolean(productData.get("isClearance").toString()));
+        }
+        if (productData.get("clearanceDiscount") != null) {
+            existingProduct.setClearanceDiscount(Double.parseDouble(productData.get("clearanceDiscount").toString()));
         }
         
         // Cập nhật trạng thái hết hạn
-        product.updateExpiryStatus();
+        existingProduct.updateExpiryStatus();
         
-        // Xử lý upload ảnh mới
-        if (imageFile != null && !imageFile.isEmpty()) {
-            String imagePath = saveImage(imageFile);
-            product.setImage(imagePath);
-        }
-        
-        return productRepository.save(product);
+        return productRepository.save(existingProduct);
     }
 
     /**
@@ -192,24 +279,6 @@ public class AdminService {
             throw new Exception("Sản phẩm không tồn tại");
         }
         productRepository.deleteById(productId);
-    }
-
-    /**
-     * Lưu ảnh vào thư mục
-     */
-    private String saveImage(MultipartFile imageFile) throws IOException {
-        // Tạo thư mục nếu chưa tồn tại
-        Path uploadPath = Paths.get(UPLOAD_DIR);
-        Files.createDirectories(uploadPath);
-        
-        // Tạo tên file duy nhất
-        String fileName = System.currentTimeMillis() + "_" + imageFile.getOriginalFilename();
-        Path filePath = uploadPath.resolve(fileName);
-        
-        // Lưu file
-        Files.copy(imageFile.getInputStream(), filePath);
-        
-        return fileName;
     }
 
     // ==================== ORDER MANAGEMENT ====================
@@ -1058,5 +1127,60 @@ public class AdminService {
         return allProducts.stream()
                 .filter(p -> p.getBatchNumber() != null && !p.getBatchNumber().isEmpty())
                 .collect(Collectors.groupingBy(Product::getBatchNumber));
+    }
+
+    /**
+     * Xóa nhiều sản phẩm cùng lúc
+     */
+    public Map<String, Object> deleteMultipleProducts(List<String> productIds) {
+        Map<String, Object> result = new HashMap<>();
+        List<String> deletedIds = new ArrayList<>();
+        List<String> failedIds = new ArrayList<>();
+        
+        for (String productId : productIds) {
+            try {
+                if (productRepository.existsById(productId)) {
+                    productRepository.deleteById(productId);
+                    deletedIds.add(productId);
+                } else {
+                    failedIds.add(productId);
+                }
+            } catch (Exception e) {
+                failedIds.add(productId);
+            }
+        }
+        
+        result.put("deletedCount", deletedIds.size());
+        result.put("deletedIds", deletedIds);
+        result.put("failedCount", failedIds.size());
+        result.put("failedIds", failedIds);
+        result.put("message", "Đã xóa " + deletedIds.size() + "/" + productIds.size() + " sản phẩm");
+        
+        return result;
+    }
+
+    /**
+     * Thêm ảnh placeholder cho các sản phẩm không có ảnh
+     */
+    public Map<String, Object> fixMissingImages() {
+        List<Product> allProducts = productRepository.findAll();
+        List<String> fixedProductIds = new ArrayList<>();
+        
+        String placeholderImage = "https://via.placeholder.com/400x400?text=No+Image";
+        
+        for (Product product : allProducts) {
+            if (product.getImage() == null || product.getImage().isEmpty()) {
+                product.setImage(placeholderImage);
+                productRepository.save(product);
+                fixedProductIds.add(product.getId());
+            }
+        }
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("fixedCount", fixedProductIds.size());
+        result.put("fixedProductIds", fixedProductIds);
+        result.put("message", "Đã thêm ảnh placeholder cho " + fixedProductIds.size() + " sản phẩm");
+        
+        return result;
     }
 }

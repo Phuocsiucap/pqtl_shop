@@ -92,7 +92,7 @@ public class DatabaseSeeder implements CommandLineRunner {
 
             createProduct("Xà Lách Romaine Hữu Cơ", "Xà lách Romaine hữu cơ giòn ngon, 300g",
                 "Rau Ăn Hữu Cơ", "Rau ăn lá", 40000, 5000, 80, "Hữu Cơ Việt", "Đà Lạt",
-                List.of("VietGAP", "GlobalGAP"), "Xà lách Romaine hữu cơ, 300g, tươi giòn, giàu chất xơ", false, false, 4.4),
+                List.of("VietGAP"), "Xà lách Romaine hữu cơ, 300g, tươi giòn, giàu chất xơ", false, false, 4.4),
 
             // ========== CỦ QUẢ & GIA VỊ ==========
             createProduct("Tỏi Lý Sơn", "Tỏi Lý Sơn thơm cay, 500g",
@@ -189,7 +189,6 @@ public class DatabaseSeeder implements CommandLineRunner {
         product.setBrand(brand);
         product.setOrigin(origin);
         product.setCertifications(certifications);
-        product.setSpecifications(specifications);
         product.setIsBestSeller(isBestSeller);
         product.setIsSeasonal(isSeasonal);
         product.setRating(rating);

@@ -25,6 +25,9 @@ import FinancialReport from "./Admin/FinancialReport"
 import ClearanceManager from "./Admin/ClearanceManager"
 import ClearanceProducts from "./ClearanceProducts"
 import OAuth2RedirectHandler from "./OAuth2RedirectHandler";
+import ShiftHandoverManager from "./Admin/ShiftHandover";
+import EmployeeShiftHandover from "./Admin/EmployeeShift";
+import POSSales from "./Admin/POSSales";
 
 const PublicPage = [
     { path: "/", component: Home, layout: Defaultlayout },
@@ -52,6 +55,9 @@ const PublicPage = [
     { path: "/admin/financial-report", component: FinancialReport, layout: AdminLayout },
     { path: "/admin/clearance", component: ClearanceManager, layout: AdminLayout },
     { path: "/admin/managevoucher", component: ManagementVoucher, layout: AdminLayout },
+    { path: "/admin/shift-handover", component: ShiftHandoverManager, layout: AdminLayout },
+    { path: "/admin/employee-shift", component: EmployeeShiftHandover, layout: AdminLayout },
+    { path: "/admin/pos", component: POSSales, layout: AdminLayout },
     { path: "/oauth2/success", component: OAuth2RedirectHandler, layout: null },
 
 ]

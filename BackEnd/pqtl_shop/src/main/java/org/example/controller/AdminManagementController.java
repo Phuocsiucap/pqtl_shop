@@ -8,9 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -90,19 +88,15 @@ public class AdminManagementController {
     }
 
     /**
-     * Create new product with image upload
+     * Create new product with image URL
      * POST /api/v1/admin/goods/
+     * Receives product data as JSON with image URL (already uploaded to Cloudinary)
      */
     @PostMapping("/goods/")
-    public ResponseEntity<?> createProduct(
-            @RequestParam("good") String goodJson,
-            @RequestParam(value = "image", required = false) MultipartFile imageFile) {
+    public ResponseEntity<?> createProduct(@RequestBody Map<String, Object> productData) {
         try {
-            Product product = adminService.createProduct(goodJson, imageFile);
+            Product product = adminService.createProduct(productData);
             return ResponseEntity.status(HttpStatus.CREATED).body(product);
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("error", "Lỗi khi xử lý ảnh: " + e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Thêm sản phẩm thất bại: " + e.getMessage()));
@@ -112,29 +106,15 @@ public class AdminManagementController {
     /**
      * Update product
      * PUT /api/v1/admin/goods/{id}/
+     * Receives product data as JSON with image URL (already uploaded to Cloudinary)
      */
     @PutMapping("/goods/{id}/")
     public ResponseEntity<?> updateProduct(
             @PathVariable String id,
-            @RequestParam(value = "goodName", required = false) String goodName,
-            @RequestParam(value = "amount", required = false) String amount,
-            @RequestParam(value = "price", required = false) String price,
-            @RequestParam(value = "costPrice", required = false) String costPrice,
-            @RequestParam(value = "specifications", required = false) String specifications,
-            @RequestParam(value = "brand", required = false) String brand,
-            @RequestParam(value = "category", required = false) String category,
-            @RequestParam(value = "manufacturingDate", required = false) String manufacturingDate,
-            @RequestParam(value = "expiryDate", required = false) String expiryDate,
-            @RequestParam(value = "batchNumber", required = false) String batchNumber,
-            @RequestParam(value = "image", required = false) MultipartFile imageFile) {
+            @RequestBody Map<String, Object> productData) {
         try {
-            Product product = adminService.updateProduct(id, goodName, amount, price, 
-                    costPrice, specifications, brand, category,
-                    manufacturingDate, expiryDate, batchNumber, imageFile);
+            Product product = adminService.updateProduct(id, productData);
             return ResponseEntity.ok(product);
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("error", "Lỗi khi xử lý ảnh: " + e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Cập nhật sản phẩm thất bại: " + e.getMessage()));
@@ -150,6 +130,27 @@ public class AdminManagementController {
         try {
             adminService.deleteProduct(id);
             return ResponseEntity.ok(Map.of("message", "Xóa sản phẩm thành công"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Xóa thất bại: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Delete multiple products by IDs
+     * POST /api/v1/admin/goods/delete-multiple
+     */
+    @PostMapping("/goods/delete-multiple")
+    public ResponseEntity<?> deleteMultipleProducts(@RequestBody Map<String, List<String>> request) {
+        try {
+            List<String> ids = request.get("ids");
+            if (ids == null || ids.isEmpty()) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "Danh sách ID không được để trống"));
+            }
+            
+            Map<String, Object> result = adminService.deleteMultipleProducts(ids);
+            return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Xóa thất bại: " + e.getMessage()));
@@ -515,6 +516,22 @@ public class AdminManagementController {
         try {
             Map<String, List<Product>> batches = adminService.getProductsByBatch();
             return ResponseEntity.ok(batches);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Lỗi: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Add placeholder images to products without images
+     * POST /api/v1/admin/fix-missing-images/
+     * Utility endpoint for maintenance
+     */
+    @PostMapping("/fix-missing-images/")
+    public ResponseEntity<?> fixMissingImages() {
+        try {
+            Map<String, Object> result = adminService.fixMissingImages();
+            return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Lỗi: " + e.getMessage()));
