@@ -1,26 +1,22 @@
-# Build stage
+# --- Giai đoạn 1: Build ---
+# Dùng image Maven có sẵn Java 21 (khớp với log của bạn)
 FROM maven:3.9.8-eclipse-temurin-21 AS build
 WORKDIR /app
 
-# Copy Maven descriptors first
-COPY pom.xml mvnw* ./
-COPY .mvn .mvn
-
-# Copy source
+# Chỉ copy file cấu hình và source code
+# BỎ QUA lệnh copy .mvn và mvnw gây lỗi
+COPY pom.xml .
 COPY src ./src
 
-# Build jar
-RUN mvn -B -DskipTests package
+# Dùng lệnh 'mvn' trực tiếp (thay vì ./mvnw)
+RUN mvn clean package -DskipTests
 
-# Runtime stage
+# --- Giai đoạn 2: Run ---
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 
+# Copy file .jar đã build xong từ giai đoạn 1
 COPY --from=build /app/target/*.jar app.jar
 
 EXPOSE 8080
-
-ENV SPRING_PROFILES_ACTIVE=prod
-ENV JAVA_OPTS="-Xms256m -Xmx512m"
-
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
