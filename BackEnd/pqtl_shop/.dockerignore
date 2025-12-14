@@ -1,0 +1,12 @@
+target/
+.mvn/
+.git/
+.idea/
+node_modules/
+logs/
+*.log
+*.tmp
+**/tmp/
+*.iml
+build/
+Dockerfile*
