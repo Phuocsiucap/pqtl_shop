@@ -18,7 +18,7 @@ const ProductList = () => {
   const [filterStatus, setFilterStatus] = useState("all"); // all, clearance, nearExpiry, expired, normal
   const [searchTerm, setSearchTerm] = useState("");
   const productsPerPage = 10;
-  
+
   // Multiple selection
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
@@ -124,7 +124,7 @@ const ProductList = () => {
   const toggleSelectProduct = (productId) => {
     setSelectedProducts(prev => {
       const isCurrentlySelected = prev.includes(productId);
-      
+
       if (isCurrentlySelected) {
         // Bỏ chọn sản phẩm
         const newSelected = prev.filter(id => id !== productId);
@@ -152,10 +152,10 @@ const ProductList = () => {
     const confirmDelete = window.confirm(
       `Bạn có chắc chắn muốn xóa ${selectedProducts.length} sản phẩm đã chọn? Hành động này không thể hoàn tác.`
     );
-    
+
     if (confirmDelete) {
       try {
-        const response = await request1.post("v1/admin/goods/delete-multiple", 
+        const response = await request1.post("v1/admin/goods/delete-multiple",
           { ids: selectedProducts },
           {
             headers: {
@@ -196,23 +196,25 @@ const ProductList = () => {
     );
     closeModal();
   };
+
+  // Hàm tải lại danh sách sản phẩm
+  const refreshProducts = async () => {
+    try {
+      const response = await request1.get("v1/admin/goods/", {
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+          "Content-Type": "application/json",
+        },
+        withCredentials: true,
+      });
+      setProducts(response.data);
+    } catch (e) {
+      console.log("Lỗi khi tải lại sản phẩm:", e);
+    }
+  };
+
   useEffect(() => {
-    const fetch = async () => {
-      try {
-        const response = await request1.get("v1/admin/goods/", {
-          headers: {
-            Authorization: `Bearer ${access_token}`,
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
-        });
-        console.log(response)
-        setProducts(response.data)
-      } catch (e) {
-        console.log("Lỗi ", e);
-      }
-    };
-    fetch();
+    refreshProducts();
   }, []);
 
   // Filter products
@@ -405,13 +407,12 @@ const ProductList = () => {
               return (
                 <tr
                   key={product.id}
-                  className={`hover:bg-gray-50 border-b ${
-                    selectedProducts.includes(product.id) ? "bg-blue-100" :
-                    product.isClearance ? "bg-purple-50" :
-                    days !== null && days <= 0 ? "bg-red-50" :
-                    days !== null && days <= 7 ? "bg-orange-50" :
-                    index % 2 === 0 ? "bg-gray-50" : "bg-white"
-                  }`}
+                  className={`hover:bg-gray-50 border-b ${selectedProducts.includes(product.id) ? "bg-blue-100" :
+                      product.isClearance ? "bg-purple-50" :
+                        days !== null && days <= 0 ? "bg-red-50" :
+                          days !== null && days <= 7 ? "bg-orange-50" :
+                            index % 2 === 0 ? "bg-gray-50" : "bg-white"
+                    }`}
                 >
                   <td className="px-4 py-3 text-center">
                     <input
@@ -578,11 +579,16 @@ const ProductList = () => {
         <ProductEditModal
           product={selectedProduct}
           closeModal={closeModal}
-          saveProductChanges={saveProductChanges}
+          onSave={refreshProducts}
         />
       )}
       {/* Modal Thêm Sản Phẩm */}
-      {isAddProductModalOpen && <AddProductModal closeModal={closeModal} />}
+      {isAddProductModalOpen && (
+        <AddProductModal
+          closeModal={closeModal}
+          onSave={refreshProducts}
+        />
+      )}
     </div>
   );
 };

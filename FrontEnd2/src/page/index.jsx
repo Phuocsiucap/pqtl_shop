@@ -51,7 +51,7 @@ const PublicPage = [
     { path: "/admin/bestseller", component: BestSellerList, layout: AdminLayout },
     { path: "/admin/financial-report", component: FinancialReport, layout: AdminLayout },
     { path: "/admin/clearance", component: ClearanceManager, layout: AdminLayout },
-    { path: "/admin/managevoucher", component: ManagementVoucher, layout: AdminLayout },
+{ path: "/admin/managevoucher", component: ManagementVoucher, layout: AdminLayout },
     { path: "/oauth2/success", component: OAuth2RedirectHandler, layout: null },
 
 ]

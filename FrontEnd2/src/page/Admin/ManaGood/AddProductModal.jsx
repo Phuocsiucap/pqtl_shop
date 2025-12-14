@@ -129,16 +129,42 @@ const AddProductModal = ({ closeModal, onSave, onError }) => {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Upload image to Cloudinary
+  const uploadImageToCloudinary = async (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await request1.post("v1/upload", formData, {
+      headers: {
+        Authorization: `Bearer ${access_token}`,
+        "Content-Type": "multipart/form-data",
+      },
+      withCredentials: true,
+    });
+
+    return response.data.url;
+  };
+
   // Submit
   const saveNewProduct = async () => {
     if (!validate()) return;
 
     setLoading(true);
     try {
-      const formData = new FormData();
+      // 1. Upload ảnh chính lên Cloudinary trước
+      let mainImageUrl = null;
+      if (product.image) {
+        mainImageUrl = await uploadImageToCloudinary(product.image);
+      }
 
-      // Construct JSON payload matching backend expectations
-      // Note: Backend Product.java uses 'name' and 'stockQuantity'
+      // 2. Upload ảnh phụ lên Cloudinary
+      let additionalImageUrls = [];
+      for (const img of additionalImages) {
+        const url = await uploadImageToCloudinary(img);
+        additionalImageUrls.push(url);
+      }
+
+      // 3. Gửi JSON với URL ảnh đến API thêm sản phẩm
       const productPayload = {
         name: product.goodName,
         stockQuantity: product.stockQuantity,
@@ -161,22 +187,15 @@ const AddProductModal = ({ closeModal, onSave, onError }) => {
         isSeasonal: product.isSeasonal,
         isClearance: product.isClearance,
         clearanceDiscount: product.isClearance ? product.clearanceDiscount : null,
+
+        image: mainImageUrl,
+        additionalImages: additionalImageUrls,
       };
 
-      formData.append("good", JSON.stringify(productPayload));
-
-      if (product.image) {
-        formData.append("image", product.image);
-      }
-
-      additionalImages.forEach((img) => {
-        formData.append("additionalImages", img);
-      });
-
-      const response = await request1.post("v1/admin/goods/", formData, {
+      const response = await request1.post("v1/admin/goods/", productPayload, {
         headers: {
           Authorization: `Bearer ${access_token}`,
-          "Content-Type": "multipart/form-data",
+          "Content-Type": "application/json",
         },
         withCredentials: true,
       });

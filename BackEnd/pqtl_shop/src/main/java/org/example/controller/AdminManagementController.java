@@ -8,9 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -90,20 +88,15 @@ public class AdminManagementController {
     }
 
     /**
-     * Create new product with image upload
+     * Create new product with image URL
      * POST /api/v1/admin/goods/
+     * Receives product data as JSON with image URL (already uploaded to Cloudinary)
      */
     @PostMapping("/goods/")
-    public ResponseEntity<?> createProduct(
-            @RequestParam("good") String goodJson,
-            @RequestParam(value = "image", required = false) MultipartFile imageFile,
-            @RequestParam(value = "additionalImages", required = false) MultipartFile[] additionalImages) {
+    public ResponseEntity<?> createProduct(@RequestBody Map<String, Object> productData) {
         try {
-            Product product = adminService.createProduct(goodJson, imageFile, additionalImages);
+            Product product = adminService.createProduct(productData);
             return ResponseEntity.status(HttpStatus.CREATED).body(product);
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("error", "Lỗi khi xử lý ảnh: " + e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Thêm sản phẩm thất bại: " + e.getMessage()));
@@ -113,19 +106,15 @@ public class AdminManagementController {
     /**
      * Update product
      * PUT /api/v1/admin/goods/{id}/
+     * Receives product data as JSON with image URL (already uploaded to Cloudinary)
      */
     @PutMapping("/goods/{id}/")
     public ResponseEntity<?> updateProduct(
             @PathVariable String id,
-            @RequestParam("good") String goodJson,
-            @RequestParam(value = "image", required = false) MultipartFile imageFile,
-            @RequestParam(value = "additionalImages", required = false) MultipartFile[] additionalImages) {
+            @RequestBody Map<String, Object> productData) {
         try {
-            Product product = adminService.updateProduct(id, goodJson, imageFile, additionalImages);
+            Product product = adminService.updateProduct(id, productData);
             return ResponseEntity.ok(product);
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("error", "Lỗi khi xử lý ảnh: " + e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Cập nhật sản phẩm thất bại: " + e.getMessage()));

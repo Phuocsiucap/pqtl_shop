@@ -147,15 +147,46 @@ const ProductEditModal = ({ product: initialProduct, closeModal, onSave, onError
     return Object.keys(newErrors).length === 0;
   };
 
+  // Upload image to Cloudinary
+  const uploadImageToCloudinary = async (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await request1.post("v1/upload", formData, {
+      headers: {
+        Authorization: `Bearer ${access_token}`,
+        "Content-Type": "multipart/form-data",
+      },
+      withCredentials: true,
+    });
+
+    return response.data.url;
+  };
+
   // Submit
   const handleSave = async () => {
     if (!validate()) return;
 
     setLoading(true);
     try {
-      const formDataToSend = new FormData();
+      // 1. Upload ảnh chính mới lên Cloudinary nếu có thay đổi
+      let mainImageUrl = null;
+      if (product.image) {
+        // Có file ảnh mới, upload lên Cloudinary
+        mainImageUrl = await uploadImageToCloudinary(product.image);
+      } else if (imagePreview) {
+        // Giữ nguyên URL ảnh cũ (đã là URL từ trước)
+        mainImageUrl = imagePreview;
+      }
 
-      // Construct JSON payload matching backend expectations
+      // 2. Upload ảnh phụ mới lên Cloudinary
+      let allAdditionalImageUrls = [...existingAdditionalImages]; // Giữ các ảnh cũ
+      for (const img of additionalImages) {
+        const url = await uploadImageToCloudinary(img);
+        allAdditionalImageUrls.push(url);
+      }
+
+      // 3. Gửi JSON với URL ảnh đến API sửa sản phẩm
       const productPayload = {
         name: product.goodName,
         stockQuantity: product.stockQuantity,
@@ -179,25 +210,14 @@ const ProductEditModal = ({ product: initialProduct, closeModal, onSave, onError
         isClearance: product.isClearance,
         clearanceDiscount: product.isClearance ? product.clearanceDiscount : null,
 
-        additionalImages: existingAdditionalImages,
+        image: mainImageUrl,
+        additionalImages: allAdditionalImageUrls,
       };
 
-      formDataToSend.append("good", JSON.stringify(productPayload));
-
-      // Main image (only if changed)
-      if (product.image) {
-        formDataToSend.append("image", product.image);
-      }
-
-      // Additional images (new ones)
-      additionalImages.forEach((image) => {
-        formDataToSend.append("additionalImages", image);
-      });
-
-      const response = await request1.put(`v1/admin/goods/${initialProduct.id}/`, formDataToSend, {
+      const response = await request1.put(`v1/admin/goods/${initialProduct.id}/`, productPayload, {
         headers: {
           Authorization: `Bearer ${access_token}`,
-          "Content-Type": "multipart/form-data",
+          "Content-Type": "application/json",
         },
         withCredentials: true,
       });

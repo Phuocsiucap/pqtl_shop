@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FaChartLine, FaUsers, FaBoxOpen, FaFileInvoice, FaBook, FaFire } from "react-icons/fa"; 
+import { FaChartLine, FaUsers, FaBoxOpen, FaFileInvoice, FaBook, FaFire, FaTicketAlt, FaMoneyBillWave, FaExclamationTriangle } from "react-icons/fa";
 import { FaUser } from "react-icons/fa";
 import { IoLogOut } from "react-icons/io5";
 import { BiCategory } from "react-icons/bi";
 import { FaBookOpen } from "react-icons/fa6";
 import Cookies from "js-cookie"; // Make sure to import Cookies
+import CategorySidebar from "../CategorySidebar";
 
 const Sidebar1 = () => {
   const navigate = useNavigate();
@@ -16,7 +17,10 @@ const Sidebar1 = () => {
     { link: "/admin/manageuser", label: "Quản lý người dùng", icon: <FaUsers /> },
     { link: "/admin/managegood", label: "Quản lý sản phẩm", icon: <FaBoxOpen /> },
     { link: "/admin/managebill", label: "Quản lý đơn hàng", icon: <FaFileInvoice /> },
+    { link: "/admin/managevoucher", label: "Quản lý Voucher", icon: <FaTicketAlt /> },
     { link: "/admin/bestseller", label: "Bán chạy", icon: <FaFire /> },
+    { link: "/admin/financial-report", label: "Báo cáo lợi nhuận", icon: <FaMoneyBillWave /> },
+    { link: "/admin/clearance", label: "Hạn SD & Thanh lý", icon: <FaExclamationTriangle /> },
   ];
 
   const menuItems1 = [
@@ -34,9 +38,9 @@ const Sidebar1 = () => {
   };
 
   return (
-    <div className="bg-white shadow-lg font-Montserrat rounded-lg overflow-hidden h-screen flex flex-col">
+    <div className="bg-white shadow-lg font-Montserrat rounded-lg overflow-hidden h-screen">
       {/* Logo */}
-      <div className="p-6 border-b flex-shrink-0">
+      <div className="p-6 border-b">
         <Link to={"/admin"}>
             <h1 className="text-3xl font-extrabold text-primary tracking-wide">
             PQTLSHOP
@@ -45,23 +49,22 @@ const Sidebar1 = () => {
       </div>
 
       {/* Navigation */}
-      <div className="p-6 space-y-6 overflow-y-auto flex-1">
+      <div className="p-6 space-y-6">
         <h3 className="text-blue-600 text-lg font-semibold uppercase tracking-wide">
           Quản trị Admin
         </h3>
-        <div className="space-y-4 font-medium">
-          <div className="flex items-center space-x-2 mb-3">
+        <ul className="space-y-4 font-medium">
+          <li className="flex items-center space-x-2">
             <BiCategory className="text-xl" />
             <span className="font-bold text-lg text-gray-800">Dashboards</span>
-          </div>
-          <div className="max-h-64 overflow-y-auto pr-2 custom-scrollbar">
-            {menuItems.map((item, index) => (
+          </li>
+          {menuItems.map((item, index) => (
             <Link
               key={index}
               to={item.link}
-              className={`ml-4 flex items-center space-x-2 py-2 px-4 rounded-lg cursor-pointer transition-all duration-300 ease-in-out 
-                ${activeMenu === item.link 
-                  ? "bg-blue-100 text-blue-600" 
+              className={`ml-4 flex items-center space-x-2 py-2 px-4 rounded-lg cursor-pointer transition-all duration-300 ease-in-out
+                ${activeMenu === item.link
+? "bg-blue-100 text-blue-600"
                   : "text-gray-700 hover:bg-blue-50"}`}
               onClick={() => setActiveMenu(item.link)} // Set active menu item
             >
@@ -73,8 +76,10 @@ const Sidebar1 = () => {
               </li>
             </Link>
           ))}
-          </div>
-        </div>
+        </ul>
+
+        {/* Category Quick Access */}
+        <CategorySidebar />
 
         <h3 className="text-blue-600 text-lg font-semibold uppercase tracking-wide mt-8">
           Quản lý tài khoản
