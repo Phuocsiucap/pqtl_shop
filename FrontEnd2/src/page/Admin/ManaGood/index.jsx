@@ -253,16 +253,14 @@ const ProductList = () => {
 
   const deleteMultipleProducts = async () => {
     try {
-      const response = await request1.post("v1/admin/goods/delete-multiple", 
-        { ids: selectedProducts },
-        {
-          headers: {
-            Authorization: `Bearer ${access_token}`,
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
-        }
-      );
+      const response = await request1.delete("v1/admin/goods/batch/", {
+        headers: {
+          Authorization: `Bearer ${access_token}`,
+          "Content-Type": "application/json",
+        },
+        data: { ids: selectedProducts },
+        withCredentials: true,
+      });
 
       const result = response.data;
       showToast(result.message || `Đã xóa ${result.successCount} sản phẩm`, "success");
@@ -449,7 +447,7 @@ const ProductList = () => {
                         type="checkbox"
                         checked={selectAll && currentProducts.length > 0}
                         onChange={toggleSelectAll}
-                        className="w-5 h-5 cursor-pointer accent-blue-600 border-2 border-white rounded"
+                        className="w-4 h-4 cursor-pointer"
                       />
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-semibold">Hình ảnh</th>
@@ -475,7 +473,7 @@ const ProductList = () => {
                           type="checkbox"
                           checked={selectedProducts.includes(product.id)}
                           onChange={() => toggleSelectProduct(product.id)}
-                          className="w-5 h-5 cursor-pointer accent-blue-600 border-2 border-gray-300 rounded"
+                          className="w-4 h-4 cursor-pointer"
                         />
                       </td>
                       <td className="px-6 py-4">
