@@ -116,6 +116,12 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/categories/**").permitAll()
                         .requestMatchers("/api/v1/vouchers/**").permitAll()
 
+                        // VNPAY - Cho phép public các endpoint thanh toán
+                        .requestMatchers("/api/vn/payment").permitAll()
+                        .requestMatchers("/api/vn/payment-return").permitAll()
+                        .requestMatchers("/api/vn/payment-ipn").permitAll()
+                        .requestMatchers("/api/vn/response-message/**").permitAll()
+
                         // ==================== STAFF + ADMIN ====================
                         // Quản lý sản phẩm - STAFF và ADMIN đều được truy cập
                         .requestMatchers("/api/v1/admin/goods/**").hasAnyAuthority("ADMIN", "STAFF")
@@ -125,6 +131,9 @@ public class SecurityConfig {
 
                         // Quản lý đánh giá - STAFF và ADMIN đều được truy cập
                         .requestMatchers("/api/v1/admin/reviews/**").hasAnyAuthority("ADMIN", "STAFF")
+
+                        // Quản lý thanh toán - STAFF và ADMIN đều được truy cập
+                        .requestMatchers("/api/v1/admin/payments/**").hasAnyAuthority("ADMIN", "STAFF")
 
                         // Bàn giao ca - STAFF và ADMIN đều được truy cập
                         .requestMatchers("/api/v1/shift/**").hasAnyAuthority("ADMIN", "STAFF")

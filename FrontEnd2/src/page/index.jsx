@@ -30,6 +30,8 @@ import ShiftHandoverManager from "./Admin/ShiftHandover";
 import EmployeeShiftHandover from "./Admin/EmployeeShift";
 import POSSales from "./Admin/POSSales";
 import ReviewManagement from "./Admin/ReviewManagement";
+import PaymentManagement from "./Admin/PaymentManagement";
+import PaymentReturn from "./Oder/PaymentReturn";
 import withRoleCheck from "../components/withRoleCheck";
 
 // Wrap các trang chỉ dành cho ADMIN
@@ -49,6 +51,7 @@ const StaffAndAdminBillDetail = withRoleCheck(DetailModal, ["ADMIN", "STAFF"]);
 const StaffAndAdminEmployeeShift = withRoleCheck(EmployeeShiftHandover, ["ADMIN", "STAFF"]);
 const StaffAndAdminPOS = withRoleCheck(POSSales, ["ADMIN", "STAFF"]);
 const StaffAndAdminReviews = withRoleCheck(ReviewManagement, ["ADMIN", "STAFF"]);
+const StaffAndAdminPayments = withRoleCheck(PaymentManagement, ["ADMIN", "STAFF"]);
 
 const PublicPage = [
     { path: "/", component: Home, layout: Defaultlayout },
@@ -63,6 +66,7 @@ const PublicPage = [
     { path: "/clearance", component: ClearanceProducts, layout: Defaultlayout },
     { path: "/order", component: Order, layout: Defaultlayout },
     { path: "/buildDetail/:id", component: BuildDetail, layout: Defaultlayout },
+    { path: "/payment-return", component: PaymentReturn, layout: null },
     { path: "/login", component: Login, layout: null },
     { path: "/regester", component: Regester, layout: null },
     // admin
@@ -81,6 +85,7 @@ const PublicPage = [
     { path: "/admin/employee-shift", component: StaffAndAdminEmployeeShift, layout: AdminLayout },
     { path: "/admin/pos", component: StaffAndAdminPOS, layout: AdminLayout },
     { path: "/admin/reviews", component: StaffAndAdminReviews, layout: AdminLayout },
+    { path: "/admin/payments", component: StaffAndAdminPayments, layout: AdminLayout },
     { path: "/oauth2/success", component: OAuth2RedirectHandler, layout: null },
 
 ]

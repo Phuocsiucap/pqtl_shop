@@ -64,7 +64,7 @@ function Navbar() {
             interactive={true}
             render={(attrs) => (
               <div className="box bg-white shadow-lg rounded-lg" tabIndex="-1" {...attrs}>
-                <Search search={search.toLowerCase().split(" ")} />
+                <Search keyword={search} />
               </div>
             )}
           >
@@ -93,7 +93,7 @@ function Navbar() {
               tabIndex="-1"
               {...attrs}
             >
-              <Search search={search.toLowerCase().split(" ")} />
+              <Search keyword={search} />
             </div>
           )}
         >

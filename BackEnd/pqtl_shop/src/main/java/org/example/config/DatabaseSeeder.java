@@ -189,12 +189,56 @@ public class DatabaseSeeder implements CommandLineRunner {
         product.setBrand(brand);
         product.setOrigin(origin);
         product.setCertifications(certifications);
+        product.setSpecifications(specifications); // Đã thêm: set specifications
+        
         product.setIsBestSeller(isBestSeller);
         product.setIsSeasonal(isSeasonal);
         product.setRating(rating);
         product.setReviewCount(0);
         product.setImage(""); // Có thể thêm đường dẫn ảnh sau
         product.setCreatedAt(Instant.now());
+
+        // Các trường mới tự động tính toán cho seed data
+        product.setCostPrice(price * 0.7); // Giả định giá nhập = 70% giá bán
+        
+        // Logic tính hạn sử dụng dựa trên danh mục
+        int shelfLifeDays = 30; // Mặc định
+        
+        if (category.equalsIgnoreCase("Rau Ăn Hữu Cơ") || 
+            category.equalsIgnoreCase("Thịt & Trứng Sạch") || 
+            category.equalsIgnoreCase("Hải Sản Tươi")) {
+            shelfLifeDays = 5; // Hàng tươi sống: 5 ngày
+        } else if (category.equalsIgnoreCase("Trái Cây Tươi")) {
+            shelfLifeDays = 15; // Trái cây: 15 ngày
+        } else if (category.equalsIgnoreCase("Củ Quả & Gia Vị")) {
+            shelfLifeDays = 45; // Củ quả: 45 ngày
+        } else if (category.equalsIgnoreCase("Thực Phẩm Khô")) {
+            shelfLifeDays = 180; // Đồ khô: 6 tháng
+        }
+
+        product.setManufacturingDate(java.time.LocalDate.now().minusDays(2)); // NSX: 2 ngày trước
+        product.setExpiryDate(java.time.LocalDate.now().plusDays(shelfLifeDays - 2)); 
+        
+        product.setBatchNumber("BATCH-" + category.substring(0, 3).toUpperCase() + "-" + java.time.LocalDate.now().getYear());
+        
+        // Tạo ảnh placeholder dựa trên tên sản phẩm (viết liền, không dấu nếu có thể, hoặc đơn giản để nguyên)
+        // Lưu ý: URL cần encode nếu có ký tự đặc biệt, ở đây dùng đơn giản
+        String encodedName = name.replace(" ", "+");
+        product.setImage("https://placehold.co/600x600?text=" + encodedName);
+
+        // Khởi tạo các trường còn thiếu để đảm bảo đầy đủ model
+        java.util.List<String> extraImages = new java.util.ArrayList<>();
+        extraImages.add("https://placehold.co/600x600?text=" + encodedName + "+1");
+        extraImages.add("https://placehold.co/600x600?text=" + encodedName + "+2");
+        product.setAdditionalImages(extraImages);
+        
+        product.setIsClearance(false);
+        product.setClearanceDiscount(0.0);
+        product.setIsExpired(false);
+        product.setIsNearExpiry(false);
+        
+        product.updateExpiryStatus();
+
         return product;
     }
 }
