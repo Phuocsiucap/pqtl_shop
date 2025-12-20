@@ -21,25 +21,6 @@ public class AdminManagementController {
     @Autowired
     private AdminService adminService;
 
-    // ==================== AUTHENTICATION ====================
-    /**
-     * Admin login
-     * POST /api/v1/admin/login
-     */
-    @PostMapping("/login")
-    public ResponseEntity<?> adminLogin(@RequestBody Map<String, String> credentials) {
-        try {
-            String username = credentials.get("username");
-            String password = credentials.get("password");
-            
-            Map<String, Object> response = adminService.adminLogin(username, password);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Đăng nhập thất bại: " + e.getMessage()));
-        }
-    }
-
     // ==================== USER MANAGEMENT ====================
     /**
      * Get all users

@@ -32,37 +32,6 @@ public class AdminService {
     @Autowired
     private OrderRepository orderRepository;
 
-    // ==================== AUTHENTICATION ====================
-    /**
-     * Admin login - Kiểm tra username/password
-     */
-    public Map<String, Object> adminLogin(String username, String password) throws Exception {
-        Optional<User> user = userRepository.findByUsername(username);
-        
-        if (user.isEmpty()) {
-            throw new Exception("Tài khoản không tồn tại");
-        }
-        
-        User adminUser = user.get();
-        
-        // Kiểm tra password (trong thực tế nên dùng BCryptPasswordEncoder)
-        if (!adminUser.getPassword().equals(password)) {
-            throw new Exception("Mật khẩu không chính xác");
-        }
-        
-        // Kiểm tra quyền admin
-        if (adminUser.getRole() == null || !adminUser.getRole().equals("ADMIN")) {
-            throw new Exception("Người dùng không có quyền admin");
-        }
-        
-        Map<String, Object> response = new HashMap<>();
-        response.put("accessToken", "token_" + adminUser.getId());
-        response.put("refreshToken", "refresh_" + adminUser.getId());
-        response.put("user", adminUser);
-        
-        return response;
-    }
-
     // ==================== USER MANAGEMENT ====================
     /**
      * Lấy tất cả người dùng

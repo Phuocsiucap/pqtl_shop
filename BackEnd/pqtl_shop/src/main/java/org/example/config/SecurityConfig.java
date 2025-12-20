@@ -102,15 +102,44 @@ public class SecurityConfig {
                         ).permitAll()
                         // Cho phép truy cập công khai các API tìm kiếm, chi tiết sản phẩm và trang chủ (GET)
                         .requestMatchers("/api/v1/search/**").permitAll()
-                        .requestMatchers("/api/v1/**").permitAll()
-
                         .requestMatchers("/api/v1/products/**").permitAll()
-                        .requestMatchers("/api/v1/homepage/**").permitAll() // Bổ sung cho Homepage
+                        .requestMatchers("/api/v1/homepage/**").permitAll()
+                        .requestMatchers("/api/v1/categories/**").permitAll()
+                        .requestMatchers("/api/v1/vouchers/**").permitAll()
+
+                        // ==================== STAFF + ADMIN ====================
+                        // Quản lý sản phẩm - STAFF và ADMIN đều được truy cập
+                        .requestMatchers("/api/v1/admin/goods/**").hasAnyAuthority("ADMIN", "STAFF")
+
+                        // Bàn giao ca - STAFF và ADMIN đều được truy cập
+                        .requestMatchers("/api/v1/shift/**").hasAnyAuthority("ADMIN", "STAFF")
+
+                        // Upload ảnh - STAFF và ADMIN đều được truy cập (để upload ảnh sản phẩm)
+                        .requestMatchers("/api/v1/upload/**").hasAnyAuthority("ADMIN", "STAFF")
+
+                        // ==================== CHỈ ADMIN ====================
+                        // Các API admin khác chỉ ADMIN mới được truy cập
+                        .requestMatchers("/api/v1/admin/**").hasAuthority("ADMIN")
                         .requestMatchers("/api/admin/**").hasAuthority("ADMIN")
+
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
                         .successHandler(oAuth2SuccessHandler)
+                )
+                // Xử lý khi request không có token hoặc token không hợp lệ
+                // Trả về 401 JSON thay vì redirect đến trang login OAuth2
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(401);
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"Bạn cần đăng nhập để truy cập tài nguyên này\"}");
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setStatus(403);
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.getWriter().write("{\"error\": \"Forbidden\", \"message\": \"Bạn không có quyền truy cập tài nguyên này\"}");
+                        })
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 

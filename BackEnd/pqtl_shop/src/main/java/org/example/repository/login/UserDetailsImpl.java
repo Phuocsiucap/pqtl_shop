@@ -31,8 +31,9 @@ public class UserDetailsImpl implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
+        // Trả về role KHÔNG có prefix ROLE_ để khớp với hasAuthority() trong SecurityConfig
         return user.getRole() != null ?
-                java.util.Collections.singleton(() -> "ROLE_" + user.getRole()) :
+                java.util.Collections.singleton(() -> user.getRole()) :
                 java.util.Collections.emptyList();
     }
 

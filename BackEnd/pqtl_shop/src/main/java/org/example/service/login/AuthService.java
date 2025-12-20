@@ -77,14 +77,19 @@ public class AuthService {
 
     // ---------------------- LOGIN ----------------------
     public AuthResponse login(LoginRequest request) {
-        // 🔍 Chỉ tìm theo email
+        // 🔍 Tìm theo email hoặc username
         Optional<User> userOpt = userRepository.findByEmail(request.getUsername());
+        if (userOpt.isEmpty()) {
+            userOpt = userRepository.findByUsername(request.getUsername());
+        }
 
-        User user = userOpt.orElseThrow(() -> new RuntimeException("Email không tồn tại"));
+        User user = userOpt.orElseThrow(() -> new RuntimeException("Tài khoản không tồn tại"));
 
-        // 🚫 Chặn người dùng chưa xác minh hoặc chưa kích hoạt
-        if (!user.isVerified() || !user.getIsActive()) {
-            throw new RuntimeException("Tài khoản chưa được xác minh hoặc chưa kích hoạt");
+        // 🚫 Chặn CUSTOMER chưa xác minh - ADMIN/STAFF không cần xác minh
+        if ("CUSTOMER".equals(user.getRole())) {
+            if (!user.isVerified() || !user.getIsActive()) {
+                throw new RuntimeException("Tài khoản chưa được xác minh hoặc chưa kích hoạt");
+            }
         }
 
         // 🔐 Kiểm tra mật khẩu
