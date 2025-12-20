@@ -96,6 +96,23 @@ function Search({ keyword, onClose }) {
 
     const isSearching = keyword && keyword.trim().length > 0;
 
+    // Fuzzy matching đơn giản cho từ khóa gợi ý (History & Popular)
+    const getFuzzySuggestions = () => {
+        if (!keyword || !keyword.trim()) return [];
+        const searchLower = keyword.toLowerCase().trim();
+
+        // Gộp history và popular
+        const allKeywords = [...new Set([...localHistory, ...popularKeywords])];
+
+        return allKeywords.filter(kw => {
+            const kwLower = kw.toLowerCase();
+            // Match nếu chứa từ khóa hoặc match từng ký tự (đơn giản)
+            return kwLower.includes(searchLower);
+        }).slice(0, 5); // Lấy 5 gợi ý tốt nhất
+    };
+
+    const suggestedKeywords = getFuzzySuggestions();
+
     // Highlight từ khóa trong tên sản phẩm
     const HighlightText = ({ text, highlight }) => {
         if (!highlight || !text) return <span>{text}</span>;
@@ -118,73 +135,92 @@ function Search({ keyword, onClose }) {
     };
 
     return (
-        <div className="absolute top-full left-0 w-full bg-white font-Montserrat text-left shadow-2xl rounded-b-xl border-t border-gray-100 overflow-hidden z-[9999]">
+        <div className="absolute top-full left-0 w-full md:w-[800px] bg-white font-Montserrat text-left shadow-2xl rounded-b-xl border-t border-gray-100 overflow-hidden z-[9999] -ml-[100px] md:ml-0">
             {isSearching ? (
-                <>
-                    <div className="bg-gray-50 px-4 py-2 text-xs text-gray-500 font-medium border-b border-gray-200 flex justify-between items-center">
-                        <span>{loading ? "Đang tìm kiếm..." : "Sản phẩm gợi ý"}</span>
-                        {!loading && products?.content?.length > 0 && (
-                            <button
-                                onClick={() => handleNavigateToSearch()}
-                                className="text-primary hover:underline"
-                            >
-                                Xem tất cả kết quả
-                            </button>
-                        )}
-                    </div>
-
-                    <div className="max-h-[60vh] overflow-y-auto custom-scrollbar">
-                        {loading ? (
-                            <div className="flex justify-center py-6">
-                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+                <div className="flex flex-col md:flex-row">
+                    {/* Cột trái: Gợi ý từ khóa (nếu có) */}
+                    {suggestedKeywords.length > 0 && (
+                        <div className="w-full md:w-1/3 bg-gray-50 border-r border-gray-100 p-2">
+                            <div className="px-3 py-2 text-xs text-gray-500 font-semibold uppercase tracking-wider">
+                                Từ khóa phù hợp
                             </div>
-                        ) : products?.content?.length > 0 ? (
                             <ul>
-                                {products.content.map((product) => (
+                                {suggestedKeywords.map((kw, idx) => (
                                     <li
-                                        key={product.id}
-                                        onClick={() => handleNavigateToProductDetail(product.id)}
-                                        className="flex items-center gap-4 px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors border-b border-gray-100 last:border-0 group"
+                                        key={idx}
+                                        onClick={() => handleNavigateToSearch(kw)}
+                                        className="px-3 py-2 text-sm text-gray-700 hover:bg-white hover:text-primary hover:shadow-sm rounded-md cursor-pointer transition-all flex items-center gap-2"
                                     >
-                                        <div className="relative w-12 h-12 flex-shrink-0 border border-gray-200 rounded-lg overflow-hidden bg-white">
-                                            <img
-                                                src={getFullImageUrl(product.image)}
-                                                alt={product.name}
-                                                className="w-full h-full object-contain p-0.5"
-                                                onError={(e) => { e.target.src = "https://via.placeholder.com/50" }}
-                                            />
-                                        </div>
-                                        <div className="flex-grow min-w-0">
-                                            <p className="text-sm font-medium text-gray-800 truncate group-hover:text-primary transition-colors">
-                                                <HighlightText text={product.name} highlight={keyword} />
-                                            </p>
-                                            <div className="flex items-center gap-2 mt-0.5">
-                                                <span className="text-sm font-bold text-red-600">
-                                                    {PricetoString(product.finalPrice || product.price)}đ
-                                                </span>
-                                                {product.discount > 0 && (
-                                                    <span className="text-xs text-gray-400 line-through">
-                                                        {PricetoString(product.price)}đ
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
+                                        <FaSearch className="text-gray-400 text-xs" />
+                                        <HighlightText text={kw} highlight={keyword} />
                                     </li>
                                 ))}
                             </ul>
-                        ) : (
-                            <div className="px-4 py-8 text-center text-gray-500 text-sm">
-                                <p>Không tìm thấy sản phẩm nào phù hợp.</p>
+                        </div>
+                    )}
+
+                    {/* Cột phải: Sản phẩm gợi ý */}
+                    <div className={`w-full ${suggestedKeywords.length > 0 ? 'md:w-2/3' : 'md:w-full'}`}>
+                        <div className="bg-white px-4 py-2 text-xs text-gray-500 font-medium border-b border-gray-100 flex justify-between items-center">
+                            <span>{loading ? "Đang tìm kiếm..." : "Sản phẩm gợi ý"}</span>
+                            {!loading && products?.content?.length > 0 && (
                                 <button
                                     onClick={() => handleNavigateToSearch()}
-                                    className="mt-2 text-primary hover:underline font-medium"
+                                    className="text-primary hover:underline flex items-center gap-1"
                                 >
-                                    Thử tìm kiếm nâng cao
+                                    Xem tất cả <span className="text-xs">({products.totalElements || products.content.length})</span>
                                 </button>
-                            </div>
-                        )}
+                            )}
+                        </div>
+
+                        <div className="max-h-[60vh] overflow-y-auto custom-scrollbar p-2">
+                            {loading ? (
+                                <div className="flex justify-center py-8">
+                                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                                </div>
+                            ) : products?.content?.length > 0 ? (
+                                <ul className="grid grid-cols-1 gap-1">
+                                    {products.content.map((product) => (
+                                        <li
+                                            key={product.id}
+                                            onClick={() => handleNavigateToProductDetail(product.id)}
+                                            className="flex items-center gap-4 p-2 hover:bg-blue-50 rounded-lg cursor-pointer transition-all group"
+                                        >
+                                            <div className="relative w-14 h-14 flex-shrink-0 border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm group-hover:border-blue-200 transition-colors">
+                                                <img
+                                                    src={getFullImageUrl(product.image)}
+                                                    alt={product.name}
+                                                    className="w-full h-full object-contain p-0.5"
+                                                    onError={(e) => { e.target.src = "https://via.placeholder.com/60" }}
+                                                />
+                                            </div>
+                                            <div className="flex-grow min-w-0">
+                                                <p className="text-sm font-medium text-gray-800 line-clamp-2 group-hover:text-primary transition-colors">
+                                                    <HighlightText text={product.name} highlight={keyword} />
+                                                </p>
+                                                <div className="flex items-center justify-between mt-1">
+                                                    <span className="text-sm font-bold text-red-600">
+                                                        {PricetoString(product.finalPrice || product.price)}đ
+                                                    </span>
+                                                    {product.discount > 0 && (
+                                                        <span className="text-xs text-gray-400 line-through bg-gray-100 px-1 rounded">
+                                                            {PricetoString(product.price)}đ
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <div className="px-4 py-8 text-center text-gray-500 text-sm flex flex-col items-center">
+                                    <FaSearch className="text-gray-300 text-3xl mb-2" />
+                                    <p>Không tìm thấy sản phẩm nào.</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </>
+                </div>
             ) : (
                 // Lịch sử tìm kiếm & Từ khóa hot
                 <div className="p-4">

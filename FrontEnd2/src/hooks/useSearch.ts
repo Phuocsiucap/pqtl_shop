@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Product, SearchParams, Page, SearchHistory } from '../types/product';
 import { request1 as apiRequest } from '../utils/request'; // Sử dụng request1 cho API backend
 import { getCategories } from '../api/category';
@@ -26,6 +26,9 @@ export const useSearch = (): SearchResult => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [categories, setCategories] = useState<CategoryType[]>([]); // State cho danh mục
+
+  // Ref để lưu trữ AbortController của request hiện tại
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const adaptResponseToPage = (
     data: any,
@@ -72,6 +75,15 @@ export const useSearch = (): SearchResult => {
   };
 
   const search = useCallback(async (params: SearchParams) => {
+    // Hủy request cũ nếu đang chạy
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Tạo controller mới
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setLoading(true);
     setError(null);
     try {
@@ -114,7 +126,12 @@ export const useSearch = (): SearchResult => {
       });
 
       console.log('Search params:', filteredParams); // Debug log
-      const response = await apiRequest.get('v1/search', { params: filteredParams }); // API path là /api/v1/search, baseURL đã gồm /api/
+
+      const response = await apiRequest.get('v1/search', {
+        params: filteredParams,
+        signal: controller.signal // Gắn signal để hủy request
+      });
+
       console.log('Search response:', response.data); // Debug log
 
       const normalizedPage = adaptResponseToPage(response.data, filteredParams);
@@ -137,12 +154,21 @@ export const useSearch = (): SearchResult => {
         content: sortedContent,
       });
 
-    } catch (err) {
+    } catch (err: any) {
+      // Nếu lỗi do hủy request thì bỏ qua
+      if (err.name === 'CanceledError' || err.message === 'canceled') {
+        console.log('Search request canceled');
+        return;
+      }
+
       console.error('Search failed:', err);
       setError('Không thể tìm kiếm sản phẩm.');
       setProducts(null);
     } finally {
-      setLoading(false);
+      // Chỉ tắt loading nếu request không bị hủy (controller hiện tại vẫn khớp)
+      if (abortControllerRef.current === controller) {
+        setLoading(false);
+      }
     }
   }, []);
 
