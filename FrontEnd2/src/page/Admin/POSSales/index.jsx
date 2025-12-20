@@ -223,6 +223,7 @@ const POSSales = () => {
                     order_desc: `POS - ${customerName || 'Khách vãng lai'} - ${cart.length} sản phẩm`,
                     bank_code: "",
                     language: "vn",
+                    returnUrl: window.location.origin + "/admin/pos" // Redirect xác định cho POS
                 },
                 {
                     headers: {
@@ -378,18 +379,32 @@ const POSSales = () => {
                 const pendingOrder = JSON.parse(localStorage.getItem("pendingPOSOrder") || "null");
 
                 if (vnp_ResponseCode === "00" && pendingOrder) {
-                    // Thanh toán thành công, tạo đơn hàng
+                    // Thanh toán thành công, gọi backend để update transaction status
                     try {
-                        const order = await createPOSOrder({
-                            ...pendingOrder,
-                            amountReceived: pendingOrder.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0)
-                        }, access_token);
+                        const response = await request1.get(`/vn/payment-return${window.location.search}`, {
+                            headers: { Authorization: `Bearer ${access_token}` }
+                        });
 
-                        setLastOrder(order);
-                        setShowSuccessModal(true);
-                        localStorage.removeItem("pendingPOSOrder");
+                        if (response.data.code !== "00") {
+                            alert("Lỗi xác thực thanh toán: " + response.data.message);
+                            return;
+                        }
+
+                        console.log("Transaction updated successfully");
+                        // Không tạo đơn hàng ở đây, để tab cũ polling và tạo.
+
                     } catch (error) {
-                        console.error("Error creating order after VNPAY:", error);
+                        console.error("Error updating transaction:", error);
+                        alert("Có lỗi xảy ra khi xác thực thanh toán");
+                        return;
+                    }
+
+                    if (window.opener) {
+                        alert("Thanh toán thành công! Cửa sổ sẽ đóng sau 5 giây.");
+                        setTimeout(() => {
+                            window.close();
+                        }, 5000);
+                        return; // Stop execution to prevent re-render issues in popup
                     }
                 } else if (pendingOrder) {
                     alert("Thanh toán VNPAY không thành công. Vui lòng thử lại.");
@@ -477,10 +492,10 @@ const POSSales = () => {
                                             {formatCurrency(product.finalPrice)}
                                         </p>
                                         <span className={`text-xs px-2 py-1 rounded ${product.stockQuantity > 10
-                                                ? 'bg-green-100 text-green-700'
-                                                : product.stockQuantity > 0
-                                                    ? 'bg-yellow-100 text-yellow-700'
-                                                    : 'bg-red-100 text-red-700'
+                                            ? 'bg-green-100 text-green-700'
+                                            : product.stockQuantity > 0
+                                                ? 'bg-yellow-100 text-yellow-700'
+                                                : 'bg-red-100 text-red-700'
                                             }`}>
                                             {product.stockQuantity > 0 ? `SL: ${product.stockQuantity}` : 'Hết hàng'}
                                         </span>
@@ -650,8 +665,8 @@ const POSSales = () => {
                                     <button
                                         onClick={() => setPaymentMethod("CASH")}
                                         className={`p-3 rounded-lg border-2 flex flex-col items-center ${paymentMethod === "CASH"
-                                                ? "border-green-500 bg-green-50"
-                                                : "border-gray-200 hover:border-gray-300"
+                                            ? "border-green-500 bg-green-50"
+                                            : "border-gray-200 hover:border-gray-300"
                                             }`}
                                     >
                                         <FaMoneyBillWave className={`text-2xl ${paymentMethod === "CASH" ? "text-green-500" : "text-gray-400"}`} />
@@ -661,8 +676,8 @@ const POSSales = () => {
                                     <button
                                         onClick={() => setPaymentMethod("VNPAY")}
                                         className={`p-3 rounded-lg border-2 flex flex-col items-center ${paymentMethod === "VNPAY"
-                                                ? "border-red-500 bg-red-50"
-                                                : "border-gray-200 hover:border-gray-300"
+                                            ? "border-red-500 bg-red-50"
+                                            : "border-gray-200 hover:border-gray-300"
                                             }`}
                                     >
                                         <FaQrcode className={`text-2xl ${paymentMethod === "VNPAY" ? "text-red-500" : "text-gray-400"}`} />
@@ -750,8 +765,8 @@ const POSSales = () => {
                                 onClick={handlePayment}
                                 disabled={isProcessingVNPay}
                                 className={`px-6 py-2 rounded-lg flex items-center ${paymentMethod === "VNPAY"
-                                        ? "bg-red-500 hover:bg-red-600 text-white"
-                                        : "bg-green-500 hover:bg-green-600 text-white"
+                                    ? "bg-red-500 hover:bg-red-600 text-white"
+                                    : "bg-green-500 hover:bg-green-600 text-white"
                                     } disabled:opacity-50`}
                             >
                                 {isProcessingVNPay ? (

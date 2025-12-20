@@ -163,6 +163,7 @@ function Order({ }) {
           order_desc: `Đơn hàng ${orderId} - ${itemsToOrder.length} sản phẩm`,
           bank_code: "",
           language: "vn",
+          returnUrl: window.location.origin + "/order" // Redirect xác định cho Online Order
         },
         {
           headers: {
@@ -318,7 +319,14 @@ function Order({ }) {
               response_code: "00"
             }));
             localStorage.setItem("message", "Thanh toán thành công!");
-            setShowPaymentReturn(true);
+            localStorage.setItem("message", "Thanh toán thành công!");
+
+            // Chuyển hướng đến trang chi tiết đơn hàng
+            if (response.data && response.data.id) {
+              window.location.href = `/buildDetail/${response.data.id}`;
+            } else {
+              setShowPaymentReturn(true);
+            }
 
           } catch (error) {
             console.error("Error creating order after VNPAY:", error);
@@ -510,8 +518,8 @@ function Order({ }) {
                 <div
                   key={method.value}
                   className={`p-3 border-2 rounded-lg cursor-pointer text-center transition-all ${shippingMethod === method.value
-                      ? "border-primary bg-primary/10"
-                      : "border-gray-200 hover:border-primary/50"
+                    ? "border-primary bg-primary/10"
+                    : "border-gray-200 hover:border-primary/50"
                     }`}
                   onClick={() => setShippingMethod(method.value)}
                 >
@@ -532,8 +540,8 @@ function Order({ }) {
               {/* COD */}
               <div
                 className={`p-4 border-2 rounded-lg cursor-pointer text-center transition-all ${paymentMethod === "COD"
-                    ? "border-primary bg-primary/10"
-                    : "border-gray-200 hover:border-primary/50"
+                  ? "border-primary bg-primary/10"
+                  : "border-gray-200 hover:border-primary/50"
                   }`}
                 onClick={() => setPaymentMethod("COD")}
               >
@@ -547,8 +555,8 @@ function Order({ }) {
               {/* VNPAY */}
               <div
                 className={`p-4 border-2 rounded-lg cursor-pointer text-center transition-all ${paymentMethod === "VNPAY"
-                    ? "border-red-500 bg-red-50"
-                    : "border-gray-200 hover:border-red-300"
+                  ? "border-red-500 bg-red-50"
+                  : "border-gray-200 hover:border-red-300"
                   }`}
                 onClick={() => setPaymentMethod("VNPAY")}
               >
@@ -599,10 +607,10 @@ function Order({ }) {
         <div className="test flex justify-end mr-5 py-10">
           <button
             className={`px-8 py-4 text-base font-bold rounded-lg flex items-center gap-2 transition-all ${isProcessingPayment
-                ? "bg-gray-400 cursor-not-allowed"
-                : paymentMethod === "VNPAY"
-                  ? "bg-red-500 hover:bg-red-600 text-white"
-                  : "bg-primary hover:bg-primary/80 text-white"
+              ? "bg-gray-400 cursor-not-allowed"
+              : paymentMethod === "VNPAY"
+                ? "bg-red-500 hover:bg-red-600 text-white"
+                : "bg-primary hover:bg-primary/80 text-white"
               }`}
             onClick={() => HandleOnclickOrder()}
             disabled={isProcessingPayment}

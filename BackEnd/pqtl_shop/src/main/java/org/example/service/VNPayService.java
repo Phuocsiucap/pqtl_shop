@@ -67,7 +67,13 @@ public class VNPayService {
             String language = request.getLanguage();
             vnp_Params.put("vnp_Locale", (language != null && !language.isEmpty()) ? language : "vn");
             
-            vnp_Params.put("vnp_ReturnUrl", vnPayConfig.getVnpReturnUrl());
+            // Check for dynamic return URL
+            if (request.getReturnUrl() != null && !request.getReturnUrl().isEmpty()) {
+                vnp_Params.put("vnp_ReturnUrl", request.getReturnUrl());
+            } else {
+                vnp_Params.put("vnp_ReturnUrl", vnPayConfig.getVnpReturnUrl());
+            }
+
             vnp_Params.put("vnp_IpAddr", vnPayConfig.getIpAddress(httpRequest));
             vnp_Params.put("vnp_CreateDate", vnp_CreateDate);
             vnp_Params.put("vnp_ExpireDate", vnp_ExpireDate);

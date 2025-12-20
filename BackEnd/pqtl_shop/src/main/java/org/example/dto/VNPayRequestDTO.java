@@ -9,4 +9,5 @@ public class VNPayRequestDTO {
     private String order_desc;    // Mô tả đơn hàng
     private String bank_code;     // Mã ngân hàng (optional)
     private String language;      // Ngôn ngữ: "vn" hoặc "en"
+    private String returnUrl;     // URL redirect sau khi thanh toán
 }
