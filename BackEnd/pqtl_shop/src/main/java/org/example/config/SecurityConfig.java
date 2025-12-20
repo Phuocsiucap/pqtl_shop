@@ -1,6 +1,7 @@
 package org.example.config;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -18,6 +19,11 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
+import java.util.Arrays;
+import java.util.stream.Collectors;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
 //
 //
 //@Configuration
@@ -85,6 +91,9 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final CustomOAuth2SuccessHandler oAuth2SuccessHandler;
+    
+    @Value("${CORS_ALLOWED_ORIGINS:}")
+    private String corsAllowedOrigins; // comma-separated list; may be empty
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -170,7 +179,42 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("http://localhost:8888")); // ✅ FE port
+        // Determine origins: priority -> system env -> application property -> .env file -> default
+        String originsRaw = System.getenv("CORS_ALLOWED_ORIGINS");
+        if (originsRaw == null || originsRaw.isBlank()) {
+            originsRaw = corsAllowedOrigins; // property value
+        }
+        // If still empty, try to read .env in project root
+        if (originsRaw == null || originsRaw.isBlank()) {
+            try {
+                Path envPath = Path.of(".env");
+                if (Files.exists(envPath)) {
+                    List<String> lines = Files.readAllLines(envPath, StandardCharsets.UTF_8);
+                    for (String line : lines) {
+                        String l = line.strip();
+                        if (l.startsWith("#") || l.isBlank() || !l.contains("=")) continue;
+                        String[] parts = l.split("=", 2);
+                        String key = parts[0].trim();
+                        String val = parts[1].trim();
+                        if (key.equals("CORS_ALLOWED_ORIGINS")) {
+                            originsRaw = val;
+                            break;
+                        }
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
+        if (originsRaw == null || originsRaw.isBlank()) {
+            originsRaw = "http://localhost:3000"; // fallback default
+        }
+
+        List<String> allowedOrigins = Arrays.stream(originsRaw.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
+        configuration.setAllowedOriginPatterns(allowedOrigins);
         configuration.setAllowedMethods(List.of("GET","POST","PUT","DELETE","PATCH","OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true); // ✅ cho phép cookie / Authorization
