@@ -30,7 +30,9 @@ public class OrderService {
 
         order.setOrderDate(LocalDateTime.now());
         order.setUpdatedAt(LocalDateTime.now());
-        order.setOrderStatus("Đã xác nhận");
+        if (order.getOrderStatus() == null || order.getOrderStatus().isEmpty()) {
+            order.setOrderStatus("Chờ xác nhận");
+        }
         order.setPaymentStatus("Chưa thanh toán");
 
         // Lưu costPrice cho mỗi OrderItem từ Product
@@ -119,8 +121,8 @@ public class OrderService {
             // Lấy trạng thái từ cả orderStatus và shipping_status
             String status = order.getOrderStatus() != null ? order.getOrderStatus() : order.getShipping_status();
             
-            // Chỉ cho phép xóa nếu đơn hàng ở trạng thái "Đã xác nhận", "Hủy" hoặc "Đã hủy"
-            if (!"Đã xác nhận".equals(status) && !"Hủy".equals(status) && !"Đã hủy".equals(status)) {
+            // Chỉ cho phép xóa nếu đơn hàng ở trạng thái "Chờ xác nhận"
+            if (!"Chờ xác nhận".equals(status)) {
                 throw new IllegalStateException("Không thể xóa đơn hàng ở trạng thái: " + status);
             }
 

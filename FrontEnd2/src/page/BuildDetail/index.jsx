@@ -50,20 +50,16 @@ function BuildDetail() {
   const handleOnclickCancel = async () => {
     if (window.confirm("Bạn chắc chắn muốn hủy đơn hàng này?")) {
       try {
-        const response = await request1.post(
-          `order/cancel_order/${id}/`,
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${access_token}`,
-              "Content-Type": "application/json",
-            },
-            withCredentials: true,
-          }
-        );
+        const response = await request1.delete(`orders/${id}`, {
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+            "Content-Type": "application/json",
+          },
+          withCredentials: true,
+        });
 
-        if (response.status === 200) {
-          const successMessage = response.data.success || "Đơn hàng đã được hủy thành công.";
+        if (response.status === 200 || response.status === 204) {
+          const successMessage = (response.data && response.data.message) || "Đơn hàng đã được hủy thành công.";
           alert(successMessage);
 
           // Update order status locally - dùng "Hủy" để đồng bộ với admin
@@ -73,12 +69,13 @@ function BuildDetail() {
             shipping_status: "Hủy",
           }));
         } else {
-          const errorMessage = response.data.error || "Có lỗi xảy ra. Vui lòng thử lại.";
+          const errorMessage = (response.data && response.data.error) || "Có lỗi xảy ra. Vui lòng thử lại.";
           alert(errorMessage);
         }
       } catch (error) {
         console.error("Lỗi khi hủy đơn hàng:", error);
-        alert("Không thể hủy đơn hàng. Vui lòng thử lại sau.");
+        const errorMessage = (error.response && error.response.data && error.response.data.error) || "Không thể hủy đơn hàng. Vui lòng thử lại sau.";
+        alert(errorMessage);
       }
     }
   };
