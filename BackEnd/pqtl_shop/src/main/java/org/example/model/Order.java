@@ -24,7 +24,7 @@ public class Order {
     private String shippingMethod;            // Phương thức giao hàng: "Nhanh", "Tiết kiệm", "Tiêu chuẩn"
     private String paymentMethod;             // Phương thức thanh toán: "COD", "Chuyển khoản", "Ví điện tử", "Thẻ ngân hàng"
     private String paymentStatus;             // "Chưa thanh toán", "Đã thanh toán", "Hoàn tiền"
-    private String orderStatus;               // "Đã xác nhận", "Đang giao", "Đã giao", "Đã hủy"
+    private String orderStatus;               // "Chờ xác nhận", "Đã xác nhận", "Đang giao", "Đã giao", "Hủy"
 
     private LocalDateTime orderDate;          // Ngày đặt hàng
     private LocalDateTime updatedAt;          // Ngày cập nhật đơn hàng

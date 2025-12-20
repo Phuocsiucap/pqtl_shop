@@ -21,14 +21,36 @@ const ReviewList = ({ reviews, fetchReviews, productId }) => {
             {reviews.content.map((review) => (
                 <div key={review.id} className="border-b py-4">
                     <div className="flex justify-between items-center">
-                        <span className="font-semibold">{review.username}</span>
-                        <span className="text-sm text-gray-500">{new Date(review.reviewDate).toLocaleDateString()}</span>
+                        <div className="flex items-center">
+                            <span className="font-semibold">{review.username}</span>
+                            <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded">
+                                ✓ Đã mua hàng
+                            </span>
+                        </div>
+                        <span className="text-sm text-gray-500">{new Date(review.reviewDate).toLocaleDateString('vi-VN')}</span>
                     </div>
-                    <div className="text-yellow-500">
+                    <div className="text-yellow-500 mt-1">
                         {'★'.repeat(review.rating)}
                         {'☆'.repeat(5 - review.rating)}
                     </div>
                     <p className="mt-2 text-gray-700">{review.comment}</p>
+                    
+                    {/* Hiển thị phản hồi từ admin nếu có */}
+                    {review.adminReply && (
+                        <div className="mt-3 ml-4 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+                            <div className="flex items-center mb-1">
+                                <span className="font-semibold text-blue-700 text-sm">
+                                    🛒 Phản hồi từ Shop
+                                </span>
+                                {review.adminReplyDate && (
+                                    <span className="ml-2 text-xs text-gray-500">
+                                        {new Date(review.adminReplyDate).toLocaleDateString('vi-VN')}
+                                    </span>
+                                )}
+                            </div>
+                            <p className="text-gray-700 text-sm">{review.adminReply}</p>
+                        </div>
+                    )}
                 </div>
             ))}
             {/* Pagination controls */}

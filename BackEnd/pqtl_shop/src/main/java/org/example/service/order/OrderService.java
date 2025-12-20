@@ -116,9 +116,12 @@ public class OrderService {
                 return false;
             }
 
-            // Chỉ cho phép xóa nếu đơn hàng ở trạng thái "Đã xác nhận" hoặc "Đã hủy"
-            if (!order.getOrderStatus().equals("Đã xác nhận") && !order.getOrderStatus().equals("Đã hủy")) {
-                throw new IllegalStateException("Không thể xóa đơn hàng ở trạng thái: " + order.getOrderStatus());
+            // Lấy trạng thái từ cả orderStatus và shipping_status
+            String status = order.getOrderStatus() != null ? order.getOrderStatus() : order.getShipping_status();
+            
+            // Chỉ cho phép xóa nếu đơn hàng ở trạng thái "Đã xác nhận", "Hủy" hoặc "Đã hủy"
+            if (!"Đã xác nhận".equals(status) && !"Hủy".equals(status) && !"Đã hủy".equals(status)) {
+                throw new IllegalStateException("Không thể xóa đơn hàng ở trạng thái: " + status);
             }
 
             orderRepository.deleteById(id);
@@ -167,9 +170,11 @@ public class OrderService {
 
     // 🟣 Helper: Validate trạng thái đơn hàng
     private boolean isValidOrderStatus(String status) {
-        return status.equals("Đã xác nhận") ||
+        return status.equals("Chờ xác nhận") ||
+                status.equals("Đã xác nhận") ||
                 status.equals("Đang giao") ||
                 status.equals("Đã giao") ||
+                status.equals("Hủy") ||
                 status.equals("Đã hủy");
     }
 
@@ -177,8 +182,11 @@ public class OrderService {
     public Map<String, Object> getUserOrderStats(String userId) {
         List<Order> orders = getOrdersByUser(userId);
         long totalOrders = orders.size();
-        long deliveredOrders = orders.stream().filter(o -> o.getOrderStatus().equals("Đã giao")).count();
-        long cancelledOrders = orders.stream().filter(o -> o.getOrderStatus().equals("Đã hủy")).count();
+        long deliveredOrders = orders.stream().filter(o -> 
+            "Đã giao".equals(o.getOrderStatus()) || "Đã giao".equals(o.getShipping_status())).count();
+        long cancelledOrders = orders.stream().filter(o -> 
+            "Hủy".equals(o.getOrderStatus()) || "Hủy".equals(o.getShipping_status()) ||
+            "Đã hủy".equals(o.getOrderStatus()) || "Đã hủy".equals(o.getShipping_status())).count();
         double totalSpent = orders.stream().mapToDouble(Order::getFinalAmount).sum();
 
         return Map.of(

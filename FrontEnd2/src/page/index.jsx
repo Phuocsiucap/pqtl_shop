@@ -29,6 +29,7 @@ import OAuth2RedirectHandler from "./OAuth2RedirectHandler";
 import ShiftHandoverManager from "./Admin/ShiftHandover";
 import EmployeeShiftHandover from "./Admin/EmployeeShift";
 import POSSales from "./Admin/POSSales";
+import ReviewManagement from "./Admin/ReviewManagement";
 import withRoleCheck from "../components/withRoleCheck";
 
 // Wrap các trang chỉ dành cho ADMIN
@@ -47,6 +48,7 @@ const StaffAndAdminManageBill = withRoleCheck(ManagementBill, ["ADMIN", "STAFF"]
 const StaffAndAdminBillDetail = withRoleCheck(DetailModal, ["ADMIN", "STAFF"]);
 const StaffAndAdminEmployeeShift = withRoleCheck(EmployeeShiftHandover, ["ADMIN", "STAFF"]);
 const StaffAndAdminPOS = withRoleCheck(POSSales, ["ADMIN", "STAFF"]);
+const StaffAndAdminReviews = withRoleCheck(ReviewManagement, ["ADMIN", "STAFF"]);
 
 const PublicPage = [
     { path: "/", component: Home, layout: Defaultlayout },
@@ -78,6 +80,7 @@ const PublicPage = [
     { path: "/admin/shift-handover", component: AdminOnlyShiftHandover, layout: AdminLayout },
     { path: "/admin/employee-shift", component: StaffAndAdminEmployeeShift, layout: AdminLayout },
     { path: "/admin/pos", component: StaffAndAdminPOS, layout: AdminLayout },
+    { path: "/admin/reviews", component: StaffAndAdminReviews, layout: AdminLayout },
     { path: "/oauth2/success", component: OAuth2RedirectHandler, layout: null },
 
 ]

@@ -2,12 +2,19 @@ package org.example.exception;
 
 public class AppException extends RuntimeException {
 
+    private ErrorCode errorCode;
+    private String customMessage;
+
     public AppException(ErrorCode errorCode) {
         super(errorCode.getMessage());
         this.errorCode = errorCode;
     }
-
-    private ErrorCode errorCode;
+    
+    public AppException(ErrorCode errorCode, String customMessage) {
+        super(customMessage);
+        this.errorCode = errorCode;
+        this.customMessage = customMessage;
+    }
 
     public ErrorCode getErrorCode() {
         return errorCode;
@@ -15,5 +22,9 @@ public class AppException extends RuntimeException {
 
     public void setErrorCode(ErrorCode errorCode) {
         this.errorCode = errorCode;
+    }
+    
+    public String getCustomMessage() {
+        return customMessage;
     }
 }

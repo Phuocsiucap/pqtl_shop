@@ -292,6 +292,8 @@ public class AdminService {
         
         Order order = orderOpt.get();
         order.setShipping_status(shippingStatus);
+        // Đồng bộ orderStatus với shipping_status để khách hàng cũng thấy trạng thái mới
+        order.setOrderStatus(shippingStatus);
         order.setUpdatedAt(LocalDateTime.now());
         
         return orderRepository.save(order);

@@ -78,7 +78,7 @@ const SearchProductItem = ({ product }) => {
 function SearchResultPage() {
     const location = useLocation();
     const params = useParams();
-    const { search, products, loading, error, categories } = useSearch();
+    const { search, products, loading, error, categories, history, fetchHistory } = useSearch();
     const [filters, setFilters] = useState(INITIAL_FILTERS);
     const [sortBy, setSortBy] = useState('popular');
     const [page, setPage] = useState(0);
@@ -243,6 +243,12 @@ function SearchResultPage() {
             ...prev,
             isClearance: !prev.isClearance,
         }));
+    };
+
+    const handleHistoryClick = (term) => {
+        if (!term) return;
+        setPage(0);
+        navigate(`/search?keyword=${encodeURIComponent(term)}`);
     };
 
     const clearAllFilters = () => {
@@ -489,6 +495,28 @@ function SearchResultPage() {
         </div>
     );
 
+    const renderHistory = () => (
+        history && history.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap bg-white px-4 py-3 rounded-lg shadow border border-gray-200">
+                <span className="text-sm text-gray-600">Lịch sử tìm kiếm:</span>
+                {history.slice(0, 8).map((item) => (
+                    <button
+                        key={item.id || item.keyword}
+                        type="button"
+                        onClick={() => handleHistoryClick(item.keyword)}
+                        className="text-sm px-3 py-1 rounded-full bg-gray-100 hover:bg-primary hover:text-white transition"
+                    >
+                        {item.keyword}
+                    </button>
+                ))}
+            </div>
+        )
+    );
+
+    useEffect(() => {
+        fetchHistory();
+    }, [fetchHistory, keyword]);
+
     return (
         <div className="bg-gray-50 min-h-screen">
             <div className="container mx-auto px-4 py-6">
@@ -510,6 +538,8 @@ function SearchResultPage() {
                         {renderSorting()}
                     </div>
                 </div>
+
+                {renderHistory()}
 
                 {renderTagList()}
 

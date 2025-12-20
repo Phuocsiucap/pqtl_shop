@@ -6,6 +6,7 @@ import CartItem from "./cartItems";
 import VoucherModal from "./VoucherModels";
 import CartFooter from "./CartFooter";
 import { getCSRFTokenFromCookie } from "../../Component/Token/getCSRFToken";
+import { computeFinalPrice } from "../../utils/pricing";
 
 
 // import CartFooter from "./cartFooter";
@@ -50,13 +51,7 @@ function CartShopping() {
     let total = cartItems
       .filter((item) => selectedItems.includes(item.productId)) // Lọc các mục được chọn
       .reduce((sum, item) => {
-        // Tính giá cuối cùng: ưu tiên thanh lý > giảm giá > giá gốc
-        let finalPrice;
-        if (item.isClearance && item.clearanceDiscount > 0) {
-          finalPrice = item.price * (1 - item.clearanceDiscount / 100);
-        } else {
-          finalPrice = item.price - (item.discount || 0);
-        }
+        const finalPrice = computeFinalPrice(item);
         return sum + finalPrice * item.qty;
       }, 0); // Tính tổng giá
 

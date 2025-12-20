@@ -28,7 +28,12 @@ public enum ErrorCode {
     INVALID_FRIEND_REQUEST_STATUS(1018, "Invalid friend request status", HttpStatus.BAD_REQUEST),
 
     // Product errors
-    PRODUCT_NOT_FOUND(2001, "Product not found", HttpStatus.NOT_FOUND);
+    PRODUCT_NOT_FOUND(2001, "Product not found", HttpStatus.NOT_FOUND),
+    
+    // Review errors
+    REVIEW_NOT_ALLOWED(3001, "Review not allowed - Purchase required", HttpStatus.FORBIDDEN),
+    REVIEW_ALREADY_EXISTS(3002, "Review already exists", HttpStatus.BAD_REQUEST),
+    REVIEW_NOT_FOUND(3003, "Review not found", HttpStatus.NOT_FOUND);
 
     private final int code;
     private final String message;

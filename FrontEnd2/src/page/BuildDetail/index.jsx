@@ -66,11 +66,11 @@ function BuildDetail() {
           const successMessage = response.data.success || "Đơn hàng đã được hủy thành công.";
           alert(successMessage);
 
-          // Update order status locally
+          // Update order status locally - dùng "Hủy" để đồng bộ với admin
           setBuild((prevBuild) => ({
             ...prevBuild,
-            orderStatus: "Đã hủy",
-            shipping_status: "Đã hủy",
+            orderStatus: "Hủy",
+            shipping_status: "Hủy",
           }));
         } else {
           const errorMessage = response.data.error || "Có lỗi xảy ra. Vui lòng thử lại.";
@@ -226,7 +226,7 @@ function BuildDetail() {
         <p>{build.finalAmount ? PricetoString(build.finalAmount.toString()) : "0"}đ</p>
       </div>
       <div className="flex justify-end mx-3 md:mx-5 text-[10px] md:text-base">
-        {status !== "Đã hủy" && status !== "Đã giao" &&
+        {status !== "Đã hủy" && status !== "Hủy" && status !== "Đã giao" &&
           <button
             className="button-primary bg-red-500 px-3 py-2 md:px-5 md:py-3 font-semibold"
             onClick={() => handleOnclickCancel()}
