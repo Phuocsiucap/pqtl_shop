@@ -13,6 +13,7 @@ const OrderManagement = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [showConfirmPopup, setShowConfirmPopup] = useState(false);
+  const [newStatus, setNewStatus] = useState(""); // Trạng thái mới được chọn
   const access_token = getCSRFTokenFromCookie("access_token_admin");
   const navigate = useNavigate();
   
@@ -36,7 +37,7 @@ const OrderManagement = () => {
     { key: "confirmed", label: "Đã xác nhận", value: "Đã xác nhận", color: "bg-green-500" },
     { key: "shipping", label: "Đang giao", value: "Đang giao", color: "bg-blue-500" },
     { key: "delivered", label: "Đã giao", value: "Đã giao", color: "bg-purple-500" },
-    { key: "cancelled", label: "Đã hủy", value: "Đã hủy", color: "bg-red-500" },
+    { key: "cancelled", label: "Hủy", value: "Hủy", color: "bg-red-500" },
   ];
 
   // Calculate stats from orders
@@ -57,7 +58,7 @@ const OrderManagement = () => {
         case "Đã xác nhận": stats.confirmed++; break;
         case "Đang giao": stats.shipping++; break;
         case "Đã giao": stats.delivered++; break;
-        case "Đã hủy": stats.cancelled++; break;
+        case "Hủy": stats.cancelled++; break;
         default: break;
       }
     });
@@ -134,6 +135,7 @@ const OrderManagement = () => {
     console.log("Confirm order clicked:", order);
     setSelectedOrder(order);
     setSelectedOrderId(order.id);
+    setNewStatus(order.shipping_status || "Chờ xác nhận"); // Set trạng thái hiện tại
     setShowConfirmPopup(true);
   };
 
@@ -145,33 +147,47 @@ const OrderManagement = () => {
     setShowConfirmPopup(false);
     setSelectedOrderId(null);
     setSelectedOrder(null);
+    setNewStatus("");
+  };
+
+  // Hàm xử lý hủy đơn hàng nhanh
+  const handleCancelOrder = (order) => {
+    setSelectedOrder(order);
+    setSelectedOrderId(order.id);
+    setNewStatus("Hủy");
+    setShowConfirmPopup(true);
+  };
+
+  // Lấy danh sách trạng thái có thể chuyển đến
+  const getAvailableStatuses = (currentStatus) => {
+    const allStatuses = [
+      { value: "Chờ xác nhận", label: "Chờ xác nhận" },
+      { value: "Đã xác nhận", label: "Đã xác nhận" },
+      { value: "Đang giao", label: "Đang giao" },
+      { value: "Đã giao", label: "Đã giao" },
+      { value: "Hủy", label: "Hủy" },
+    ];
+    return allStatuses;
   };
 
   const handleConfirm = async() => {
     console.log("handleConfirm called with selectedOrderId:", selectedOrderId);
     console.log("selectedOrder:", selectedOrder);
-    
+    console.log("newStatus:", newStatus);
+
     if (!selectedOrderId) {
       alert("Lỗi: ID đơn hàng không hợp lệ");
       return;
     }
-    
-    let newStatus;
+
     const currentStatus = selectedOrder.shipping_status || "Chờ xác nhận";
-    
-    switch (currentStatus) {
-      case "Chờ xác nhận":
-        newStatus = "Đã xác nhận";
-        break;
-      case "Đã xác nhận":
-        newStatus = "Đang giao";
-        break;
-      case "Đang giao":
-        newStatus = "Đã giao";
-        break;
-      default:
-        newStatus = currentStatus;
+
+    // Kiểm tra nếu trạng thái không thay đổi
+    if (newStatus === currentStatus) {
+      alert("Vui lòng chọn trạng thái khác với trạng thái hiện tại");
+      return;
     }
+
     try{
       const response=await request1.patch(`v1/admin/orders/${selectedOrderId}/`,
         {
@@ -322,6 +338,7 @@ const OrderManagement = () => {
         orders={filteredOrders}
         onViewDetails={handleViewDetails}
         onConfirmOrder={handleConfirmOrder}
+        onCancelOrder={handleCancelOrder}
       />
 
       {/* Modal Xem chi tiết */}
@@ -332,26 +349,69 @@ const OrderManagement = () => {
       {/* Popup Xác nhận */}
       {showConfirmPopup && selectedOrder && (
         <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex justify-center items-center z-50">
-          <div className="bg-white rounded-lg p-6 w-[400px]">
+          <div className="bg-white rounded-lg p-6 w-[450px]">
             <h3 className="text-lg font-semibold mb-4">
-              Cập nhật đơn hàng 
+              Cập nhật đơn hàng
               <span className="text-primary font-semibold">
               &nbsp;#{selectedOrder.id}
               </span>
             </h3>
-            <p>Bạn có chắc chắn cập nhật trạng thái đơn hàng này không?</p>
+
+            {/* Trạng thái hiện tại */}
+            <div className="mb-4">
+              <p className="text-gray-600 mb-2">Trạng thái hiện tại:</p>
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                (selectedOrder.shipping_status || "Chờ xác nhận") === "Chờ xác nhận" ? "bg-yellow-100 text-yellow-700" :
+                selectedOrder.shipping_status === "Đã xác nhận" ? "bg-green-100 text-green-700" :
+                selectedOrder.shipping_status === "Đang giao" ? "bg-blue-100 text-blue-700" :
+                selectedOrder.shipping_status === "Đã giao" ? "bg-purple-100 text-purple-700" :
+                selectedOrder.shipping_status === "Hủy" ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-700"
+              }`}>
+                {selectedOrder.shipping_status || "Chờ xác nhận"}
+              </span>
+            </div>
+
+            {/* Dropdown chọn trạng thái mới */}
+            <div className="mb-4">
+              <label className="block text-gray-600 mb-2">Chọn trạng thái mới:</label>
+              <select
+                value={newStatus}
+                onChange={(e) => setNewStatus(e.target.value)}
+                className="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {getAvailableStatuses(selectedOrder.shipping_status || "Chờ xác nhận").map((status) => (
+                  <option key={status.value} value={status.value}>
+                    {status.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Cảnh báo khi hủy đơn */}
+            {newStatus === "Hủy" && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-red-600 text-sm font-medium">
+                  ⚠️ Cảnh báo: Hủy đơn hàng sẽ không thể hoàn tác!
+                </p>
+              </div>
+            )}
+
             <div className="flex justify-between mt-4">
               <button
                 onClick={handleCloseConfirmPopup}
                 className="bg-gray-400 text-white px-6 py-2 rounded-md hover:bg-gray-500"
               >
-                Hủy
+                Đóng
               </button>
               <button
                 onClick={handleConfirm}
-                className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700"
+                className={`px-6 py-2 rounded-md text-white ${
+                  newStatus === "Hủy"
+                    ? "bg-red-600 hover:bg-red-700"
+                    : "bg-green-600 hover:bg-green-700"
+                }`}
               >
-                Xác nhận
+                {newStatus === "Hủy" ? "Xác nhận hủy" : "Cập nhật"}
               </button>
             </div>
           </div>

@@ -66,13 +66,13 @@ const DetailModal = () => {
               order.shipping_status === "Chờ xác nhận"
                 ? "text-yellow-500"
                 : order.shipping_status === "Đã xác nhận"
-                ? "text-blue-500"
-                : order.shipping_status === "Đã hủy"
+                ? "text-green-500"
+                : order.shipping_status === "Hủy"
                 ? "text-red-500"
                 : order.shipping_status === "Đang giao"
                 ? "text-blue-500"
                 : order.shipping_status === "Đã giao"
-                ? "text-green-500"
+                ? "text-purple-500"
                 : "text-gray-600"
             }`}
           >

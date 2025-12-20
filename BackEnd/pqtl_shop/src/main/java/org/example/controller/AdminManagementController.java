@@ -3,7 +3,9 @@ package org.example.controller;
 import org.example.model.Order;
 import org.example.model.Product;
 import org.example.model.login.User;
+import org.example.repository.login.UserRepository;
 import org.example.service.AdminService;
+import org.example.service.login.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +22,12 @@ public class AdminManagementController {
 
     @Autowired
     private AdminService adminService;
+
+    @Autowired
+    private JwtService jwtService;
+
+    @Autowired
+    private UserRepository userRepository;
 
     // ==================== USER MANAGEMENT ====================
     /**
@@ -345,10 +353,13 @@ public class AdminManagementController {
             @RequestBody Map<String, Object> updates,
             @RequestHeader("Authorization") String authHeader) {
         try {
-            // Lấy admin ID từ token (simplified - trong thực tế cần parse JWT)
-            String adminId = "admin"; // Placeholder - cần lấy từ JWT
-            
-            User user = adminService.updateUser(id, updates, adminId);
+            // Lấy admin ID từ JWT token
+            String token = authHeader.replace("Bearer ", "");
+            String email = jwtService.extractUsername(token);
+            User adminUser = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new Exception("Không tìm thấy admin"));
+
+            User user = adminService.updateUser(id, updates, adminUser.getId());
             return ResponseEntity.ok(user);
         } catch (Exception e) {
             if (e.getMessage().contains("không có quyền")) {

@@ -111,6 +111,9 @@ public class SecurityConfig {
                         // Quản lý sản phẩm - STAFF và ADMIN đều được truy cập
                         .requestMatchers("/api/v1/admin/goods/**").hasAnyAuthority("ADMIN", "STAFF")
 
+                        // Quản lý đơn hàng - STAFF và ADMIN đều được truy cập
+                        .requestMatchers("/api/v1/admin/orders/**").hasAnyAuthority("ADMIN", "STAFF")
+
                         // Bàn giao ca - STAFF và ADMIN đều được truy cập
                         .requestMatchers("/api/v1/shift/**").hasAnyAuthority("ADMIN", "STAFF")
 

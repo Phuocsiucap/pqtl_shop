@@ -23,7 +23,8 @@ const UserList = () => {
 
   const roleList = [
     { key: "all", label: "Tất cả", color: "bg-gray-500" },
-    { key: "USER", label: "Người dùng", color: "bg-blue-500" },
+    { key: "CUSTOMER", label: "Khách hàng", color: "bg-blue-500" },
+    { key: "STAFF", label: "Nhân viên", color: "bg-green-500" },
     { key: "ADMIN", label: "Admin", color: "bg-red-500" },
   ];
 
@@ -170,12 +171,15 @@ const UserList = () => {
   };
 
   const getRoleBadge = (role) => {
-    const isAdmin = role === "ADMIN";
+    const roleConfig = {
+      ADMIN: { bg: "bg-red-100", text: "text-red-700", label: "Admin" },
+      STAFF: { bg: "bg-green-100", text: "text-green-700", label: "Nhân viên" },
+      CUSTOMER: { bg: "bg-blue-100", text: "text-blue-700", label: "Khách hàng" },
+    };
+    const config = roleConfig[role] || roleConfig.CUSTOMER;
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-        isAdmin ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700"
-      }`}>
-        {isAdmin ? "Admin" : "User"}
+      <span className={`px-2 py-1 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
+        {config.label}
       </span>
     );
   };
@@ -215,7 +219,8 @@ const UserList = () => {
   // Count users by role
   const userStats = {
     all: users.length,
-    USER: users.filter(u => u.role === "USER").length,
+    CUSTOMER: users.filter(u => u.role === "CUSTOMER").length,
+    STAFF: users.filter(u => u.role === "STAFF").length,
     ADMIN: users.filter(u => u.role === "ADMIN").length,
   };
 

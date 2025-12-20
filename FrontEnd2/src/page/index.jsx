@@ -28,6 +28,23 @@ import OAuth2RedirectHandler from "./OAuth2RedirectHandler";
 import ShiftHandoverManager from "./Admin/ShiftHandover";
 import EmployeeShiftHandover from "./Admin/EmployeeShift";
 import POSSales from "./Admin/POSSales";
+import withRoleCheck from "../components/withRoleCheck";
+
+// Wrap các trang chỉ dành cho ADMIN
+const AdminOnlyHome = withRoleCheck(AdminHome, ["ADMIN"]);
+const AdminOnlyManageUser = withRoleCheck(ManagementUser, ["ADMIN"]);
+const AdminOnlyBestSeller = withRoleCheck(BestSellerList, ["ADMIN"]);
+const AdminOnlyFinancialReport = withRoleCheck(FinancialReport, ["ADMIN"]);
+const AdminOnlyClearance = withRoleCheck(ClearanceManager, ["ADMIN"]);
+const AdminOnlyVoucher = withRoleCheck(ManagementVoucher, ["ADMIN"]);
+const AdminOnlyShiftHandover = withRoleCheck(ShiftHandoverManager, ["ADMIN"]);
+
+// Các trang STAFF + ADMIN đều truy cập được
+const StaffAndAdminGoods = withRoleCheck(ManagementGood, ["ADMIN", "STAFF"]);
+const StaffAndAdminManageBill = withRoleCheck(ManagementBill, ["ADMIN", "STAFF"]);
+const StaffAndAdminBillDetail = withRoleCheck(DetailModal, ["ADMIN", "STAFF"]);
+const StaffAndAdminEmployeeShift = withRoleCheck(EmployeeShiftHandover, ["ADMIN", "STAFF"]);
+const StaffAndAdminPOS = withRoleCheck(POSSales, ["ADMIN", "STAFF"]);
 
 const PublicPage = [
     { path: "/", component: Home, layout: Defaultlayout },
@@ -46,18 +63,18 @@ const PublicPage = [
     { path: "/regester", component: Regester, layout: null },
     // admin
     { path: "/admin/login", component: LoginForm, layout: null },
-    { path: "/admin", component: AdminHome, layout: AdminLayout },
-    { path: "/admin/manageuser", component: ManagementUser, layout: AdminLayout },
-    { path: "/admin/managegood", component: ManagementGood, layout: AdminLayout },
-    { path: "/admin/managebill", component: ManagementBill, layout: AdminLayout },
-    { path: "/admin/managebill/billdetail", component: DetailModal, layout: AdminLayout },
-    { path: "/admin/bestseller", component: BestSellerList, layout: AdminLayout },
-    { path: "/admin/financial-report", component: FinancialReport, layout: AdminLayout },
-    { path: "/admin/clearance", component: ClearanceManager, layout: AdminLayout },
-    { path: "/admin/managevoucher", component: ManagementVoucher, layout: AdminLayout },
-    { path: "/admin/shift-handover", component: ShiftHandoverManager, layout: AdminLayout },
-    { path: "/admin/employee-shift", component: EmployeeShiftHandover, layout: AdminLayout },
-    { path: "/admin/pos", component: POSSales, layout: AdminLayout },
+    { path: "/admin", component: AdminOnlyHome, layout: AdminLayout },
+    { path: "/admin/manageuser", component: AdminOnlyManageUser, layout: AdminLayout },
+    { path: "/admin/managegood", component: StaffAndAdminGoods, layout: AdminLayout },
+    { path: "/admin/managebill", component: StaffAndAdminManageBill, layout: AdminLayout },
+    { path: "/admin/managebill/billdetail", component: StaffAndAdminBillDetail, layout: AdminLayout },
+    { path: "/admin/bestseller", component: AdminOnlyBestSeller, layout: AdminLayout },
+    { path: "/admin/financial-report", component: AdminOnlyFinancialReport, layout: AdminLayout },
+    { path: "/admin/clearance", component: AdminOnlyClearance, layout: AdminLayout },
+    { path: "/admin/managevoucher", component: AdminOnlyVoucher, layout: AdminLayout },
+    { path: "/admin/shift-handover", component: AdminOnlyShiftHandover, layout: AdminLayout },
+    { path: "/admin/employee-shift", component: StaffAndAdminEmployeeShift, layout: AdminLayout },
+    { path: "/admin/pos", component: StaffAndAdminPOS, layout: AdminLayout },
     { path: "/oauth2/success", component: OAuth2RedirectHandler, layout: null },
 
 ]

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { FaEye, FaEdit, FaTrashAlt, FaTag, FaFilter, FaExclamationTriangle } from "react-icons/fa";
+import { FaEye, FaEdit, FaTrashAlt, FaTag, FaFilter, FaExclamationTriangle, FaLock } from "react-icons/fa";
 import defaultImage from "../../../assets/images/placeholder.png";
 import placeholderImg from "../../../assets/images/placeholder.png";
 import ProductDetailModal from "./ProductDetailModal ";
@@ -7,7 +7,8 @@ import ProductEditModal from "./ProductEditModal ";
 import AddProductModal from "./AddProductModal";
 import { request1, request } from "../../../utils/request";
 import { getCSRFTokenFromCookie } from "../../../Component/Token/getCSRFToken";
-const ProductList = () => {
+
+const ProductList = ({ userRole }) => {
   const [products, setProducts] = useState([]);
   const access_token = getCSRFTokenFromCookie("access_token_admin");
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -18,6 +19,14 @@ const ProductList = () => {
   const [filterStatus, setFilterStatus] = useState("all"); // all, clearance, nearExpiry, expired, normal
   const [searchTerm, setSearchTerm] = useState("");
   const productsPerPage = 10;
+
+  // Kiểm tra quyền STAFF
+  const isStaff = userRole === "STAFF";
+
+  // Hàm hiển thị thông báo cho STAFF
+  const showStaffAlert = (action) => {
+    alert(`Bạn không có quyền ${action} sản phẩm.\nVui lòng liên hệ Admin để thực hiện chức năng này.`);
+  };
 
   // Multiple selection
   const [selectedProducts, setSelectedProducts] = useState([]);
@@ -73,12 +82,20 @@ const ProductList = () => {
 
   // Hàm mở modal chỉnh sửa sản phẩm
   const editProduct = (product) => {
+    if (isStaff) {
+      showStaffAlert("sửa");
+      return;
+    }
     setSelectedProduct(product);
     setIsEditModalOpen(true);
   };
 
   // Hàm xóa sản phẩm
   const deleteProduct = async (id) => {
+    if (isStaff) {
+      showStaffAlert("xóa");
+      return;
+    }
     const confirmDelete = window.confirm(
       "Bạn có chắc chắn muốn xóa sản phẩm này?"
     );
@@ -144,6 +161,10 @@ const ProductList = () => {
 
   // Bulk delete products
   const deleteMultipleProducts = async () => {
+    if (isStaff) {
+      showStaffAlert("xóa");
+      return;
+    }
     if (selectedProducts.length === 0) {
       alert("Vui lòng chọn ít nhất một sản phẩm");
       return;
@@ -266,6 +287,10 @@ const ProductList = () => {
 
   // Mark as clearance
   const markAsClearance = async (productId, discount) => {
+    if (isStaff) {
+      showStaffAlert("đánh dấu thanh lý");
+      return;
+    }
     try {
       await request1.post(`v1/admin/clearance/${productId}/?discount=${discount}`, {}, {
         headers: {
@@ -292,6 +317,10 @@ const ProductList = () => {
 
   // Unmark clearance
   const unmarkClearance = async (productId) => {
+    if (isStaff) {
+      showStaffAlert("hủy thanh lý");
+      return;
+    }
     try {
       await request1.delete(`v1/admin/clearance/${productId}/`, {
         headers: {
@@ -360,7 +389,7 @@ const ProductList = () => {
             + Thêm sản phẩm
           </button>
 
-          {selectedProducts.length > 0 && (
+          {!isStaff && selectedProducts.length > 0 && (
             <button
               onClick={deleteMultipleProducts}
               className="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700 transition-colors flex items-center gap-2"
@@ -375,18 +404,20 @@ const ProductList = () => {
         <table className="min-w-full table-auto border-collapse">
           <thead className="bg-blue-500 text-white whitespace-nowrap">
             <tr>
-              <th className="px-4 py-3 text-center">
-                <div className="flex flex-col items-center gap-1">
-                  <input
-                    type="checkbox"
-                    checked={selectAll && currentProducts.length > 0}
-                    onChange={toggleSelectAll}
-                    className="w-5 h-5 cursor-pointer accent-blue-600 border-2 border-white rounded"
-                    title="Chọn tất cả"
-                  />
-                  <span className="text-xs">Chọn</span>
-                </div>
-              </th>
+              {!isStaff && (
+                <th className="px-4 py-3 text-center">
+                  <div className="flex flex-col items-center gap-1">
+                    <input
+                      type="checkbox"
+                      checked={selectAll && currentProducts.length > 0}
+                      onChange={toggleSelectAll}
+                      className="w-5 h-5 cursor-pointer accent-blue-600 border-2 border-white rounded"
+                      title="Chọn tất cả"
+                    />
+                    <span className="text-xs">Chọn</span>
+                  </div>
+                </th>
+              )}
               <th className="px-4 py-3 text-left">Hình ảnh</th>
               <th className="px-4 py-3 text-left">Tên sản phẩm</th>
               <th className="px-4 py-3 text-center">SL</th>
@@ -414,14 +445,16 @@ const ProductList = () => {
                             index % 2 === 0 ? "bg-gray-50" : "bg-white"
                     }`}
                 >
-                  <td className="px-4 py-3 text-center">
-                    <input
-                      type="checkbox"
-                      checked={selectedProducts.includes(product.id)}
-                      onChange={() => toggleSelectProduct(product.id)}
-                      className="w-5 h-5 cursor-pointer accent-blue-600 border-2 border-gray-300 rounded"
-                    />
-                  </td>
+                  {!isStaff && (
+                    <td className="px-4 py-3 text-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedProducts.includes(product.id)}
+                        onChange={() => toggleSelectProduct(product.id)}
+                        className="w-5 h-5 cursor-pointer accent-blue-600 border-2 border-gray-300 rounded"
+                      />
+                    </td>
+                  )}
                   <td className="px-4 py-3">
                     <img
                       src={product.image || defaultImage}
@@ -510,12 +543,12 @@ const ProductList = () => {
                       </button>
                       <button
                         onClick={() => editProduct(product)}
-                        className="text-yellow-500 hover:text-yellow-700 p-1"
-                        title="Chỉnh sửa"
+                        className={`p-1 ${isStaff ? "text-gray-400 cursor-not-allowed" : "text-yellow-500 hover:text-yellow-700"}`}
+                        title={isStaff ? "Liên hệ Admin để sửa" : "Chỉnh sửa"}
                       >
-                        <FaEdit />
+                        {isStaff ? <FaLock /> : <FaEdit />}
                       </button>
-                      {product.isClearance ? (
+                      {!isStaff && (product.isClearance ? (
                         <button
                           onClick={() => unmarkClearance(product.id)}
                           className="text-gray-500 hover:text-gray-700 p-1"
@@ -536,13 +569,13 @@ const ProductList = () => {
                         >
                           <FaTag />
                         </button>
-                      )}
+                      ))}
                       <button
                         onClick={() => deleteProduct(product.id)}
-                        className="text-red-500 hover:text-red-700 p-1"
-                        title="Xóa"
+                        className={`p-1 ${isStaff ? "text-gray-400 cursor-not-allowed" : "text-red-500 hover:text-red-700"}`}
+                        title={isStaff ? "Liên hệ Admin để xóa" : "Xóa"}
                       >
-                        <FaTrashAlt />
+                        {isStaff ? <FaLock /> : <FaTrashAlt />}
                       </button>
                     </div>
                   </td>
