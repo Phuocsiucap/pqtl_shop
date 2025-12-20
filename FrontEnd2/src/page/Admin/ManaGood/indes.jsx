@@ -46,26 +46,78 @@ const ProductList = ({ userRole }) => {
     return Math.ceil((new Date(expiryDate) - new Date()) / (1000 * 60 * 60 * 24));
   };
 
-  // Get status badge
-  const getStatusBadge = (product) => {
+  // Get status badges - hiển thị nhiều trạng thái
+  const getStatusBadges = (product) => {
     const days = getDaysUntilExpiry(product.expiryDate);
+    const badges = [];
 
+    // Trạng thái thanh lý
     if (product.isClearance) {
-      return <span className="px-2 py-1 bg-purple-600 text-white text-xs rounded-full">Thanh lý -{product.clearanceDiscount}%</span>;
+      badges.push(
+        <span key="clearance" className="px-2 py-1 bg-purple-600 text-white text-xs rounded-full">
+          Thanh lý -{product.clearanceDiscount}%
+        </span>
+      );
     }
+
+    // Trạng thái theo mùa
+    if (product.isSeasonal) {
+      badges.push(
+        <span key="seasonal" className="px-2 py-1 bg-blue-500 text-white text-xs rounded-full">
+          Theo mùa
+        </span>
+      );
+    }
+
+    // Trạng thái hết hạn
     if (days !== null && days < 0) {
-      return <span className="px-2 py-1 bg-red-600 text-white text-xs rounded-full">Hết hạn</span>;
+      badges.push(
+        <span key="expired" className="px-2 py-1 bg-red-600 text-white text-xs rounded-full">
+          Hết hạn
+        </span>
+      );
+    } else if (days !== null && days <= 7) {
+      badges.push(
+        <span key="nearexpiry" className="px-2 py-1 bg-red-500 text-white text-xs rounded-full">
+          Còn {days} ngày
+        </span>
+      );
+    } else if (days !== null && days <= 30) {
+      badges.push(
+        <span key="soonexpiry" className="px-2 py-1 bg-orange-500 text-white text-xs rounded-full">
+          Sắp hết hạn
+        </span>
+      );
     }
-    if (days !== null && days <= 7) {
-      return <span className="px-2 py-1 bg-red-500 text-white text-xs rounded-full">Còn {days} ngày</span>;
+
+    // Trạng thái giảm giá (không phải thanh lý)
+    if (!product.isClearance && product.discount > 0) {
+      badges.push(
+        <span key="discount" className="px-2 py-1 bg-green-500 text-white text-xs rounded-full">
+          Giảm giá
+        </span>
+      );
     }
-    if (days !== null && days <= 30) {
-      return <span className="px-2 py-1 bg-orange-500 text-white text-xs rounded-full">Sắp hết hạn</span>;
+
+    // Nếu không có trạng thái nào
+    if (badges.length === 0) {
+      badges.push(
+        <span key="normal" className="px-2 py-1 bg-gray-200 text-gray-600 text-xs rounded-full">
+          Bình thường
+        </span>
+      );
     }
-    if (product.discount > 0) {
-      return <span className="px-2 py-1 bg-green-500 text-white text-xs rounded-full">Giảm giá</span>;
-    }
-    return <span className="px-2 py-1 bg-gray-200 text-gray-600 text-xs rounded-full">Bình thường</span>;
+
+    return (
+      <div className="flex flex-wrap gap-1 justify-center">
+        {badges}
+      </div>
+    );
+  };
+
+  // Backward compatible function
+  const getStatusBadge = (product) => {
+    return getStatusBadges(product);
   };
 
   // Calculate profit margin
@@ -249,6 +301,9 @@ const ProductList = ({ userRole }) => {
     let matchStatus = true;
 
     switch (filterStatus) {
+      case "seasonal":
+        matchStatus = product.isSeasonal === true;
+        break;
       case "clearance":
         matchStatus = product.isClearance === true;
         break;
@@ -262,7 +317,7 @@ const ProductList = ({ userRole }) => {
         matchStatus = product.discount > 0;
         break;
       case "normal":
-        matchStatus = !product.isClearance && (days === null || days > 30) && (!product.discount || product.discount === 0);
+        matchStatus = !product.isClearance && !product.isSeasonal && (days === null || days > 30) && (!product.discount || product.discount === 0);
         break;
       default:
         matchStatus = true;
@@ -375,11 +430,12 @@ const ProductList = ({ userRole }) => {
             className="px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">Tất cả</option>
-            <option value="clearance">🏷️ Đang thanh lý</option>
-            <option value="nearExpiry">⏰ Sắp hết hạn</option>
-            <option value="expired">❌ Đã hết hạn</option>
-            <option value="sale">💰 Đang giảm giá</option>
-            <option value="normal">✅ Bình thường</option>
+            <option value="seasonal">Theo mùa</option>
+            <option value="clearance">Đang thanh lý</option>
+            <option value="nearExpiry">Sắp hết hạn</option>
+            <option value="expired">Đã hết hạn</option>
+            <option value="sale">Đang giảm giá</option>
+            <option value="normal">Bình thường</option>
           </select>
 
           <button

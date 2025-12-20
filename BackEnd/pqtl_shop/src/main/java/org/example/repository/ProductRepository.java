@@ -32,4 +32,10 @@ public interface ProductRepository extends MongoRepository<Product, String> {
 
     // Homepage: Lấy sản phẩm theo mùa (Seasonal)
     List<Product> findTop6ByIsSeasonalTrue();
+
+    // Homepage: Lấy 8 sản phẩm mới nhất (theo thời gian tạo)
+    List<Product> findTop8ByOrderByCreatedAtDesc();
+
+    // Homepage: Lấy 8 sản phẩm mới nhất (theo ID giảm dần - fallback nếu không có createdAt)
+    List<Product> findTop8ByOrderByIdDesc();
 }

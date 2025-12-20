@@ -3,36 +3,26 @@ import HeroBanner from "./Slider"; // File is Slider/index.jsx but exports HeroB
 import QuickAccessCategories from "./content/QuickAccessCategories";
 import { useHomepageData } from "../../hooks/useHomepageData";
 import ProductCard from "../../components/Product/ProductCard";
+import { FaFire, FaClock, FaLeaf } from "react-icons/fa";
 
-// Component hiển thị danh sách sản phẩm
-const ProductSection = ({ title, products, loading, error }) => {
+// Component hiển thị danh sách sản phẩm với icon
+const ProductSection = ({ title, products, loading, error, icon: Icon, iconColor }) => {
     if (loading) return <div className="text-center py-8">Đang tải {title}...</div>;
     if (error) return <div className="text-center text-red-500 py-8">Lỗi tải dữ liệu: {error}</div>;
 
     // Đảm bảo products là mảng trước khi kiểm tra length và map
     const productsArray = Array.isArray(products) ? products : (products === null ? [] : []);
 
-    // Debug log
-    console.log(`ProductSection ${title} - products:`, products);
-    console.log(`ProductSection ${title} - productsArray:`, productsArray);
-    console.log(`ProductSection ${title} - productsArray.length:`, productsArray.length);
-
     if (productsArray.length === 0) {
-        return (
-            <div className="mt-12">
-                <h2 className="text-3xl font-bold mb-6 text-primary">{title}</h2>
-                <div className="text-center py-8 text-gray-500">
-                    Không tìm thấy {title}.
-                    <br />
-                    <small className="text-sm">(Có thể database chưa có dữ liệu hoặc API chưa được cấu hình đúng)</small>
-                </div>
-            </div>
-        );
+        return null; // Không hiển thị section nếu không có sản phẩm
     }
 
     return (
         <div className="mt-12">
-            <h2 className="text-3xl font-bold mb-6 text-primary">{title}</h2>
+            <div className="flex items-center gap-3 mb-6">
+                {Icon && <Icon className={`text-2xl ${iconColor || 'text-primary'}`} />}
+                <h2 className="text-3xl font-bold text-primary">{title}</h2>
+            </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                 {productsArray.map((product) => (
                     <ProductCard key={product.id} product={product} />
@@ -44,13 +34,7 @@ const ProductSection = ({ title, products, loading, error }) => {
 
 
 function Home() {
-    const { bestsellers, seasonalProducts, loading, error } = useHomepageData();
-
-    // Debug log
-    console.log('Home Component - Bestsellers:', bestsellers);
-    console.log('Home Component - Seasonal Products:', seasonalProducts);
-    console.log('Home Component - Loading:', loading);
-    console.log('Home Component - Error:', error);
+    const { bestsellers, newestProducts, seasonalProducts, loading, error } = useHomepageData();
 
     return (
         <div>
@@ -60,20 +44,34 @@ function Home() {
                 {/* 1. Danh mục Truy cập Nhanh */}
                 <QuickAccessCategories />
 
-                {/* 2. Sản phẩm Bán chạy nhất & Đề xuất */}
+                {/* 2. Sản phẩm Bán chạy nhất */}
                 <ProductSection
-                    title="Sản phẩm Bán chạy nhất & Đề xuất"
+                    title="Sản phẩm bán chạy nhất"
                     products={bestsellers}
                     loading={loading}
                     error={error}
+                    icon={FaFire}
+                    iconColor="text-orange-500"
                 />
 
-                {/* 3. Nông sản Theo Mùa */}
+                {/* 3. Sản phẩm Mới nhất */}
                 <ProductSection
-                    title="Nông sản Theo Mùa"
+                    title="Sản phẩm mới nhất"
+                    products={newestProducts}
+                    loading={loading}
+                    error={error}
+                    icon={FaClock}
+                    iconColor="text-blue-500"
+                />
+
+                {/* 4. Sản phẩm Theo mùa */}
+                <ProductSection
+                    title="Sản phẩm theo mùa"
                     products={seasonalProducts}
                     loading={loading}
                     error={error}
+                    icon={FaLeaf}
+                    iconColor="text-green-500"
                 />
             </div>
         </div>

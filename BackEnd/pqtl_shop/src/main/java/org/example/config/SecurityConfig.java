@@ -120,6 +120,11 @@ public class SecurityConfig {
                         // Upload ảnh - STAFF và ADMIN đều được truy cập (để upload ảnh sản phẩm)
                         .requestMatchers("/api/v1/upload/**").hasAnyAuthority("ADMIN", "STAFF")
 
+                        // Quản lý danh mục - STAFF và ADMIN đều được thêm/sửa/xóa
+                        .requestMatchers(HttpMethod.POST, "/api/v1/categories/**").hasAnyAuthority("ADMIN", "STAFF")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/categories/**").hasAnyAuthority("ADMIN", "STAFF")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/categories/**").hasAnyAuthority("ADMIN", "STAFF")
+
                         // ==================== CHỈ ADMIN ====================
                         // Các API admin khác chỉ ADMIN mới được truy cập
                         .requestMatchers("/api/v1/admin/**").hasAuthority("ADMIN")

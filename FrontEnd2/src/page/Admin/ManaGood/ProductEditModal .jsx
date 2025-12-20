@@ -2,9 +2,12 @@ import React, { useState, useEffect } from "react";
 import { request1, request } from "../../../utils/request";
 import { getCSRFTokenFromCookie } from "../../../Component/Token/getCSRFToken";
 import { getCategories } from "../../../api/category";
-import { FaPlus, FaTimes, FaCloudUploadAlt } from "react-icons/fa";
+import { FaPlus, FaTimes, FaCloudUploadAlt, FaExclamationCircle } from "react-icons/fa";
 
 const ProductEditModal = ({ product: initialProduct, closeModal, onSave, onError }) => {
+  // Toast notification state
+  const [toast, setToast] = useState({ show: false, message: [], type: "error" });
+
   // Initial State - mapped from initialProduct prop
   const [product, setProduct] = useState({
     goodName: initialProduct?.name || "",
@@ -144,7 +147,15 @@ const ProductEditModal = ({ product: initialProduct, closeModal, onSave, onError
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+
+    // Hiển thị thông báo lỗi đẹp nếu có
+    if (Object.keys(newErrors).length > 0) {
+      const errorMessages = Object.values(newErrors);
+      setToast({ show: true, message: errorMessages, type: "error" });
+      return false;
+    }
+
+    return true;
   };
 
   // Upload image to Cloudinary
@@ -237,6 +248,33 @@ const ProductEditModal = ({ product: initialProduct, closeModal, onSave, onError
 
   return (
     <div className="fixed inset-0 bg-gray-900 bg-opacity-60 flex justify-center items-center z-50 p-4 overflow-y-auto">
+      {/* Toast Notification */}
+      {toast.show && (
+        <div className="fixed top-5 right-5 z-[9999] max-w-md w-full animate-slide-in">
+          <div className="bg-red-50 border-l-4 border-red-500 rounded-lg shadow-lg p-4 flex items-start gap-3">
+            <div className="flex-shrink-0 mt-0.5">
+              <FaExclamationCircle className="text-red-500 text-xl" />
+            </div>
+            <div className="flex-1">
+              <h4 className="font-semibold text-red-800">Vui lòng nhập đầy đủ thông tin</h4>
+              <div className="mt-2 text-sm text-gray-700">
+                <ul className="list-disc list-inside space-y-1">
+                  {toast.message.map((msg, idx) => (
+                    <li key={idx}>{msg}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <button
+              onClick={() => setToast({ ...toast, show: false })}
+              className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <FaTimes />
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col">
 
         {/* Header */}
@@ -519,21 +557,10 @@ const ProductEditModal = ({ product: initialProduct, closeModal, onSave, onError
                   <label className="flex items-center space-x-3 cursor-pointer">
                     <input
                       type="checkbox"
-                      name="isBestSeller"
-                      checked={product.isBestSeller}
-                      onChange={handleChange}
-                      className="h-5 w-5 text-green-600 rounded focus:ring-green-500"
-                    />
-                    <span className="text-gray-700">Sản phẩm bán chạy (Best Seller)</span>
-                  </label>
-
-                  <label className="flex items-center space-x-3 cursor-pointer">
-                    <input
-                      type="checkbox"
                       name="isSeasonal"
                       checked={product.isSeasonal}
                       onChange={handleChange}
-                      className="h-5 w-5 text-green-600 rounded focus:ring-green-500"
+                      className="h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
                     />
                     <span className="text-gray-700">Sản phẩm theo mùa</span>
                   </label>

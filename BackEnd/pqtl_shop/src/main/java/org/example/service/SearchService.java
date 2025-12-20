@@ -46,6 +46,8 @@ public class SearchService {
         public List<String> certifications;
         public Double ratingMin;
         public Boolean onSaleOnly;
+        public Boolean isSeasonal;
+        public Boolean isClearance;
         public String sortBy; // e.g., price_asc, price_desc, rating_desc, sold_desc
         public Integer page = 0;
         public Integer size = 10;
@@ -63,6 +65,8 @@ public class SearchService {
             copy.certifications = this.certifications != null ? new ArrayList<>(this.certifications) : null;
             copy.ratingMin = this.ratingMin;
             copy.onSaleOnly = this.onSaleOnly;
+            copy.isSeasonal = this.isSeasonal;
+            copy.isClearance = this.isClearance;
             copy.sortBy = this.sortBy;
             copy.page = this.page;
             copy.size = this.size;
@@ -110,6 +114,8 @@ public class SearchService {
 
         metadata.ratings = computeRatingBuckets(params);
         metadata.onSaleCount = computeOnSaleCount(params);
+        metadata.seasonalCount = computeSeasonalCount(params);
+        metadata.clearanceCount = computeClearanceCount(params);
 
         double[] priceRange = computePriceRange(params);
         metadata.minPrice = priceRange[0];
@@ -199,6 +205,14 @@ public class SearchService {
 
         if (Boolean.TRUE.equals(params.onSaleOnly)) {
             criteriaList.add(Criteria.where("discount").gt(0));
+        }
+
+        if (Boolean.TRUE.equals(params.isSeasonal)) {
+            criteriaList.add(Criteria.where("isSeasonal").is(true));
+        }
+
+        if (Boolean.TRUE.equals(params.isClearance)) {
+            criteriaList.add(Criteria.where("isClearance").is(true));
         }
 
         if (criteriaList.isEmpty()) {
@@ -322,6 +336,22 @@ public class SearchService {
         return mongoTemplate.count(query, Product.class);
     }
 
+    private long computeSeasonalCount(SearchParams params) {
+        SearchParams copy = params.copy();
+        copy.isSeasonal = null;
+        Query query = buildQuery(copy);
+        query.addCriteria(Criteria.where("isSeasonal").is(true));
+        return mongoTemplate.count(query, Product.class);
+    }
+
+    private long computeClearanceCount(SearchParams params) {
+        SearchParams copy = params.copy();
+        copy.isClearance = null;
+        Query query = buildQuery(copy);
+        query.addCriteria(Criteria.where("isClearance").is(true));
+        return mongoTemplate.count(query, Product.class);
+    }
+
     private double[] computePriceRange(SearchParams params) {
         SearchParams copy = params.copy();
         copy.priceMin = null;
@@ -361,6 +391,8 @@ public class SearchService {
         public List<FilterCount> certifications = List.of();
         public List<FilterCount> ratings = List.of();
         public long onSaleCount;
+        public long seasonalCount;
+        public long clearanceCount;
         public Double minPrice;
         public Double maxPrice;
     }

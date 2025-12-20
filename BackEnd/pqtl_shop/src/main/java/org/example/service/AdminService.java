@@ -105,10 +105,10 @@ public class AdminService {
             product.setStockQuantity(Integer.parseInt(productData.get("stockQuantity").toString()));
         }
         
+
         // Set finalPrice
-        double price = product.getPrice();
-        double discount = product.getDiscount();
-        product.setFinalPrice(price - discount);
+        // Sẽ được tính lại ở cuối hàm sau khi có đầy đủ thông tin (bao gồm clearance)
+
         
         // Set các trường ngày
         if (productData.get("manufacturingDate") != null && !productData.get("manufacturingDate").toString().isEmpty()) {
@@ -140,7 +140,10 @@ public class AdminService {
         
         // Cập nhật trạng thái hết hạn nếu có
         product.updateExpiryStatus();
-        
+
+        // Tính toán lại finalPrice
+        calculateAndSetFinalPrice(product);
+
         return productRepository.save(product);
     }
 
@@ -208,9 +211,8 @@ public class AdminService {
         }
         
         // Cập nhật finalPrice
-        double price = existingProduct.getPrice();
-        double discount = existingProduct.getDiscount();
-        existingProduct.setFinalPrice(price - discount);
+        // Sẽ được tính lại ở cuối hàm sau khi có đầy đủ thông tin
+
         
         // Cập nhật các trường ngày
         if (productData.get("manufacturingDate") != null && !productData.get("manufacturingDate").toString().isEmpty()) {
@@ -236,7 +238,10 @@ public class AdminService {
         
         // Cập nhật trạng thái hết hạn
         existingProduct.updateExpiryStatus();
-        
+
+        // Tính toán lại finalPrice
+        calculateAndSetFinalPrice(existingProduct);
+
         return productRepository.save(existingProduct);
     }
 
@@ -1008,7 +1013,9 @@ public class AdminService {
         Product product = productOpt.get();
         product.setIsClearance(true);
         product.setClearanceDiscount(clearanceDiscount != null ? clearanceDiscount : 30.0);
-        
+
+        calculateAndSetFinalPrice(product);
+
         return productRepository.save(product);
     }
     
@@ -1025,7 +1032,9 @@ public class AdminService {
         Product product = productOpt.get();
         product.setIsClearance(false);
         product.setClearanceDiscount(null);
-        
+
+        calculateAndSetFinalPrice(product);
+
         return productRepository.save(product);
     }
     
@@ -1049,6 +1058,7 @@ public class AdminService {
             if (product.getIsClearance() == null || !product.getIsClearance()) {
                 product.setIsClearance(true);
                 product.setClearanceDiscount(clearanceDiscount != null ? clearanceDiscount : 30.0);
+                calculateAndSetFinalPrice(product);
                 productRepository.save(product);
                 markedCount++;
             }
@@ -1134,9 +1144,9 @@ public class AdminService {
     public Map<String, Object> fixMissingImages() {
         List<Product> allProducts = productRepository.findAll();
         List<String> fixedProductIds = new ArrayList<>();
-        
+
         String placeholderImage = "https://via.placeholder.com/400x400?text=No+Image";
-        
+
         for (Product product : allProducts) {
             if (product.getImage() == null || product.getImage().isEmpty()) {
                 product.setImage(placeholderImage);
@@ -1144,12 +1154,22 @@ public class AdminService {
                 fixedProductIds.add(product.getId());
             }
         }
-        
+
         Map<String, Object> result = new HashMap<>();
         result.put("fixedCount", fixedProductIds.size());
         result.put("fixedProductIds", fixedProductIds);
         result.put("message", "Đã thêm ảnh placeholder cho " + fixedProductIds.size() + " sản phẩm");
-        
+
         return result;
+    }
+
+    private void calculateAndSetFinalPrice(Product product) {
+        if (Boolean.TRUE.equals(product.getIsClearance()) && product.getClearanceDiscount() != null) {
+            product.setFinalPrice(product.getPrice() * (1 - product.getClearanceDiscount() / 100.0));
+        } else {
+            // Đảm bảo discount không null
+            double discount = product.getDiscount() > 0 ? product.getDiscount() : 0;
+            product.setFinalPrice(product.getPrice() - discount);
+        }
     }
 }

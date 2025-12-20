@@ -18,6 +18,7 @@ import ManagementUser from "./Admin/ManaUser"
 import ManagementBill from "./Admin/ManaBill"
 import DetailModal from "./Admin/ManaBill/DetailModal"
 import ManagementGood from "./Admin/ManaGood/indes"
+import ManagementCategory from "./Admin/ManaCategory"
 import ManagementVoucher from "./Admin/ManaVoucher"
 import LoginForm from "./Admin/LoginAdmin"
 import BestSellerList from "./Admin/BestSeller"
@@ -41,6 +42,7 @@ const AdminOnlyShiftHandover = withRoleCheck(ShiftHandoverManager, ["ADMIN"]);
 
 // Các trang STAFF + ADMIN đều truy cập được
 const StaffAndAdminGoods = withRoleCheck(ManagementGood, ["ADMIN", "STAFF"]);
+const StaffAndAdminCategory = withRoleCheck(ManagementCategory, ["ADMIN", "STAFF"]);
 const StaffAndAdminManageBill = withRoleCheck(ManagementBill, ["ADMIN", "STAFF"]);
 const StaffAndAdminBillDetail = withRoleCheck(DetailModal, ["ADMIN", "STAFF"]);
 const StaffAndAdminEmployeeShift = withRoleCheck(EmployeeShiftHandover, ["ADMIN", "STAFF"]);
@@ -66,6 +68,7 @@ const PublicPage = [
     { path: "/admin", component: AdminOnlyHome, layout: AdminLayout },
     { path: "/admin/manageuser", component: AdminOnlyManageUser, layout: AdminLayout },
     { path: "/admin/managegood", component: StaffAndAdminGoods, layout: AdminLayout },
+    { path: "/admin/managecategory", component: StaffAndAdminCategory, layout: AdminLayout },
     { path: "/admin/managebill", component: StaffAndAdminManageBill, layout: AdminLayout },
     { path: "/admin/managebill/billdetail", component: StaffAndAdminBillDetail, layout: AdminLayout },
     { path: "/admin/bestseller", component: AdminOnlyBestSeller, layout: AdminLayout },

@@ -41,6 +41,8 @@ public class SearchController {
             @RequestParam(required = false, name = "certificationsCsv") String certificationsCsv,
             @RequestParam(required = false) Double ratingMin,
             @RequestParam(required = false) Boolean onSaleOnly,
+            @RequestParam(required = false) Boolean isSeasonal,
+            @RequestParam(required = false) Boolean isClearance,
             @RequestParam(required = false) String sortBy,
             @RequestParam(defaultValue = "0") Integer page,
             @RequestParam(defaultValue = "10") Integer size) {
@@ -61,6 +63,8 @@ public class SearchController {
                 certificationsCsv,
                 ratingMin,
                 onSaleOnly,
+                isSeasonal,
+                isClearance,
                 sortBy,
                 page,
                 size
@@ -86,7 +90,9 @@ public class SearchController {
             @RequestParam(required = false) List<String> certifications,
             @RequestParam(required = false, name = "certificationsCsv") String certificationsCsv,
             @RequestParam(required = false) Double ratingMin,
-            @RequestParam(required = false) Boolean onSaleOnly) {
+            @RequestParam(required = false) Boolean onSaleOnly,
+            @RequestParam(required = false) Boolean isSeasonal,
+            @RequestParam(required = false) Boolean isClearance) {
 
         SearchService.SearchParams params = buildSearchParams(
                 keyword,
@@ -104,6 +110,8 @@ public class SearchController {
                 certificationsCsv,
                 ratingMin,
                 onSaleOnly,
+                isSeasonal,
+                isClearance,
                 null,
                 0,
                 Integer.MAX_VALUE
@@ -141,6 +149,8 @@ public class SearchController {
             String certificationsCsv,
             Double ratingMin,
             Boolean onSaleOnly,
+            Boolean isSeasonal,
+            Boolean isClearance,
             String sortBy,
             Integer page,
             Integer size) {
@@ -157,6 +167,8 @@ public class SearchController {
         params.certifications = mergeParamValues(certifications, certificationsCsv);
         params.ratingMin = ratingMin;
         params.onSaleOnly = onSaleOnly;
+        params.isSeasonal = isSeasonal;
+        params.isClearance = isClearance;
         params.sortBy = sortBy;
         params.page = page != null ? page : 0;
         params.size = size != null ? size : 10;

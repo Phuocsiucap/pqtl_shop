@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { Product, SearchParams, Page, SearchHistory } from '../types/product';
 import { request1 as apiRequest } from '../utils/request'; // Sử dụng request1 cho API backend
 import { getCategories } from '../api/category';
+import { computeFinalPrice } from '../utils/pricing';
 
 type CategoryType = {
   id?: string;
@@ -77,25 +78,65 @@ export const useSearch = (): SearchResult => {
       // Lọc bỏ các tham số null/undefined trước khi gửi
       // Nhưng giữ lại keyword ngay cả khi là chuỗi rỗng (để backend xử lý)
       const filteredParams: any = {};
-      
+
       // Luôn thêm keyword nếu có (kể cả chuỗi rỗng)
       if (params.keyword !== undefined && params.keyword !== null) {
         filteredParams.keyword = params.keyword;
       }
-      
+
+      // Chuẩn hóa sortBy để khớp backend và client
+      const normalizeSort = (value?: string) => {
+        switch (value) {
+          case 'price_low_to_high':
+          case 'price_asc':
+            return 'price_low_to_high';
+          case 'price_high_to_low':
+          case 'price_desc':
+            return 'price_high_to_low';
+          case 'rating':
+          case 'rating_desc':
+            return 'rating_desc';
+          case 'newest':
+            return 'newest';
+          case 'popular':
+          case 'sold_desc':
+            return 'popular';
+          default:
+            return value;
+        }
+      };
+
       // Lọc các tham số khác
       Object.entries(params).forEach(([key, value]) => {
         if (key !== 'keyword' && value !== undefined && value !== null && value !== "") {
-          filteredParams[key] = value;
+          filteredParams[key] = key === 'sortBy' ? normalizeSort(value as string) : value;
         }
       });
-      
+
       console.log('Search params:', filteredParams); // Debug log
       const response = await apiRequest.get('v1/search', { params: filteredParams }); // API path là /api/v1/search, baseURL đã gồm /api/
       console.log('Search response:', response.data); // Debug log
+
       const normalizedPage = adaptResponseToPage(response.data, filteredParams);
-      setProducts(normalizedPage);
-      
+
+      // Đảm bảo luôn có finalPrice và tự sắp xếp khi sortBy liên quan tới giá
+      const enrichedContent = normalizedPage.content.map((product) => ({
+        ...product,
+        finalPrice: computeFinalPrice(product),
+      }));
+
+      let sortedContent = enrichedContent;
+      if (filteredParams.sortBy === 'price_low_to_high' || filteredParams.sortBy === 'price_asc') {
+        sortedContent = [...enrichedContent].sort((a, b) => computeFinalPrice(a) - computeFinalPrice(b));
+      } else if (filteredParams.sortBy === 'price_high_to_low' || filteredParams.sortBy === 'price_desc') {
+        sortedContent = [...enrichedContent].sort((a, b) => computeFinalPrice(b) - computeFinalPrice(a));
+      }
+
+      setProducts({
+        ...normalizedPage,
+        content: sortedContent,
+      });
+
     } catch (err) {
       console.error('Search failed:', err);
       setError('Không thể tìm kiếm sản phẩm.');
