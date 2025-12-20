@@ -72,4 +72,7 @@ public interface POSOrderRepository extends MongoRepository<POSOrder, String> {
      */
     @Query(value = "{ 'posOrderCode': { $regex: ?0 } }", sort = "{ 'posOrderCode': -1 }")
     List<POSOrder> findLastOrderCodeByDatePattern(String datePattern);
+
+    // Tìm đơn hàng POS theo khoảng thời gian hoàn thành (cho báo cáo doanh thu)
+    List<POSOrder> findByCompletedAtBetween(LocalDateTime start, LocalDateTime end);
 }

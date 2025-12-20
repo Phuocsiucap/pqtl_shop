@@ -37,6 +37,12 @@ public class Order {
     // Thêm shipping_status - cần thiết cho admin API quản lý trạng thái giao hàng
     private String shipping_status = "Chờ xác nhận";  // Giá trị mặc định
     
+    // Thêm channel để phân biệt nguồn đơn hàng
+    private String channel = "ONLINE";        // "ONLINE" hoặc "POS"
+
+    // Thêm completedAt để ghi nhận thời điểm hoàn tất đơn hàng (tính doanh thu)
+    private LocalDateTime completedAt;
+
     // Tính lợi nhuận từ các items (nếu totalProfit chưa được set)
     public double getTotalProfit() {
         if (totalProfit > 0 || items == null) {

@@ -336,13 +336,25 @@ public class AdminService {
     public List<Map<String, Object>> getMonthlyRevenue() {
         List<Order> allOrders = orderRepository.findAll();
         
-        // Nhóm theo tháng
-        Map<YearMonth, Double> monthlyRevenue = new HashMap<>();
+        // Nhóm theo tháng và loại (Online/POS)
+        Map<YearMonth, Map<String, Double>> monthlyRevenue = new HashMap<>();
         
         for (Order order : allOrders) {
             if (order.getOrderDate() != null) {
                 YearMonth month = YearMonth.from(order.getOrderDate());
-                monthlyRevenue.put(month, monthlyRevenue.getOrDefault(month, 0.0) + order.getFinalAmount());
+                Map<String, Double> stats = monthlyRevenue.getOrDefault(month, new HashMap<>());
+                
+                double amount = order.getFinalAmount();
+                stats.put("total", stats.getOrDefault("total", 0.0) + amount);
+                
+                String orderCode = order.getOrder_id();
+                if (orderCode != null && orderCode.startsWith("POS")) {
+                    stats.put("pos", stats.getOrDefault("pos", 0.0) + amount);
+                } else {
+                    stats.put("online", stats.getOrDefault("online", 0.0) + amount);
+                }
+                
+                monthlyRevenue.put(month, stats);
             }
         }
         
@@ -350,12 +362,14 @@ public class AdminService {
         List<Map<String, Object>> result = new ArrayList<>();
         for (int i = 11; i >= 0; i--) {
             YearMonth month = YearMonth.now().minusMonths(i);
-            double revenue = monthlyRevenue.getOrDefault(month, 0.0);
+            Map<String, Double> stats = monthlyRevenue.getOrDefault(month, new HashMap<>());
             
             Map<String, Object> monthData = new HashMap<>();
             monthData.put("month", month.getMonthValue());
             monthData.put("year", month.getYear());
-            monthData.put("revenue", revenue);
+            monthData.put("revenue", stats.getOrDefault("total", 0.0));
+            monthData.put("onlineRevenue", stats.getOrDefault("online", 0.0));
+            monthData.put("posRevenue", stats.getOrDefault("pos", 0.0));
             
             result.add(monthData);
         }
@@ -369,8 +383,8 @@ public class AdminService {
     public List<Map<String, Object>> getWeeklyRevenue() {
         List<Order> allOrders = orderRepository.findAll();
         
-        // Nhóm theo tuần
-        Map<Long, Double> weeklyRevenue = new HashMap<>();
+        // Nhóm theo tuần và loại (Online/POS)
+        Map<Long, Map<String, Double>> weeklyRevenue = new HashMap<>();
         
         for (Order order : allOrders) {
             if (order.getOrderDate() != null) {
@@ -378,7 +392,20 @@ public class AdminService {
                         LocalDate.of(2024, 1, 1),
                         order.getOrderDate().toLocalDate()
                 );
-                weeklyRevenue.put(weekNumber, weeklyRevenue.getOrDefault(weekNumber, 0.0) + order.getFinalAmount());
+                
+                Map<String, Double> stats = weeklyRevenue.getOrDefault(weekNumber, new HashMap<>());
+                
+                double amount = order.getFinalAmount();
+                stats.put("total", stats.getOrDefault("total", 0.0) + amount);
+                
+                String orderCode = order.getOrder_id();
+                if (orderCode != null && orderCode.startsWith("POS")) {
+                    stats.put("pos", stats.getOrDefault("pos", 0.0) + amount);
+                } else {
+                    stats.put("online", stats.getOrDefault("online", 0.0) + amount);
+                }
+                
+                weeklyRevenue.put(weekNumber, stats);
             }
         }
         
@@ -389,11 +416,13 @@ public class AdminService {
                     LocalDate.of(2024, 1, 1),
                     LocalDate.now()
             ) - i;
-            double revenue = weeklyRevenue.getOrDefault(weekNumber, 0.0);
+            Map<String, Double> stats = weeklyRevenue.getOrDefault(weekNumber, new HashMap<>());
             
             Map<String, Object> weekData = new HashMap<>();
             weekData.put("week", weekNumber);
-            weekData.put("revenue", revenue);
+            weekData.put("revenue", stats.getOrDefault("total", 0.0));
+            weekData.put("onlineRevenue", stats.getOrDefault("online", 0.0));
+            weekData.put("posRevenue", stats.getOrDefault("pos", 0.0));
             
             result.add(weekData);
         }

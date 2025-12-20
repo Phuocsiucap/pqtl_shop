@@ -39,4 +39,7 @@ public interface OrderRepository extends MongoRepository<Order, String> {
     // Đếm số đơn hàng đã giao chứa sản phẩm cụ thể của user
     @Query(value = "{ 'userId': ?0, 'items.productId': ?1, $or: [ { 'orderStatus': { $in: ['Đã giao', 'Hoàn thành'] } }, { 'shipping_status': { $in: ['Đã giao', 'Hoàn thành'] } } ] }", count = true)
     long countDeliveredOrdersByUserIdAndProductId(String userId, String productId);
+
+    // Tìm đơn hàng theo khoảng thời gian hoàn thành (cho báo cáo doanh thu)
+    List<Order> findByCompletedAtBetween(java.time.LocalDateTime start, java.time.LocalDateTime end);
 }

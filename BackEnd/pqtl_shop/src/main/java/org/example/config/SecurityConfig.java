@@ -122,6 +122,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/vn/payment-ipn").permitAll()
                         .requestMatchers("/api/vn/response-message/**").permitAll()
 
+                        // Migration (Tạm thời)
+                        .requestMatchers("/api/migration/**").permitAll()
+
                         // ==================== STAFF + ADMIN ====================
                         // Quản lý sản phẩm - STAFF và ADMIN đều được truy cập
                         .requestMatchers("/api/v1/admin/goods/**").hasAnyAuthority("ADMIN", "STAFF")

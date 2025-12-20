@@ -54,6 +54,12 @@ public class POSOrder {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     
+    // Kênh bán hàng (mặc định POS)
+    private String channel = "POS";
+
+    // Thời điểm hoàn tất (dùng để tính doanh thu)
+    private LocalDateTime completedAt;
+
     /**
      * Inner class cho item trong đơn POS
      */

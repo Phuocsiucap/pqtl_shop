@@ -32,6 +32,7 @@ public class OrderService {
         order.setUpdatedAt(LocalDateTime.now());
         order.setOrderStatus("Đã xác nhận");
         order.setPaymentStatus("Chưa thanh toán");
+        order.setChannel("ONLINE"); // Xác định nguồn đơn hàng
 
         // Lưu costPrice cho mỗi OrderItem từ Product
         double totalProfit = 0;
@@ -143,6 +144,12 @@ public class OrderService {
             }
 
             order.setOrderStatus(newStatus);
+
+            // Nếu đơn hàng hoàn tất, ghi nhận thời gian
+            if ("Đã giao".equals(newStatus)) {
+                order.setCompletedAt(LocalDateTime.now());
+            }
+
             order.setUpdatedAt(LocalDateTime.now());
             return Optional.of(orderRepository.save(order));
         });
@@ -163,6 +170,12 @@ public class OrderService {
                 throw new IllegalArgumentException("Trạng thái không hợp lệ: " + newStatus);
             }
             order.setOrderStatus(newStatus);
+
+            // Nếu đơn hàng hoàn tất, ghi nhận thời gian
+            if ("Đã giao".equals(newStatus)) {
+                order.setCompletedAt(LocalDateTime.now());
+            }
+
             order.setUpdatedAt(LocalDateTime.now());
             return orderRepository.save(order);
         });
