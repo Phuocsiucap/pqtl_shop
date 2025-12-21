@@ -3,6 +3,8 @@ import { FaLeaf, FaTruck, FaShieldAlt } from 'react-icons/fa';
 import { useState, useRef, useEffect } from 'react';
 import video1 from '../../../assets/video/Kịch_Bản_TVC_Rau_Sạch_s.mp4';
 import video2 from '../../../assets/video/Kịch_bản_TVC_rau_sạch_s2.mp4';
+import video3 from '../../../assets/video/20251222_0246_01kd16t2skf1q9da077zex507j.mp4';
+import video4 from '../../../assets/video/20251222_0246_01kd16t68ce8dasztqsc3n27yj.mp4';
 
 function HeroBanner() {
     const [currentVideo, setCurrentVideo] = useState(0);
@@ -10,7 +12,9 @@ function HeroBanner() {
 
     const videos = [
         { src: video1, title: "Nông sản tươi sạch từ trang trại" },
-        { src: video2, title: "Chất lượng hữu cơ 100%" }
+        { src: video2, title: "Chất lượng hữu cơ 100%" },
+        { src: video3, title: "Trải nghiệm mua sắm tuyệt vời" },
+        { src: video4, title: "Dịch vụ giao hàng tận nơi" }
     ];
 
     const nextVideo = () => {
@@ -20,7 +24,7 @@ function HeroBanner() {
     useEffect(() => {
         const timer = setInterval(() => {
             nextVideo();
-        }, 10000); // Chuyển video sau 10 giây
+        }, 8000); // Chuyển video sau 8 giây để có thời gian xem đủ 4 video
 
         return () => clearInterval(timer);
     }, []);
@@ -28,7 +32,7 @@ function HeroBanner() {
     return (
         <div className="relative w-full">
             {/* Main Banner with Video */}
-            <div className="relative h-[350px] md:h-[450px] overflow-hidden">
+            <div className="relative h-[420px] md:h-[520px] overflow-hidden">
                 <video
                     ref={videoRef}
                     src={videos[currentVideo].src}
