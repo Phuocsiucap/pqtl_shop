@@ -145,9 +145,13 @@ public class VoucherService {
      * Lấy danh sách voucher có thể đổi (cho customer)
      */
     public List<VoucherResponse> getAvailableVouchers() {
-        return voucherRepository.findByIsActiveTrue().stream()
+        List<Voucher> activeVouchers = voucherRepository.findByIsActiveTrue();
+        System.out.println("Active vouchers found: " + activeVouchers.size());
+        for (Voucher v : activeVouchers) {
+            System.out.println("Voucher: " + v.getTitle() + ", isValid: " + v.isValid() + ", pointsRequired: " + v.getPointsRequired());
+        }
+        return activeVouchers.stream()
                 .filter(Voucher::isValid)
-                .filter(v -> v.getPointsRequired() != null && v.getPointsRequired() > 0)
                 .map(this::mapToVoucherResponse)
                 .collect(Collectors.toList());
     }

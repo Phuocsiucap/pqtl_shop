@@ -5,12 +5,12 @@ import org.example.dto.response.UserVoucherResponse;
 import org.example.dto.response.VoucherApplyResponse;
 import org.example.dto.response.VoucherResponse;
 import org.example.model.login.User;
-import org.example.repository.login.UserRepository;
 import org.example.service.VoucherService;
-import org.example.service.login.JwtService;
+import org.example.service.login.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,24 +28,7 @@ public class CustomerVoucherController {
     private VoucherService voucherService;
 
     @Autowired
-    private JwtService jwtService;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    /**
-     * Lấy userId từ token
-     */
-    private String getUserIdFromToken(String authHeader) {
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7);
-            String email = jwtService.extractUsername(token);
-            User user = userRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
-            return user.getId();
-        }
-        throw new RuntimeException("Token không hợp lệ");
-    }
+    private UserService userService;
 
     /**
      * Lấy danh sách voucher có thể đổi
@@ -68,9 +51,11 @@ public class CustomerVoucherController {
     @PostMapping("/redeem/{voucherId}/")
     public ResponseEntity<?> redeemVoucher(
             @PathVariable String voucherId,
-            @RequestHeader("Authorization") String authHeader) {
+            Authentication authentication) {
         try {
-            String userId = getUserIdFromToken(authHeader);
+            String email = authentication.getName();
+            User user = userService.getUser(email);
+            String userId = user.getId();
             UserVoucherResponse result = voucherService.redeemVoucher(userId, voucherId);
             return ResponseEntity.status(HttpStatus.CREATED).body(result);
         } catch (RuntimeException e) {
@@ -87,9 +72,11 @@ public class CustomerVoucherController {
      * GET /api/v1/vouchers/redeemed_vouchers/
      */
     @GetMapping("/redeemed_vouchers/")
-    public ResponseEntity<?> getRedeemedVouchers(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<?> getRedeemedVouchers(Authentication authentication) {
         try {
-            String userId = getUserIdFromToken(authHeader);
+            String email = authentication.getName();
+            User user = userService.getUser(email);
+            String userId = user.getId();
             List<UserVoucherResponse> vouchers = voucherService.getUserRedeemedVouchers(userId);
             return ResponseEntity.ok(vouchers);
         } catch (RuntimeException e) {
@@ -106,9 +93,11 @@ public class CustomerVoucherController {
      * GET /api/v1/vouchers/unused/
      */
     @GetMapping("/unused/")
-    public ResponseEntity<?> getUnusedVouchers(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<?> getUnusedVouchers(Authentication authentication) {
         try {
-            String userId = getUserIdFromToken(authHeader);
+            String email = authentication.getName();
+            User user = userService.getUser(email);
+            String userId = user.getId();
             List<UserVoucherResponse> vouchers = voucherService.getUserUnusedVouchers(userId);
             return ResponseEntity.ok(vouchers);
         } catch (RuntimeException e) {
@@ -124,9 +113,11 @@ public class CustomerVoucherController {
     @PostMapping("/apply/")
     public ResponseEntity<?> applyVoucher(
             @RequestBody VoucherApplyRequest request,
-            @RequestHeader("Authorization") String authHeader) {
+            Authentication authentication) {
         try {
-            String userId = getUserIdFromToken(authHeader);
+            String email = authentication.getName();
+            User user = userService.getUser(email);
+            String userId = user.getId();
             VoucherApplyResponse result = voucherService.applyVoucher(userId, request);
             
             if (result.getSuccess()) {

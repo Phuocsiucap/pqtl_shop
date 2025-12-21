@@ -10,14 +10,13 @@ function Myvoucher() {
   const dispatch = useDispatch();
   const [loyaltyPoint, setLoyaltyPoint] = useState(0);
   const [vouchers, setVouchers] = useState([]);
-  const [vouchersUser, setVouchersUser] = useState([])
   const [isLoading, setIsLoading] = useState(true);
   const access_token = getCSRFTokenFromCookie("access_token");
-// load voucher
+// load unused vouchers
   useEffect(() => {
     const fetchVouchers = async () => {
       try {
-        const response = await request1.get("v1/vouchers/", {
+        const response = await request1.get("v1/vouchers/unused/", {
           headers: {
             Authorization: `Bearer ${access_token}`,
             "Content-Type": "application/json",
@@ -57,77 +56,6 @@ function Myvoucher() {
     fetch();
   },[])
 
- // load user's voucher to set display "doi" button
- useEffect(()=>{
-  const fetch= async()=> {
-    try {
-      const response = await request1.get("v1/vouchers/redeemed_vouchers/",{
-        headers: {
-          Authorization: `Bearer ${access_token}`,
-          "Content-Type": "application/json",
-        },
-        withCredentials: true,
-      })
-      setVouchersUser(response.data);
-
-    }
-    catch(e) {
-      console.log("Error",e);
-    }
-  
-  }
-  fetch();
-},[loyaltyPoint])
-
-
-  const handleOnclickDoi = async (item) => {
-    if (loyaltyPoint < item.points_required) {
-      alert("Bạn chưa đủ điểm để đổi voucher này");
-      return;
-    }
-    try {
-      
-      const response = await request1.post(
-        `v1/vouchers/redeem/${item.id}/`, // voucher_id nằm trong URL
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${access_token}`,
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
-        }
-      );
-      
-      // Kiểm tra trạng thái và phản hồi từ server
-      if (response.status === 201) {
-        alert("Đổi voucher thành công");
-        const updatedPoints = loyaltyPoint - item.points_required;
-        setLoyaltyPoint(updatedPoints);
-        dispatch(UpdateUser({ loyaltyPoints: updatedPoints }));
-      } else if (response.data && response.data.detail) {
-        // Hiển thị chi tiết lỗi từ backend
-        alert(response.data.detail);
-      } else {
-        alert("Đã xảy ra lỗi không xác định.");
-      }
-    } catch (error) {
-      console.error("Lỗi khi đổi voucher: ", error);
-      
-      // Kiểm tra nếu error.response tồn tại và có thông tin lỗi
-      if (error.response && error.response.data && error.response.data.detail) {
-        alert(error.response.data.detail); // Hiển thị chi tiết lỗi từ backend
-      } else {
-        alert("Đã xảy ra lỗi khi đổi voucher.");
-      }
-    }
-  };
-
-  const isVoucherRedeemed = (voucherId) => {
-    return vouchersUser.some((v) => v.voucher.id === voucherId);
-  };
-  
-
   if (isLoading) {
     return <p>Đang tải voucher...</p>;
   }
@@ -158,31 +86,34 @@ function Myvoucher() {
             </div>
             <div>
               <h3 className="text-sm lg:text-lg font-semibold text-gray-700">
-                {item.title}
+                {item.voucher.title}
               </h3>
               <p className="text-xs lg:text-sm font-medium text-red-500">
-                Yêu cầu {item.points_required} điểm
+                Mã: {item.voucher.code}
+              </p>
+              <p className="text-xs lg:text-sm text-gray-600">
+                {item.voucher.description}
+              </p>
+              <p className="text-xs lg:text-sm text-gray-600">
+                Loại: {item.voucher.discountType === 'PERCENTAGE' ? 'Giảm %' : 'Giảm cố định'} - Giá trị: {item.voucher.discountValue}{item.voucher.discountType === 'PERCENTAGE' ? '%' : ' VND'}
+              </p>
+              {item.voucher.minOrderValue && (
+                <p className="text-xs lg:text-sm text-gray-600">
+                  Đơn tối thiểu: {item.voucher.minOrderValue} VND
+                </p>
+              )}
+              <p className="text-xs lg:text-sm text-gray-600">
+                Hết hạn: {item.expiresAt ? new Date(item.expiresAt).toLocaleDateString('vi-VN') : 'Không giới hạn'}
               </p>
             </div>
           </div>
 
-          {/* Nút đổi điểm */}
-          <button
-                className={`${
-                  isVoucherRedeemed(item.id)
-                    ? "bg-gray-400 "
-                    : "bg-primary text-white"
-                } text-xs lg:text-sm font-semibold px-4 py-2 lg:px-6 lg:py-3 rounded-lg shadow hover:bg-primary/90 transition-all`}
-                onClick={() => handleOnclickDoi(item)}
-                // disabled={isVoucherRedeemed(item.id)} // Disable nếu voucher đã đổi
-              >
-                {isVoucherRedeemed(item.id) ? "Đã đổi" : "Đổi điểm"}
-              </button>
+          {/* Không có nút đổi */}
         </div>
       ))
     ) : (
       <p className="text-center text-gray-500 text-sm lg:text-base">
-        Không có voucher nào để đổi.
+        Bạn chưa có voucher nào chưa sử dụng.
       </p>
     )}
   </div>

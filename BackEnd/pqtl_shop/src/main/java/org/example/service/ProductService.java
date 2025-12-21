@@ -31,6 +31,20 @@ public class ProductService {
     private OrderRepository orderRepository;
 
     /**
+     * Lấy tất cả sản phẩm.
+     */
+    public List<Product> getAllProducts() {
+        return productRepository.findAll();
+    }
+
+    /**
+     * Lấy sản phẩm thanh lý.
+     */
+    public List<Product> getClearanceProducts() {
+        return productRepository.findByIsClearanceTrue();
+    }
+
+    /**
      * Lấy chi tiết sản phẩm theo ID.
      * US2.1, US2.2, US2.3, US2.5
      */
