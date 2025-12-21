@@ -3,7 +3,6 @@ package org.example.controller.order;
 import lombok.RequiredArgsConstructor;
 import org.example.model.Order;
 import org.example.model.login.User;
-import org.example.repository.login.UserDetailsImpl;
 import org.example.repository.login.UserRepository;
 import org.example.service.login.UserService;
 import org.example.service.order.OrderService;
@@ -22,6 +21,7 @@ import java.util.Optional;
 public class OrderController {
 
     private final OrderService orderService;
+    private final UserService userService;
     private UserRepository userRepository;
 
     // 🟢 Tạo đơn hàng mới
@@ -30,8 +30,9 @@ public class OrderController {
             Authentication authentication,
             @RequestBody Order order) {
         try {
-            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-            String userId = userDetails.getId();
+            String email = authentication.getName();
+            User user = userService.getUser(email);
+            String userId = user.getId();
 
             order.setUserId(userId);
             Order created = orderService.createOrder(order);
@@ -45,8 +46,9 @@ public class OrderController {
     @GetMapping
     public ResponseEntity<?> getUserOrders(Authentication authentication) {
         try {
-            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-            String userId = userDetails.getId();
+            String email = authentication.getName();
+            User user = userService.getUser(email);
+            String userId = user.getId();
             List<Order> orders = orderService.getOrdersByUser(userId);
             return ResponseEntity.ok(orders);
         } catch (Exception e) {
@@ -60,8 +62,9 @@ public class OrderController {
             Authentication authentication,
             @PathVariable String id) {
         try {
-            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-            String userId = userDetails.getId();
+            String email = authentication.getName();
+            User user = userService.getUser(email);
+            String userId = user.getId();
             Optional<Order> orderOpt = orderService.getOrderById(id);
             if (orderOpt.isPresent() && orderOpt.get().getUserId().equals(userId)) {
                 return ResponseEntity.ok(orderOpt.get());
@@ -80,8 +83,9 @@ public class OrderController {
             @PathVariable String id,
             @RequestBody Order order) {
         try {
-            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-            String userId = userDetails.getId();
+            String email = authentication.getName();
+            User user = userService.getUser(email);
+            String userId = user.getId();
             Optional<Order> result = orderService.updateOrder(id, order, userId);
             if (result.isPresent()) {
                 return ResponseEntity.ok(result.get());
@@ -100,8 +104,9 @@ public class OrderController {
             @PathVariable String id,
             @RequestParam String status) {
         try {
-            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-            String userId = userDetails.getId();
+            String email = authentication.getName();
+            User user = userService.getUser(email);
+            String userId = user.getId();
             Optional<Order> result = orderService.updateOrderStatus(id, status, userId);
             if (result.isPresent()) {
                 return ResponseEntity.ok(result.get());
@@ -119,8 +124,9 @@ public class OrderController {
             Authentication authentication,
             @PathVariable String id) {
         try {
-            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-            String userId = userDetails.getId();
+            String email = authentication.getName();
+            User user = userService.getUser(email);
+            String userId = user.getId();
             boolean deleted = orderService.deleteOrder(id, userId);
             if (deleted) {
                 return ResponseEntity.noContent().build();
@@ -147,7 +153,8 @@ public class OrderController {
     @GetMapping("/admin/all")
     public ResponseEntity<?> getAllOrdersAdmin(Authentication authentication) {
         try {
-            User user = (User) authentication.getPrincipal();
+            String email = authentication.getName();
+            User user = userService.getUser(email);
             // TODO: Kiểm tra nếu user là ADMIN thì mới cho lấy
             if (!"ADMIN".equals(user.getRole())) {
                 return ResponseEntity.status(403).body(Map.of("error", "Bạn không có quyền truy cập"));
@@ -165,7 +172,8 @@ public class OrderController {
             Authentication authentication,
             @PathVariable String userId) {
         try {
-            User user = (User) authentication.getPrincipal();
+            String email = authentication.getName();
+            User user = userService.getUser(email);
             if (!"ADMIN".equals(user.getRole())) {
                 return ResponseEntity.status(403).body(Map.of("error", "Bạn không có quyền truy cập"));
             }
@@ -183,7 +191,8 @@ public class OrderController {
             @PathVariable String id,
             @RequestParam String status) {
         try {
-            User user = (User) authentication.getPrincipal();
+            String email = authentication.getName();
+            User user = userService.getUser(email);
             if (!"ADMIN".equals(user.getRole())) {
                 return ResponseEntity.status(403).body(Map.of("error", "Bạn không có quyền truy cập"));
             }
@@ -202,7 +211,8 @@ public class OrderController {
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new RuntimeException("User not authenticated");
         }
-        User user = (User) authentication.getPrincipal();
+        String email = authentication.getName();
+        User user = userService.getUser(email);
         return user.getId();
     }
 }

@@ -22,8 +22,8 @@ public class UserController {
     public ResponseEntity<UserResponse> getCurrentUser(Authentication authentication) {
         // Lấy thông tin từ UserDetailsImpl
 
-        String username = authentication.getName();
-        User user = userService.getUser(username);
+        String email = authentication.getName();
+        User user = userService.getUser(email);
         UserResponse response = userMapper.toUserResponse(user);
         return ResponseEntity.ok(response);
     }
@@ -32,36 +32,61 @@ public class UserController {
     // ✅ Lấy thông tin user
     @GetMapping("/profile")
     public ResponseEntity<User> getProfile(Authentication auth) {
-        String username = auth.getName();
-        return ResponseEntity.ok(userService.getUser(username));
+        String email = auth.getName();
+        return ResponseEntity.ok(userService.getUser(email));
     }
 
     // ✅ Cập nhật thông tin user
     @PutMapping("/update")
     public ResponseEntity<User> updateUser(Authentication auth, @RequestBody User updatedUser) {
-        String username = auth.getName();
-        return ResponseEntity.ok(userService.updateUser(username, updatedUser));
+        String email = auth.getName();
+        return ResponseEntity.ok(userService.updateUser(email, updatedUser));
     }
 
     // ✅ Cập nhật điểm thưởng
     @PostMapping("/submit-score")
     public ResponseEntity<User> addPoints(Authentication auth, @RequestParam int score) {
-        String username = auth.getName();
-        return ResponseEntity.ok(userService.addPoints(username, score));
+        String email = auth.getName();
+        return ResponseEntity.ok(userService.addPoints(email, score));
     }
 
     // ✅ Lấy danh sách địa chỉ
     @GetMapping("/addresses")
     public ResponseEntity<?> getAddresses(Authentication auth) {
-        String username = auth.getName();
-        return ResponseEntity.ok(userService.getAddresses(username));
+        String email = auth.getName();
+        return ResponseEntity.ok(userService.getAddresses(email));
     }
 
     // ✅ Thêm địa chỉ
     @PostMapping("/addresses")
-    public ResponseEntity<?> addAddress(Authentication auth, @RequestBody Address address) {
-        String username = auth.getName();
-        return ResponseEntity.ok(userService.addAddress(username, address));
+    public ResponseEntity<Address> addAddress(Authentication auth, @RequestBody Address address) {
+        String email = auth.getName();
+        Address newAddress = userService.addAddress(email, address);
+        return ResponseEntity.status(201).body(newAddress);
+    }
+
+    // ✅ Cập nhật địa chỉ
+    @PutMapping("/addresses/{id}")
+    public ResponseEntity<Address> updateAddress(Authentication auth, @PathVariable String id, @RequestBody Address address) {
+        String email = auth.getName();
+        Address updated = userService.updateAddress(email, id, address);
+        if (updated != null) {
+            return ResponseEntity.ok(updated);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    // ✅ Xóa địa chỉ
+    @DeleteMapping("/addresses/{id}")
+    public ResponseEntity<Void> deleteAddress(Authentication auth, @PathVariable String id) {
+        String email = auth.getName();
+        boolean deleted = userService.deleteAddress(email, id);
+        if (deleted) {
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 }
 

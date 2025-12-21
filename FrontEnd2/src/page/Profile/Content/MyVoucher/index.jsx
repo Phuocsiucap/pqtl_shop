@@ -17,7 +17,7 @@ function Myvoucher() {
   useEffect(() => {
     const fetchVouchers = async () => {
       try {
-        const response = await request1.get("vouchers/", {
+        const response = await request1.get("v1/vouchers/", {
           headers: {
             Authorization: `Bearer ${access_token}`,
             "Content-Type": "application/json",
@@ -61,7 +61,7 @@ function Myvoucher() {
  useEffect(()=>{
   const fetch= async()=> {
     try {
-      const response = await request1.get("vouchers/redeemed_vouchers/",{
+      const response = await request1.get("v1/vouchers/redeemed_vouchers/",{
         headers: {
           Authorization: `Bearer ${access_token}`,
           "Content-Type": "application/json",
@@ -88,7 +88,7 @@ function Myvoucher() {
     try {
       
       const response = await request1.post(
-        `vouchers/redeem/${item.id}/`, // voucher_id nằm trong URL
+        `v1/vouchers/redeem/${item.id}/`, // voucher_id nằm trong URL
         {},
         {
           headers: {

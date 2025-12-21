@@ -109,7 +109,7 @@ function CartShopping() {
       return; // Dừng việc hiển thị voucher nếu không có sản phẩm được chọn
     }
     try {
-      const response = await request1.get("vouchers/redeemed_vouchers/", {
+      const response = await request1.get("v1/vouchers/redeemed_vouchers/", {
         params: {
           status: "Redeemed",  // Truyền status như là query parameter
         },

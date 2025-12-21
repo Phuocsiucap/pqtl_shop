@@ -11,6 +11,7 @@ import Regester from "./Regester"
 import Profile from "./Profile"
 import SaleProducts from "./SaleProducts"
 import Order from "./Oder"
+import OrderDetail from "./OrderDetail"
 import BuildDetail from "./BuildDetail"
 import CartShopping from "./Cartshopping/cartShpping"
 import AdminHome from "./Admin/AdminHome"
@@ -65,6 +66,7 @@ const PublicPage = [
     { path: "/saleproduct", component: SaleProducts, layout: Defaultlayout },
     { path: "/clearance", component: ClearanceProducts, layout: Defaultlayout },
     { path: "/order", component: Order, layout: Defaultlayout },
+    { path: "/order-detail/:id", component: OrderDetail, layout: Defaultlayout },
     { path: "/buildDetail/:id", component: BuildDetail, layout: Defaultlayout },
     { path: "/payment-return", component: PaymentReturn, layout: null },
     { path: "/login", component: Login, layout: null },

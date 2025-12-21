@@ -243,15 +243,16 @@ function Order({ }) {
         };
       }),
       totalPrice: orderData.totalPrice,
-      discount: orderData.selectedVoucher ? orderData.selectedVoucher.voucher.discountValue : 0,
+      discount: 0, // Voucher discount will be calculated by backend
       shippingFee: 25000, // tuỳ logic
-      finalAmount: orderData.totalPrice - (orderData.selectedVoucher?.voucher.discountValue || 0) + 25000,
+      finalAmount: orderData.totalPrice + 25000, // Without voucher discount, backend will adjust
       shippingAddress,
       shippingMethod,
       paymentMethod,
       paymentStatus: paymentMethod === "COD" ? "Chưa thanh toán" : "Đã thanh toán",
       orderStatus: "Chờ xác nhận", // Set initial status to Pending to allow cancellation
       note: "",
+      userVoucherId: orderData.selectedVoucher ? orderData.selectedVoucher.id : null,
     };
 
     try {
@@ -265,7 +266,11 @@ function Order({ }) {
       localStorage.removeItem("orderData");
       localStorage.removeItem("selectAddress");
       alert("Đặt hàng thành công!");
-      navigate("/cartshopping");
+      if (paymentMethod === "COD") {
+        navigate(`/order-detail/${response.data.id}`);
+      } else {
+        navigate("/cartshopping");
+      }
     } catch (error) {
       console.error("Lỗi khi tạo đơn hàng:", error.response || error);
       alert("Không thể tạo đơn hàng, vui lòng thử lại.");

@@ -32,6 +32,8 @@ public class Order {
     private String note;                      // Ghi chú của khách hàng (nếu có)
     private String adminNote;                 // Ghi chú nội bộ (nếu là admin thêm)
     
+    private String userVoucherId;             // ID của UserVoucher được sử dụng (nếu có)
+    
     // Thêm order_id - cần thiết cho admin API truy vấn/cập nhật đơn hàng
     private String order_id;
     // Thêm shipping_status - cần thiết cho admin API quản lý trạng thái giao hàng

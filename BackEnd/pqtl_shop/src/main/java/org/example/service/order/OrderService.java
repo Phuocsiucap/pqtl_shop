@@ -4,9 +4,14 @@ import lombok.RequiredArgsConstructor;
 import org.example.model.Order;
 import org.example.model.OrderItem;
 import org.example.model.Product;
+import org.example.model.UserVoucher;
+import org.example.model.Voucher;
 import org.example.repository.ProductRepository;
+import org.example.repository.UserVoucherRepository;
+import org.example.repository.VoucherRepository;
 import org.example.repository.order.OrderRepository;
 import org.example.service.CartService;
+import org.example.service.login.UserService;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -21,6 +26,9 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final CartService cartService;
     private final ProductRepository productRepository;
+    private final UserService userService;
+    private final VoucherRepository voucherRepository;
+    private final UserVoucherRepository userVoucherRepository;
 
     // 🟢 Tạo đơn hàng mới
     public Order createOrder(Order order) {
@@ -42,12 +50,48 @@ public class OrderService {
                 // Xử lý costPrice có thể null
                 Double productCostPrice = product.getCostPrice() != null ? product.getCostPrice() : 0.0;
                 item.setCostPrice(productCostPrice);
+                item.setImage(product.getImage()); // Thêm image từ product
                 // Tính lợi nhuận: (giá bán - giảm giá - giá nhập) * số lượng
                 double itemProfit = (item.getPrice() - item.getDiscount() - productCostPrice) * item.getQuantity();
                 totalProfit += itemProfit;
             }
         }
         order.setTotalProfit(totalProfit);
+
+        // Áp dụng voucher nếu có
+        UserVoucher userVoucher = null;
+        if (order.getUserVoucherId() != null && !order.getUserVoucherId().isEmpty()) {
+            Optional<UserVoucher> userVoucherOpt = userVoucherRepository.findById(order.getUserVoucherId());
+            if (userVoucherOpt.isPresent()) {
+                userVoucher = userVoucherOpt.get();
+                if (!userVoucher.getUserId().equals(order.getUserId())) {
+                    throw new IllegalArgumentException("Voucher không thuộc về người dùng này");
+                }
+                if (userVoucher.getIsUsed()) {
+                    throw new IllegalArgumentException("Voucher đã được sử dụng");
+                }
+                Optional<Voucher> voucherOpt = voucherRepository.findById(userVoucher.getVoucherId());
+                if (voucherOpt.isPresent()) {
+                    Voucher voucher = voucherOpt.get();
+                    if (order.getTotalPrice() < voucher.getMinOrderValue()) {
+                        throw new IllegalArgumentException("Đơn hàng không đủ giá trị tối thiểu để áp dụng voucher");
+                    }
+                    double discount = 0;
+                    if ("PERCENTAGE".equals(voucher.getDiscountType())) {
+                        discount = (voucher.getDiscountValue() / 100) * order.getTotalPrice();
+                        if (voucher.getMaxDiscountAmount() != null && discount > voucher.getMaxDiscountAmount()) {
+                            discount = voucher.getMaxDiscountAmount();
+                        }
+                    } else if ("FIXED_AMOUNT".equals(voucher.getDiscountType())) {
+                        discount = voucher.getDiscountValue();
+                    }
+                    order.setDiscount(discount);
+                    // Mark voucher as used
+                    userVoucher.setIsUsed(true);
+                    userVoucher.setUsedAt(LocalDateTime.now());
+                }
+            }
+        }
 
         // Tính toán finalAmount
         double finalAmount = order.getTotalPrice() - order.getDiscount() + order.getShippingFee();
@@ -58,7 +102,12 @@ public class OrderService {
             cartService.removeItemFromCart(order.getUserId(), item.getProductId());
         }
 
-        return orderRepository.save(order);
+        Order savedOrder = orderRepository.save(order);
+        if (userVoucher != null) {
+            userVoucher.setOrderId(savedOrder.getId());
+            userVoucherRepository.save(userVoucher);
+        }
+        return savedOrder;
     }
 
     // 🟡 Lấy danh sách tất cả đơn hàng (chỉ admin)
@@ -144,7 +193,15 @@ public class OrderService {
 
             order.setOrderStatus(newStatus);
             order.setUpdatedAt(LocalDateTime.now());
-            return Optional.of(orderRepository.save(order));
+            Order savedOrder = orderRepository.save(order);
+
+            // Thêm điểm thưởng nếu đơn hàng đã giao
+            if ("Đã giao".equals(newStatus)) {
+                int points = (int) (savedOrder.getFinalAmount() * 0.05);
+                userService.addPoints(savedOrder.getUserId(), points);
+            }
+
+            return Optional.of(savedOrder);
         });
     }
 
@@ -164,7 +221,15 @@ public class OrderService {
             }
             order.setOrderStatus(newStatus);
             order.setUpdatedAt(LocalDateTime.now());
-            return orderRepository.save(order);
+            Order savedOrder = orderRepository.save(order);
+
+            // Thêm điểm thưởng nếu đơn hàng đã giao
+            if ("Đã giao".equals(newStatus)) {
+                int points = (int) (savedOrder.getFinalAmount() * 0.05);
+                userService.addPoints(savedOrder.getUserId(), points);
+            }
+
+            return savedOrder;
         });
     }
 

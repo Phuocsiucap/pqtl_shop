@@ -37,14 +37,14 @@ function Account() {
       loyaltyPoints: user.loyaltyPoints,
     };
     try {
-      const respone=await request1.patch("user/update/", updateUser,{
+      const response=await request1.put("user/update", updateUser,{
         headers: {
           Authorization: `Bearer ${access_token}`,
           "Content-Type": "application/json",
         },
         withCredentials: true,
       });
-      if(respone.status===200){
+      if(response.status===200){
         alert("Chỉnh sửa thông tin thành công");
         localStorage.setItem("user",JSON.stringify(updateUser));
         setUser(pre=>({...pre,password:pre.newpassword||pre.password,newpassword:"",confirmnewpassword:""}))
