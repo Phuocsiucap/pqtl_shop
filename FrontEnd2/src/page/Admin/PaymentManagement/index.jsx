@@ -57,7 +57,11 @@ function PaymentManagement() {
         setLoading(true);
         try {
             const response = await request1.get('/v1/admin/payments', config);
-            setTransactions(response.data);
+            // Sort transactions by createdAt descending (newest first)
+            const sorted = Array.isArray(response.data)
+                ? [...response.data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                : response.data;
+            setTransactions(sorted);
             setError(null);
         } catch (err) {
             console.error('Error fetching transactions:', err);
@@ -70,7 +74,7 @@ function PaymentManagement() {
     // Fetch stats
     const fetchStats = async () => {
         try {
-            const response = await request1.get('/v1/admin/payments/stats', config);
+const response = await request1.get('/v1/admin/payments/stats', config);
             setStats(response.data);
         } catch (err) {
             console.error('Error fetching stats:', err);
@@ -134,7 +138,7 @@ function PaymentManagement() {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-sm text-gray-500">Thất bại</p>
-                            <p className="text-2xl font-bold text-red-600">{stats.failed}</p>
+<p className="text-2xl font-bold text-red-600">{stats.failed}</p>
                         </div>
                         <FaTimesCircle className="text-3xl text-red-500 opacity-50" />
                     </div>
@@ -189,7 +193,7 @@ function PaymentManagement() {
                             <option value="FAILED">Thất bại</option>
                             <option value="PENDING">Đang xử lý</option>
                         </select>
-                    </div>
+</div>
                 </div>
             </div>
 
@@ -237,7 +241,7 @@ function PaymentManagement() {
                                             <p className="font-mono text-sm text-gray-700">
                                                 {transaction.vnpTransactionNo || '-'}
                                             </p>
-                                        </td>
+</td>
                                         <td className="py-4 px-4 text-right">
                                             <p className="font-semibold text-gray-800">
                                                 {formatCurrency(transaction.amount)}
@@ -285,7 +289,7 @@ function PaymentManagement() {
                                 className="text-gray-400 hover:text-gray-600"
                             >
                                 ✕
-                            </button>
+</button>
                         </div>
                         
                         <div className="p-6 space-y-4">
@@ -332,7 +336,7 @@ function PaymentManagement() {
                                     </div>
                                 )}
                             </div>
-                        </div>
+</div>
 
                         <div className="p-6 bg-gray-50 border-t">
                             <button

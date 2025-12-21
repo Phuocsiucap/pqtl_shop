@@ -153,7 +153,7 @@ const ClearanceProducts = () => {
                 {/* Image */}
                 <div className="relative overflow-hidden">
                   <img
-                    src={product.image ? `${request}${product.image}` : "https://via.placeholder.com/300x192?text=No+Image"}
+                    src={product.image || "https://via.placeholder.com/300x192?text=No+Image"}
                     alt={product.name || "Product"}
                     className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300 bg-gray-100"
                     onError={(e) => { 

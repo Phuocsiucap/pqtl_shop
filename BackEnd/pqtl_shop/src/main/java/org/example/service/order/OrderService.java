@@ -36,6 +36,9 @@ public class OrderService {
             throw new IllegalArgumentException("UserId là bắt buộc");
         }
 
+        System.out.println("Creating order for user: " + order.getUserId());
+        System.out.println("Order items count: " + (order.getItems() != null ? order.getItems().size() : "null"));
+
         order.setOrderDate(LocalDateTime.now());
         order.setUpdatedAt(LocalDateTime.now());
         order.setOrderStatus("Đã xác nhận");
@@ -44,6 +47,7 @@ public class OrderService {
         // Lưu costPrice cho mỗi OrderItem từ Product
         double totalProfit = 0;
         for (OrderItem item : order.getItems()) {
+            System.out.println("Processing item: " + item.getProductName() + ", qty: " + item.getQuantity());
             Optional<Product> productOpt = productRepository.findById(item.getProductId());
             if (productOpt.isPresent()) {
                 Product product = productOpt.get();
@@ -103,6 +107,7 @@ public class OrderService {
         }
 
         Order savedOrder = orderRepository.save(order);
+        System.out.println("Order saved with ID: " + savedOrder.getId() + ", items count: " + (savedOrder.getItems() != null ? savedOrder.getItems().size() : "null"));
         if (userVoucher != null) {
             userVoucher.setOrderId(savedOrder.getId());
             userVoucherRepository.save(userVoucher);
@@ -115,12 +120,15 @@ public class OrderService {
         return orderRepository.findAll();
     }
 
-    // 🟡 Lấy danh sách đơn hàng theo userId
+    // 🟡 Lấy danh sách đơn hàng theo userId (sắp xếp theo thời gian mới nhất)
     public List<Order> getOrdersByUser(String userId) {
         if (userId == null || userId.isEmpty()) {
             throw new IllegalArgumentException("UserId không được để trống");
         }
-        return orderRepository.findByUserId(userId);
+        List<Order> orders = orderRepository.findByUserId(userId);
+        // Sắp xếp theo orderDate giảm dần (mới nhất trước)
+        orders.sort((a, b) -> b.getOrderDate().compareTo(a.getOrderDate()));
+        return orders;
     }
 
     // 🟡 Lấy đơn hàng theo id
@@ -198,7 +206,12 @@ public class OrderService {
             // Thêm điểm thưởng nếu đơn hàng đã giao
             if ("Đã giao".equals(newStatus)) {
                 int points = (int) (savedOrder.getFinalAmount() * 0.05);
+                System.out.println("Cộng " + points + " điểm cho user " + savedOrder.getUserId() + " cho đơn hàng " + savedOrder.getId());
                 userService.addPoints(savedOrder.getUserId(), points);
+                // Cập nhật trạng thái thanh toán khi đơn hàng đã giao
+                savedOrder.setPaymentStatus("Đã thanh toán");
+                savedOrder = orderRepository.save(savedOrder);
+                System.out.println("Đã cập nhật paymentStatus thành 'Đã thanh toán' cho đơn hàng " + savedOrder.getId());
             }
 
             return Optional.of(savedOrder);
@@ -226,7 +239,12 @@ public class OrderService {
             // Thêm điểm thưởng nếu đơn hàng đã giao
             if ("Đã giao".equals(newStatus)) {
                 int points = (int) (savedOrder.getFinalAmount() * 0.05);
+                System.out.println("Cộng " + points + " điểm cho user " + savedOrder.getUserId() + " cho đơn hàng " + savedOrder.getId());
                 userService.addPoints(savedOrder.getUserId(), points);
+                // Cập nhật trạng thái thanh toán khi đơn hàng đã giao
+                savedOrder.setPaymentStatus("Đã thanh toán");
+                savedOrder = orderRepository.save(savedOrder);
+                System.out.println("Đã cập nhật paymentStatus thành 'Đã thanh toán' cho đơn hàng " + savedOrder.getId());
             }
 
             return savedOrder;

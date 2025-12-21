@@ -1,17 +1,61 @@
 import { Link } from 'react-router-dom';
 import { FaLeaf, FaTruck, FaShieldAlt } from 'react-icons/fa';
-import bannerImage from '../../../assets/images/Titel_1.jpg';
+import { useState, useRef, useEffect } from 'react';
+import video1 from '../../../assets/video/Kịch_Bản_TVC_Rau_Sạch_s.mp4';
+import video2 from '../../../assets/video/Kịch_bản_TVC_rau_sạch_s2.mp4';
 
 function HeroBanner() {
+    const [currentVideo, setCurrentVideo] = useState(0);
+    const videoRef = useRef(null);
+
+    const videos = [
+        { src: video1, title: "Nông sản tươi sạch từ trang trại" },
+        { src: video2, title: "Chất lượng hữu cơ 100%" }
+    ];
+
+    const nextVideo = () => {
+        setCurrentVideo((prev) => (prev + 1) % videos.length);
+    };
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            nextVideo();
+        }, 10000); // Chuyển video sau 10 giây
+
+        return () => clearInterval(timer);
+    }, []);
+
     return (
         <div className="relative w-full">
-            {/* Main Banner */}
+            {/* Main Banner with Video */}
             <div className="relative h-[350px] md:h-[450px] overflow-hidden">
-                <img
-                    src={bannerImage}
-                    alt="Nông sản tươi sạch"
+                <video
+                    ref={videoRef}
+                    src={videos[currentVideo].src}
+                    autoPlay
+                    muted
+                    loop
                     className="w-full h-full object-cover"
+                    onLoadedData={() => {
+                        if (videoRef.current) {
+                            videoRef.current.play();
+                        }
+                    }}
                 />
+
+                {/* Video Indicators */}
+                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 z-20">
+                    {videos.map((_, index) => (
+                        <button
+                            key={index}
+                            onClick={() => setCurrentVideo(index)}
+                            className={`w-3 h-3 rounded-full transition-all ${
+                                index === currentVideo ? 'bg-white' : 'bg-white/50'
+                            }`}
+                        />
+                    ))}
+                </div>
+
                 {/* Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
 

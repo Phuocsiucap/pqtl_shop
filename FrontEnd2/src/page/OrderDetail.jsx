@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { request1 } from "./../utils/request";
 import { getCSRFTokenFromCookie } from "./../Component/Token/getCSRFToken";
 import { PricetoString } from "./../Component/Translate_Price";
+import { FaArrowLeft, FaMapMarkerAlt, FaCreditCard, FaTruck, FaTimes, FaCheckCircle } from "react-icons/fa";
 
 function OrderDetail() {
   const { id } = useParams();
@@ -47,70 +48,251 @@ function OrderDetail() {
     }
   }, [id, access_token, navigate]);
 
+  const handleCancelOrder = async () => {
+    if (window.confirm("Bạn chắc chắn muốn hủy đơn hàng này?")) {
+      try {
+        const response = await request1.delete(`orders/${id}`, {
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+            "Content-Type": "application/json",
+          },
+          withCredentials: true,
+        });
+
+        if (response.status === 200 || response.status === 204) {
+          const successMessage = (response.data && response.data.message) || "Đơn hàng đã được hủy thành công.";
+          alert(successMessage);
+
+          // Update order status locally
+          setOrder((prevOrder) => ({
+            ...prevOrder,
+            orderStatus: "Hủy",
+          }));
+        } else {
+          const errorMessage = (response.data && response.data.error) || "Có lỗi xảy ra. Vui lòng thử lại.";
+          alert(errorMessage);
+        }
+      } catch (error) {
+        console.error("Lỗi khi hủy đơn hàng:", error);
+        const errorMessage = (error.response && error.response.data && error.response.data.error) || "Không thể hủy đơn hàng. Vui lòng thử lại sau.";
+        alert(errorMessage);
+      }
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "Chờ xác nhận":
+        return "bg-yellow-100 text-yellow-800";
+      case "Đã xác nhận":
+        return "bg-blue-100 text-blue-800";
+      case "Đang giao":
+        return "bg-purple-100 text-purple-800";
+      case "Đã giao":
+        return "bg-green-100 text-green-800";
+      case "Hủy":
+      case "Đã hủy":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const canCancelOrder = (status) => {
+    return status === "Chờ xác nhận" || status === "Đã xác nhận";
+  };
+
   if (loading) {
-    return <div className="flex justify-center items-center h-screen">Đang tải...</div>;
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-lg font-semibold">Đang tải chi tiết đơn hàng...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!order) {
-    return <div className="flex justify-center items-center h-screen">Không tìm thấy đơn hàng.</div>;
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="text-center">
+          <FaTimes className="text-6xl text-red-500 mx-auto mb-4" />
+          <p className="text-lg font-semibold">Không tìm thấy đơn hàng.</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white shadow-lg rounded-lg mt-10">
-      <h1 className="text-2xl font-bold mb-6 text-center">Chi Tiết Đơn Hàng</h1>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-6xl mx-auto px-4">
+        {/* Header */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={() => navigate("/profile")}
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
+            >
+              <FaArrowLeft />
+              <span>Quay lại</span>
+            </button>
+            <div className="text-right">
+              <h1 className="text-2xl font-bold text-gray-800">Chi Tiết Đơn Hàng</h1>
+              <p className="text-gray-500">#{order.id}</p>
+            </div>
+          </div>
 
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold mb-4">Thông Tin Đơn Hàng</h2>
-        <p><strong>ID Đơn Hàng:</strong> {order.id}</p>
-        <p><strong>Ngày Đặt:</strong> {new Date(order.orderDate).toLocaleDateString('vi-VN')}</p>
-        <p><strong>Trạng Thái:</strong> {order.orderStatus}</p>
-        <p><strong>Phương Thức Thanh Toán:</strong> {order.paymentMethod}</p>
-        <p><strong>Trạng Thái Thanh Toán:</strong> {order.paymentStatus}</p>
-        <p><strong>Địa Chỉ Giao Hàng:</strong> {order.shippingAddress}</p>
-        <p><strong>Phương Thức Vận Chuyển:</strong> {order.shippingMethod}</p>
-        <p><strong>Ghi Chú:</strong> {order.note || "Không có"}</p>
-      </div>
+          {/* Status and Actions */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <span className={`px-4 py-2 rounded-full text-sm font-semibold ${getStatusColor(order.orderStatus)}`}>
+                {order.orderStatus}
+              </span>
+              <span className="text-gray-500">
+                {new Date(order.orderDate).toLocaleDateString('vi-VN', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </span>
+            </div>
+            {canCancelOrder(order.orderStatus) && (
+              <button
+                onClick={handleCancelOrder}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2"
+              >
+                <FaTimes />
+                Hủy đơn hàng
+              </button>
+            )}
+          </div>
+        </div>
 
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold mb-4">Sản Phẩm</h2>
-        <div className="space-y-4">
-          {order.items.map((item, index) => (
-            <div key={index} className="flex items-center border-b pb-4">
-              <img
-                src={item.image || "https://via.placeholder.com/100"}
-                alt={item.productName}
-                className="w-20 h-20 object-cover mr-4"
-              />
-              <div className="flex-1">
-                <h3 className="font-semibold">{item.productName}</h3>
-                <p>Số Lượng: {item.quantity}</p>
-                <p>Giá: {PricetoString(item.price)} VND</p>
-                {item.discount > 0 && <p>Giảm Giá: {PricetoString(item.discount)} VND</p>}
-                <p>Tổng: {PricetoString((item.price - (item.discount || 0)) * item.quantity)} VND</p>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Order Items */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Products */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <FaCheckCircle className="text-green-500" />
+                Sản phẩm đã đặt
+              </h2>
+              <div className="space-y-4">
+                {order.items && order.items.length > 0 ? (
+                  order.items.map((item, index) => (
+                    <div key={index} className="flex items-center gap-4 p-4 border rounded-lg">
+                      <img
+                        src={item.image || "https://via.placeholder.com/100"}
+                        alt={item.productName}
+                        className="w-20 h-20 object-cover rounded-lg"
+                      />
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-800">{item.productName}</h3>
+                        <p className="text-gray-600">Số lượng: {item.quantity}</p>
+                        <div className="flex items-center gap-4 mt-2">
+                          <span className="text-gray-500 line-through">{PricetoString(item.price)} VND</span>
+                          {item.discount > 0 && (
+                            <span className="text-red-500">-{PricetoString(item.discount)} VND</span>
+                          )}
+                          <span className="font-semibold text-gray-800">
+                            {PricetoString((item.price - (item.discount || 0)) * item.quantity)} VND
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-center py-8">Không có sản phẩm nào</p>
+                )}
               </div>
             </div>
-          ))}
+
+            {/* Order Summary */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h2 className="text-xl font-semibold mb-4">Tóm tắt đơn hàng</h2>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span>Tổng tiền sản phẩm:</span>
+                  <span>{PricetoString(order.totalPrice)} VND</span>
+                </div>
+                {voucher && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Voucher ({voucher.voucher.title}):</span>
+                    <span>-{PricetoString(order.discount || 0)} VND</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span>Phí vận chuyển:</span>
+                  <span>{PricetoString(order.shippingFee || 0)} VND</span>
+                </div>
+                <div className="border-t pt-3 flex justify-between font-bold text-lg">
+                  <span>Tổng cộng:</span>
+                  <span className="text-primary">{PricetoString(order.finalAmount)} VND</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Order Information */}
+          <div className="space-y-6">
+            {/* Shipping Info */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <FaTruck className="text-blue-500" />
+                Thông tin giao hàng
+              </h2>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <FaMapMarkerAlt className="text-gray-400 mt-1" />
+                  <div>
+                    <p className="font-semibold">Địa chỉ giao hàng</p>
+                    <p className="text-gray-600">{order.shippingAddress}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <FaTruck className="text-gray-400" />
+                  <div>
+                    <p className="font-semibold">Phương thức vận chuyển</p>
+                    <p className="text-gray-600">{order.shippingMethod}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Payment Info */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <FaCreditCard className="text-green-500" />
+                Thông tin thanh toán
+              </h2>
+              <div className="space-y-3">
+                <div>
+                  <p className="font-semibold">Phương thức thanh toán</p>
+                  <p className="text-gray-600">{order.paymentMethod}</p>
+                </div>
+                <div>
+                  <p className="font-semibold">Trạng thái thanh toán</p>
+                  <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                    order.paymentStatus === "Đã thanh toán"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-yellow-100 text-yellow-800"
+                  }`}>
+                    {order.paymentStatus}
+                  </span>
+                </div>
+                {order.note && (
+                  <div>
+                    <p className="font-semibold">Ghi chú</p>
+                    <p className="text-gray-600">{order.note}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold mb-4">Tóm Tắt</h2>
-        <p><strong>Tổng Tiền Sản Phẩm:</strong> {PricetoString(order.totalPrice)} VND</p>
-        {voucher && (
-          <p><strong>Voucher Áp Dụng:</strong> {voucher.voucher.title} ({voucher.voucher.code})</p>
-        )}
-        <p><strong>Giảm Giá:</strong> {PricetoString(order.discount || 0)} VND</p>
-        <p><strong>Phí Vận Chuyển:</strong> {PricetoString(order.shippingFee || 0)} VND</p>
-        <p className="text-lg font-bold"><strong>Tổng Cộng:</strong> {PricetoString(order.finalAmount)} VND</p>
-      </div>
-
-      <div className="text-center">
-        <button
-          onClick={() => navigate("/profile")}
-          className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600"
-        >
-          Quay Lại Hồ Sơ
-        </button>
       </div>
     </div>
   );

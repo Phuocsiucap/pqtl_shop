@@ -9,7 +9,15 @@ const DetailModal = () => {
   const location = useLocation();
   const order = location.state?.order;
   console.log("Order data:", order);
-  
+
+  // Helper to read fields with different naming conventions (camelCase vs snake_case)
+  const read = (...keys) => {
+    for (const k of keys) {
+      if (order && order[k] !== undefined && order[k] !== null && order[k] !== "") return order[k];
+    }
+    return null;
+  };
+
   if (!order) {
     return (
       <div className="container mx-auto p-6">
@@ -41,19 +49,22 @@ const DetailModal = () => {
       {/* Thông tin đơn hàng */}
       <div className="bg-blue-50 p-4 rounded-md shadow-md mb-8">
         <p className="text-lg text-primary">
-          <strong>Thời gian đặt hàng:</strong> {order.orderDate ? new Date(order.orderDate).toLocaleString('vi-VN') : 'N/A'}
+          <strong>Thời gian đặt hàng:</strong> {(() => {
+            const d = read('orderDate','order_date','createdAt','created_at');
+            return d ? new Date(d).toLocaleString('vi-VN') : 'N/A';
+          })()}
         </p>
         <p className="text-lg">
-          <strong>Địa chỉ giao hàng:</strong> {order.shippingAddress || 'N/A'}
+          <strong>Địa chỉ giao hàng:</strong> {read('shippingAddress','shipping_address') || 'N/A'}
         </p>
         <p className="text-lg">
-          <strong>Phương thức giao hàng:</strong> {order.shippingMethod || 'N/A'}
+          <strong>Phương thức giao hàng:</strong> {read('shippingMethod','shipping_method','shipping_type','deliveryMethod') || 'N/A'}
         </p>
         <p className="text-lg">
-          <strong>Phương thức thanh toán:</strong> {order.paymentMethod || 'N/A'}
+          <strong>Phương thức thanh toán:</strong> {read('paymentMethod','payment_method','payment_type') || 'N/A'}
         </p>
         <p className="text-lg">
-          <strong>Trạng thái thanh toán:</strong> {order.paymentStatus || 'N/A'}
+          <strong>Trạng thái thanh toán:</strong> {read('paymentStatus','payment_status') || 'N/A'}
         </p>
         <p className="text-lg text-red-500">
           <strong>Tổng tiền: </strong>
@@ -67,7 +78,7 @@ const DetailModal = () => {
                 ? "text-yellow-500"
                 : order.shipping_status === "Đã xác nhận"
                 ? "text-green-500"
-                : order.shipping_status === "Hủy"
+: order.shipping_status === "Hủy"
                 ? "text-red-500"
                 : order.shipping_status === "Đang giao"
                 ? "text-blue-500"
@@ -141,8 +152,7 @@ const DetailModal = () => {
               {PricetoString(totalBeforeDiscount)} đ
             </td>
           </tr>
-          
-          {discountAmount > 0 && (
+{discountAmount > 0 && (
             <tr className="bg-white font-medium text-lg">
               <td colSpan={3} className="text-left px-4 py-3 text-primary">
                 Giảm giá:

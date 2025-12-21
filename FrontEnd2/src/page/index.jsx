@@ -22,7 +22,6 @@ import ManagementGood from "./Admin/ManaGood/indes"
 import ManagementCategory from "./Admin/ManaCategory"
 import ManagementVoucher from "./Admin/ManaVoucher"
 import LoginForm from "./Admin/LoginAdmin"
-import BestSellerList from "./Admin/BestSeller"
 import FinancialReport from "./Admin/FinancialReport"
 import ClearanceManager from "./Admin/ClearanceManager"
 import ClearanceProducts from "./ClearanceProducts"
@@ -38,7 +37,6 @@ import withRoleCheck from "../components/withRoleCheck";
 // Wrap các trang chỉ dành cho ADMIN
 const AdminOnlyHome = withRoleCheck(AdminHome, ["ADMIN"]);
 const AdminOnlyManageUser = withRoleCheck(ManagementUser, ["ADMIN"]);
-const AdminOnlyBestSeller = withRoleCheck(BestSellerList, ["ADMIN"]);
 const AdminOnlyFinancialReport = withRoleCheck(FinancialReport, ["ADMIN"]);
 const AdminOnlyClearance = withRoleCheck(ClearanceManager, ["ADMIN"]);
 const AdminOnlyVoucher = withRoleCheck(ManagementVoucher, ["ADMIN"]);
@@ -63,11 +61,15 @@ const PublicPage = [
     { path: "/cartshopping", component: CartShopping, layout: Defaultlayout },
     { path: "/about", component: About, layout: Defaultlayout },
     { path: "/profile", component: Profile, layout: Defaultlayout },
+    { path: "/profile/account", component: Profile, layout: Defaultlayout },
+    { path: "/profile/orders", component: Profile, layout: Defaultlayout },
+    { path: "/profile/vouchers", component: Profile, layout: Defaultlayout },
+    { path: "/profile/logout", component: Profile, layout: Defaultlayout },
     { path: "/saleproduct", component: SaleProducts, layout: Defaultlayout },
     { path: "/clearance", component: ClearanceProducts, layout: Defaultlayout },
     { path: "/order", component: Order, layout: Defaultlayout },
     { path: "/order-detail/:id", component: OrderDetail, layout: Defaultlayout },
-    { path: "/buildDetail/:id", component: BuildDetail, layout: Defaultlayout },
+    { path: "/buildDetail/:id", component: OrderDetail, layout: Defaultlayout },
     { path: "/payment-return", component: PaymentReturn, layout: null },
     { path: "/login", component: Login, layout: null },
     { path: "/regester", component: Regester, layout: null },
@@ -79,7 +81,6 @@ const PublicPage = [
     { path: "/admin/managecategory", component: StaffAndAdminCategory, layout: AdminLayout },
     { path: "/admin/managebill", component: StaffAndAdminManageBill, layout: AdminLayout },
     { path: "/admin/managebill/billdetail", component: StaffAndAdminBillDetail, layout: AdminLayout },
-    { path: "/admin/bestseller", component: AdminOnlyBestSeller, layout: AdminLayout },
     { path: "/admin/financial-report", component: AdminOnlyFinancialReport, layout: AdminLayout },
     { path: "/admin/clearance", component: AdminOnlyClearance, layout: AdminLayout },
     { path: "/admin/managevoucher", component: AdminOnlyVoucher, layout: AdminLayout },

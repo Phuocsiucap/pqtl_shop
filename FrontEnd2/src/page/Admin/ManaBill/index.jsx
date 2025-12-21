@@ -66,12 +66,17 @@ const OrderManagement = () => {
     return stats;
   };
 
+  // Helper to get order date from different fields (orderDate, order_date, createdAt, created_at)
+  const getOrderDate = (order) => {
+    return order?.orderDate || order?.order_date || order?.createdAt || order?.created_at || null;
+  };
+
   // Filter orders based on status and search
   const filterOrders = () => {
     let result = [...orders];
     
     // Filter by status
-    if (selectedStatus !== "all") {
+if (selectedStatus !== "all") {
       const statusItem = statusList.find(s => s.key === selectedStatus);
       if (statusItem && statusItem.value) {
         result = result.filter(order => 
@@ -93,8 +98,13 @@ const OrderManagement = () => {
           case "phone":
             return order.phone?.includes(query);
           case "date":
-            const orderDate = new Date(order.orderDate).toLocaleDateString('vi-VN');
-            return orderDate.includes(query);
+            try {
+              const orderDate = new Date(getOrderDate(order));
+              if (isNaN(orderDate.getTime())) return false;
+              return orderDate.toLocaleDateString('vi-VN').includes(query);
+            } catch (e) {
+              return false;
+            }
           default:
             return true;
         }
@@ -164,7 +174,7 @@ const OrderManagement = () => {
       { value: "Chờ xác nhận", label: "Chờ xác nhận" },
       { value: "Đã xác nhận", label: "Đã xác nhận" },
       { value: "Đang giao", label: "Đang giao" },
-      { value: "Đã giao", label: "Đã giao" },
+{ value: "Đã giao", label: "Đã giao" },
       { value: "Hủy", label: "Hủy" },
     ];
     return allStatuses;
@@ -228,8 +238,17 @@ const OrderManagement = () => {
         },
         withCredentials: true,
       });
-      console.log("All orders:", response.data);
-      setOrders(response.data);
+      // Sort orders by date descending (newest first) using available date fields
+      const data = response.data;
+      const sorted = Array.isArray(data)
+        ? [...data].sort((a, b) => {
+            const da = getOrderDate(a);
+            const db = getOrderDate(b);
+            return new Date(db) - new Date(da);
+          })
+        : data;
+      console.log("All orders (sorted):", sorted);
+      setOrders(sorted);
     } catch (e) {
       console.log("Lỗi ", e);
     }
@@ -258,7 +277,7 @@ const OrderManagement = () => {
 
       {/* Status Filter Tabs */}
       <div className="flex flex-wrap gap-2 mb-6">
-        {statusList.map((status) => (
+{statusList.map((status) => (
           <button
             key={status.key}
             onClick={() => setSelectedStatus(status.key)}
@@ -324,7 +343,7 @@ const OrderManagement = () => {
               className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
             >
               Xóa bộ lọc
-            </button>
+</button>
           )}
         </div>
         
@@ -390,7 +409,7 @@ const OrderManagement = () => {
             {/* Cảnh báo khi hủy đơn */}
             {newStatus === "Hủy" && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-red-600 text-sm font-medium">
+<p className="text-red-600 text-sm font-medium">
                   ⚠️ Cảnh báo: Hủy đơn hàng sẽ không thể hoàn tác!
                 </p>
               </div>

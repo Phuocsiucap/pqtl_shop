@@ -67,7 +67,9 @@ public class OrderController {
             String userId = user.getId();
             Optional<Order> orderOpt = orderService.getOrderById(id);
             if (orderOpt.isPresent() && orderOpt.get().getUserId().equals(userId)) {
-                return ResponseEntity.ok(orderOpt.get());
+                Order order = orderOpt.get();
+                System.out.println("Getting order " + id + " for user " + userId + ", items count: " + (order.getItems() != null ? order.getItems().size() : "null"));
+                return ResponseEntity.ok(order);
             } else {
                 return ResponseEntity.notFound().build();
             }

@@ -12,7 +12,7 @@ const Sidebar1 = () => {
   const [activeMenu, setActiveMenu] = useState("/admin"); // State for active menu
 
   const menuItems = [
-    { link: "/admin", label: "Quản lý doanh thu", icon: <FaChartLine /> },
+    { link: "/admin", label: "Sản phẩm bán chạy", icon: <FaChartLine /> },
     { link: "/admin/manageuser", label: "Quản lý người dùng", icon: <FaUsers /> },
     { link: "/admin/managegood", label: "Quản lý sản phẩm", icon: <FaBoxOpen /> },
     { link: "/admin/managecategory", label: "Quản lý danh mục", icon: <FaTags /> },
@@ -20,7 +20,6 @@ const Sidebar1 = () => {
     { link: "/admin/managevoucher", label: "Quản lý Voucher", icon: <FaTicketAlt /> },
     { link: "/admin/reviews", label: "Quản lý đánh giá", icon: <FaComments /> },
     { link: "/admin/payments", label: "Quản lý thanh toán", icon: <FaCreditCard /> },
-    { link: "/admin/bestseller", label: "Bán chạy", icon: <FaFire /> },
     { link: "/admin/financial-report", label: "Báo cáo lợi nhuận", icon: <FaMoneyBillWave /> },
     { link: "/admin/clearance", label: "Hạn SD & Thanh lý", icon: <FaExclamationTriangle /> },
     { link: "/admin/shift-handover", label: "Quản lý Bàn giao Ca", icon: <FaClipboardList /> },

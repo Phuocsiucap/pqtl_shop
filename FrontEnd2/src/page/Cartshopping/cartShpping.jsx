@@ -56,10 +56,20 @@ function CartShopping() {
       }, 0); // Tính tổng giá
 
     if (selectedVoucher) {
-      total -= (total * selectedVoucher.voucher.discount_percentage) / 100; // Áp dụng giảm giá
+      const voucher = selectedVoucher.voucher;
+      let discount = 0;
+      if (voucher.discountType === 'PERCENTAGE' && voucher.discountValue) {
+        discount = total * voucher.discountValue / 100;
+        if (voucher.maxDiscountAmount && discount > voucher.maxDiscountAmount) {
+          discount = voucher.maxDiscountAmount;
+        }
+      } else if (voucher.discountValue) {
+        discount = voucher.discountValue;
+      }
+      total -= Math.min(discount, total);
     }
   
-    setTotalPrice(Math.round(total));
+    setTotalPrice(Math.round(total) || 0);
     console.log(selectedItems);
   }, [cartItems, selectedItems, selectedVoucher]); // Chạy lại khi giỏ hàng hoặc lựa chọn thay đổi
   
@@ -109,10 +119,7 @@ function CartShopping() {
       return; // Dừng việc hiển thị voucher nếu không có sản phẩm được chọn
     }
     try {
-      const response = await request1.get("v1/vouchers/redeemed_vouchers/", {
-        params: {
-          status: "Redeemed",  // Truyền status như là query parameter
-        },
+      const response = await request1.get("v1/vouchers/unused/", {
         headers: {
           Authorization: `Bearer ${access_token}`,
           "Content-Type": "application/json",

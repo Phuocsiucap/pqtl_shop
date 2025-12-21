@@ -14,6 +14,34 @@ function Account() {
     newpassword: "",
     confirmnewpassword: "",
   });
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const response = await request1.get("user/profile", {
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+          },
+          withCredentials: true,
+        });
+        if (response.status === 200) {
+          setUser({
+            ...response.data,
+            newpassword: "",
+            confirmnewpassword: "",
+          });
+          dispatch(UpdateUser(response.data));
+          localStorage.setItem("user", JSON.stringify(response.data));
+        }
+      } catch (error) {
+        console.error("Error fetching user profile:", error);
+      }
+    };
+
+    if (Status && access_token) {
+      fetchUserProfile();
+    }
+  }, [Status, access_token, dispatch]);
   const handleOnchange = (e) => {
     //e.preventDefault();
     const { name, value } = e.target;
