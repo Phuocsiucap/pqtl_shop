@@ -1,15 +1,55 @@
 import { useSelector } from "react-redux";
 import { FaRegUser } from "react-icons/fa6";
 import { ContentAccounts } from "./Content";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 
 function Profile() {
-  const titles = ["Tài khoản của tôi", "Đơn hàng", "Khuyến mãi của tôi", "Đăng xuất"];
+  const titles = [
+    { name: "Tài khoản của tôi", path: "/profile/account" },
+    { name: "Đơn hàng", path: "/profile/orders" },
+    { name: "Khuyến mãi của tôi", path: "/profile/vouchers" },
+    { name: "Đăng xuất", path: "/profile/logout" }
+  ];
   const UserInfor = useSelector((state) => state.user.user);
-  const [content, setContent] = useState(0);
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const handOnclick = (index) => {
-    setContent(index);
+  useEffect(() => {
+    if (location.pathname === "/profile") {
+      navigate("/profile/account", { replace: true });
+    }
+  }, [location.pathname, navigate]);
+
+  const getActiveIndex = () => {
+    const currentPath = location.pathname;
+    console.log("Current path:", currentPath);
+    if (currentPath === "/profile/account" || currentPath === "/profile") return 0;
+    if (currentPath === "/profile/orders") return 1;
+    if (currentPath === "/profile/vouchers") return 2;
+    if (currentPath === "/profile/logout") return 3;
+    return 0; // default
+  };
+
+  const content = getActiveIndex();
+
+  const AccountComponent = ContentAccounts[0].component;
+  const OrdersComponent = ContentAccounts[1].component;
+  const VouchersComponent = ContentAccounts[2].component;
+  const LogoutComponent = ContentAccounts[3].component;
+
+  const renderContent = () => {
+    switch (content) {
+      case 0: return <AccountComponent />;
+      case 1: return <OrdersComponent />;
+      case 2: return <VouchersComponent />;
+      case 3: return <LogoutComponent />;
+      default: return <AccountComponent />;
+    }
+  };
+
+  const handOnclick = (path) => {
+    navigate(path);
   };
 
   let Content = ContentAccounts[content].component;
@@ -47,9 +87,9 @@ function Profile() {
                         ? "bg-primary/10 text-primary border-r-4 border-primary"
                         : "text-gray-500 hover:text-primary hover:bg-gray-100"
                       }`}
-                    onClick={() => handOnclick(index)}
+                    onClick={() => handOnclick(title.path)}
                   >
-                    {title}
+                    {title.name}
                   </li>
                 ))}
               </ul>
@@ -59,7 +99,7 @@ function Profile() {
 
         {/* Content */}
         <div className="block lg:basis-[70%] border-r-2 border-r-gray-100">
-          <Content />
+          {renderContent()}
         </div>
       </div>
     </div>

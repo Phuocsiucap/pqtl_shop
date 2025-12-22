@@ -23,11 +23,19 @@ export interface Product {
 export interface ProductReview {
   id: string;
   productId: string;
+  productName?: string;
   userId: string;
   username: string;
   rating: number;
   comment: string;
   reviewDate: string; // ISO date string
+  // Phản hồi từ admin
+  adminReply?: string;
+  adminReplyBy?: string;
+  adminReplyDate?: string;
+  // Trạng thái
+  isApproved?: boolean;
+  isVisible?: boolean;
 }
 
 export interface SearchHistory {
@@ -37,12 +45,21 @@ export interface SearchHistory {
   searchDate: string; // ISO date string
 }
 
-export interface SearchParams {
+export interface  SearchParams {
   keyword?: string;
   category?: string;
   priceMin?: number;
   priceMax?: number;
-  sortBy?: 'price_asc' | 'price_desc' | 'rating_desc' | 'sold_desc';
+  sortBy?:
+    | 'price_asc'
+    | 'price_desc'
+    | 'price_low_to_high'
+    | 'price_high_to_low'
+    | 'rating_desc'
+    | 'rating'
+    | 'sold_desc'
+    | 'popular'
+    | 'newest';
   page?: number;
   size?: number;
 }

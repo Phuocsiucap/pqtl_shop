@@ -5,7 +5,7 @@ function VoucherModal({ setShowVoucher, voucher, onSelectVoucher, totalPrice }) 
   const [selectedVoucher, setSelectedVoucher] = useState(null);
 
   const handleSelectVoucher = (item) => {
-    if (item.voucher.min_order_value <= totalPrice) {
+    if ((item.voucher.min_order_value || 0) <= totalPrice) {
       setSelectedVoucher(item); // Lưu voucher được chọn trong state của modal
       onSelectVoucher(item); // Truyền voucher được chọn về component cha
     } else {
@@ -39,13 +39,16 @@ function VoucherModal({ setShowVoucher, voucher, onSelectVoucher, totalPrice }) 
                       <FiShoppingCart className="text-3xl text-blue-500" />
                     </div>
                     <div>
-                      <div className="flex flex-col space-y-4">
+                      <div className="flex flex-col space-y-2">
                         <p className="font-semibold text-lg text-gray-800">{item.voucher.title}</p>
                         <p className="font-semibold text-gray-800">
-                          {item.voucher.min_order_value.toLocaleString()} VND
+                          Giảm: {item.voucher.discountType === 'PERCENTAGE' ? `${item.voucher.discountValue}%` : `${item.voucher.discountValue?.toLocaleString() || 0} VND`}
+                          {item.voucher.maxDiscountAmount && item.voucher.discountType === 'PERCENTAGE' ? ` (tối đa ${item.voucher.maxDiscountAmount.toLocaleString()} VND)` : ''}
+                        </p>
+                        <p className="font-semibold text-gray-800">
+                          Đơn tối thiểu: {item.voucher.min_order_value ? item.voucher.min_order_value.toLocaleString() : '0'} VND
                         </p>
                       </div>
-                      <p className="text-sm text-gray-500">Số lượng: {item.quantity}</p>
                     </div>
                   </div>
 

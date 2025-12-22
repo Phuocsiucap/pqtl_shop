@@ -21,14 +21,36 @@ const ReviewList = ({ reviews, fetchReviews, productId }) => {
             {reviews.content.map((review) => (
                 <div key={review.id} className="border-b py-4">
                     <div className="flex justify-between items-center">
-                        <span className="font-semibold">{review.username}</span>
-                        <span className="text-sm text-gray-500">{new Date(review.reviewDate).toLocaleDateString()}</span>
+                        <div className="flex items-center">
+                            <span className="font-semibold">{review.username}</span>
+                            <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded">
+                                ✓ Đã mua hàng
+                            </span>
+                        </div>
+                        <span className="text-sm text-gray-500">{new Date(review.reviewDate).toLocaleDateString('vi-VN')}</span>
                     </div>
-                    <div className="text-yellow-500">
+                    <div className="text-yellow-500 mt-1">
                         {'★'.repeat(review.rating)}
                         {'☆'.repeat(5 - review.rating)}
                     </div>
                     <p className="mt-2 text-gray-700">{review.comment}</p>
+
+                    {/* Hiển thị phản hồi từ admin nếu có */}
+                    {review.adminReply && (
+                        <div className="mt-3 ml-4 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+                            <div className="flex items-center mb-1">
+                                <span className="font-semibold text-blue-700 text-sm">
+                                    🛒 Phản hồi từ Shop
+                                </span>
+                                {review.adminReplyDate && (
+                                    <span className="ml-2 text-xs text-gray-500">
+                                        {new Date(review.adminReplyDate).toLocaleDateString('vi-VN')}
+                                    </span>
+                                )}
+                            </div>
+                            <p className="text-gray-700 text-sm">{review.adminReply}</p>
+                        </div>
+                    )}
                 </div>
             ))}
             {/* Pagination controls */}
@@ -86,8 +108,8 @@ const ImageGallery = ({ mainImage, additionalImages }) => {
                         key={index}
                         onClick={() => setSelectedImage(image)}
                         className={`relative h-20 rounded-lg overflow-hidden border-2 transition-all ${selectedImage === image
-                                ? 'border-primary ring-2 ring-primary ring-offset-2'
-                                : 'border-gray-200 hover:border-gray-400'
+                            ? 'border-primary ring-2 ring-primary ring-offset-2'
+                            : 'border-gray-200 hover:border-gray-400'
                             }`}
                     >
                         <img
@@ -105,7 +127,7 @@ const ImageGallery = ({ mainImage, additionalImages }) => {
 // Component hiển thị sản phẩm tương tự
 const SimilarProducts = ({ products }) => {
     const navigate = useNavigate();
-    
+
     if (!products || products.length === 0) return null;
 
     const handleProductClick = (productId) => {
@@ -117,17 +139,17 @@ const SimilarProducts = ({ products }) => {
             <h2 className="text-2xl font-bold mb-6">Sản phẩm tương tự</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 {products.map((product) => (
-                    <div 
-                        key={product.id} 
+                    <div
+                        key={product.id}
                         onClick={() => handleProductClick(product.id)}
                         className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer hover:-translate-y-1"
                     >
                         {/* Image Container */}
                         <div className="relative w-full h-40 bg-gray-100 overflow-hidden">
-                            <img 
-                                src={product.image} 
-                                alt={product.name} 
-                                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" 
+                            <img
+                                src={product.image}
+                                alt={product.name}
+                                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                             />
                             {/* Stock Badge */}
                             {product.stockQuantity <= 0 && (
@@ -149,7 +171,7 @@ const SimilarProducts = ({ products }) => {
                             <h4 className="text-sm font-semibold text-gray-800 truncate mb-1">
                                 {product.name}
                             </h4>
-                            
+
                             {/* Category */}
                             <p className="text-xs text-gray-500 mb-2">
                                 {product.category}
@@ -388,12 +410,12 @@ function ProductDetail() {
                                 ⏰ Sắp hết hạn
                             </span>
                         )}
-                        
+
                         {/* Original price (if discounted or clearance) */}
                         {(product.isClearance || product.discount > 0) && (
                             <p className="text-xl text-gray-400 line-through">{product.price.toLocaleString()} VND</p>
                         )}
-                        
+
                         {/* Final price */}
                         {product.isClearance && product.clearanceDiscount > 0 ? (
                             <p className="text-4xl font-extrabold text-purple-600">
@@ -415,7 +437,7 @@ function ProductDetail() {
                         </p>
                         <p className="text-gray-500">Đã bán: {product.soldQuantity}</p>
                     </div>
-                    
+
                     {/* Thông tin hạn sử dụng */}
                     {product.expiryDate && (
                         <div className="mt-4 p-3 rounded-lg border">
@@ -429,11 +451,10 @@ function ProductDetail() {
                                 )}
                                 <div>
                                     <span className="text-gray-500">Hạn SD:</span>
-                                    <span className={`ml-2 font-medium ${
-                                        new Date(product.expiryDate) < new Date() ? 'text-red-600' :
-                                        Math.ceil((new Date(product.expiryDate) - new Date()) / (1000 * 60 * 60 * 24)) <= 30 
-                                            ? 'text-orange-600' : 'text-green-600'
-                                    }`}>
+                                    <span className={`ml-2 font-medium ${new Date(product.expiryDate) < new Date() ? 'text-red-600' :
+                                            Math.ceil((new Date(product.expiryDate) - new Date()) / (1000 * 60 * 60 * 24)) <= 30
+                                                ? 'text-orange-600' : 'text-green-600'
+                                        }`}>
                                         {product.expiryDate}
                                         {new Date(product.expiryDate) >= new Date() && (
                                             <span className="ml-1">
@@ -451,7 +472,7 @@ function ProductDetail() {
                             </div>
                         </div>
                     )}
-                    
+
                     {/* Badge thanh lý */}
                     {product.isClearance && (
                         <div className="mt-4 p-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg">

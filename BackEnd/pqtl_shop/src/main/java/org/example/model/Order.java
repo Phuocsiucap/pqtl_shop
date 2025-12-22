@@ -24,7 +24,7 @@ public class Order {
     private String shippingMethod;            // Phương thức giao hàng: "Nhanh", "Tiết kiệm", "Tiêu chuẩn"
     private String paymentMethod;             // Phương thức thanh toán: "COD", "Chuyển khoản", "Ví điện tử", "Thẻ ngân hàng"
     private String paymentStatus;             // "Chưa thanh toán", "Đã thanh toán", "Hoàn tiền"
-    private String orderStatus;               // "Đã xác nhận", "Đang giao", "Đã giao", "Đã hủy"
+    private String orderStatus;               // "Chờ xác nhận", "Đã xác nhận", "Đang giao", "Đã giao", "Hủy"
 
     private LocalDateTime orderDate;          // Ngày đặt hàng
     private LocalDateTime updatedAt;          // Ngày cập nhật đơn hàng
@@ -32,11 +32,19 @@ public class Order {
     private String note;                      // Ghi chú của khách hàng (nếu có)
     private String adminNote;                 // Ghi chú nội bộ (nếu là admin thêm)
     
+    private String userVoucherId;             // ID của UserVoucher được sử dụng (nếu có)
+    
     // Thêm order_id - cần thiết cho admin API truy vấn/cập nhật đơn hàng
     private String order_id;
     // Thêm shipping_status - cần thiết cho admin API quản lý trạng thái giao hàng
     private String shipping_status = "Chờ xác nhận";  // Giá trị mặc định
     
+    // Thêm channel để phân biệt nguồn đơn hàng
+    private String channel = "ONLINE";        // "ONLINE" hoặc "POS"
+
+    // Thêm completedAt để ghi nhận thời điểm hoàn tất đơn hàng (tính doanh thu)
+    private LocalDateTime completedAt;
+
     // Tính lợi nhuận từ các items (nếu totalProfit chưa được set)
     public double getTotalProfit() {
         if (totalProfit > 0 || items == null) {

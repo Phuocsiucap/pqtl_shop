@@ -14,6 +14,34 @@ function Account() {
     newpassword: "",
     confirmnewpassword: "",
   });
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const response = await request1.get("user/profile", {
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+          },
+          withCredentials: true,
+        });
+        if (response.status === 200) {
+          setUser({
+            ...response.data,
+            newpassword: "",
+            confirmnewpassword: "",
+          });
+          dispatch(UpdateUser(response.data));
+          localStorage.setItem("user", JSON.stringify(response.data));
+        }
+      } catch (error) {
+        console.error("Error fetching user profile:", error);
+      }
+    };
+
+    if (Status && access_token) {
+      fetchUserProfile();
+    }
+  }, [Status, access_token, dispatch]);
   const handleOnchange = (e) => {
     //e.preventDefault();
     const { name, value } = e.target;
@@ -37,14 +65,14 @@ function Account() {
       loyaltyPoints: user.loyaltyPoints,
     };
     try {
-      const respone=await request1.patch("user/update/", updateUser,{
+      const response=await request1.put("user/update", updateUser,{
         headers: {
           Authorization: `Bearer ${access_token}`,
           "Content-Type": "application/json",
         },
         withCredentials: true,
       });
-      if(respone.status===200){
+      if(response.status===200){
         alert("Chỉnh sửa thông tin thành công");
         localStorage.setItem("user",JSON.stringify(updateUser));
         setUser(pre=>({...pre,password:pre.newpassword||pre.password,newpassword:"",confirmnewpassword:""}))

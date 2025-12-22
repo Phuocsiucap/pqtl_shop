@@ -101,7 +101,7 @@ function ProductBought() {
                 </p>
                 {/* thao tác */}
                 <div>
-                  <Link to={`/buildDetail/${order.id}`}>
+                  <Link to={`/order-detail/${order.id}`}>
                     <button className="px-4 py-2 bg-primary text-white rounded-md font-bold">
                       Xem
                     </button>

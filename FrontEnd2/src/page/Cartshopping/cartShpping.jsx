@@ -6,6 +6,7 @@ import CartItem from "./cartItems";
 import VoucherModal from "./VoucherModels";
 import CartFooter from "./cartFooter";
 import { getCSRFTokenFromCookie } from "../../Component/Token/getCSRFToken";
+import { computeFinalPrice } from "../../utils/pricing";
 
 
 // import CartFooter from "./cartFooter";
@@ -50,21 +51,25 @@ function CartShopping() {
     let total = cartItems
       .filter((item) => selectedItems.includes(item.productId)) // Lọc các mục được chọn
       .reduce((sum, item) => {
-        // Tính giá cuối cùng: ưu tiên thanh lý > giảm giá > giá gốc
-        let finalPrice;
-        if (item.isClearance && item.clearanceDiscount > 0) {
-          finalPrice = item.price * (1 - item.clearanceDiscount / 100);
-        } else {
-          finalPrice = item.price - (item.discount || 0);
-        }
+        const finalPrice = computeFinalPrice(item);
         return sum + finalPrice * item.qty;
       }, 0); // Tính tổng giá
 
     if (selectedVoucher) {
-      total -= (total * selectedVoucher.voucher.discount_percentage) / 100; // Áp dụng giảm giá
+      const voucher = selectedVoucher.voucher;
+      let discount = 0;
+      if (voucher.discountType === 'PERCENTAGE' && voucher.discountValue) {
+        discount = total * voucher.discountValue / 100;
+        if (voucher.maxDiscountAmount && discount > voucher.maxDiscountAmount) {
+          discount = voucher.maxDiscountAmount;
+        }
+      } else if (voucher.discountValue) {
+        discount = voucher.discountValue;
+      }
+      total -= Math.min(discount, total);
     }
   
-    setTotalPrice(Math.round(total));
+    setTotalPrice(Math.round(total) || 0);
     console.log(selectedItems);
   }, [cartItems, selectedItems, selectedVoucher]); // Chạy lại khi giỏ hàng hoặc lựa chọn thay đổi
   
@@ -114,10 +119,7 @@ function CartShopping() {
       return; // Dừng việc hiển thị voucher nếu không có sản phẩm được chọn
     }
     try {
-      const response = await request1.get("vouchers/redeemed_vouchers/", {
-        params: {
-          status: "Redeemed",  // Truyền status như là query parameter
-        },
+      const response = await request1.get("v1/vouchers/unused/", {
         headers: {
           Authorization: `Bearer ${access_token}`,
           "Content-Type": "application/json",

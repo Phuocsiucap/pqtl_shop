@@ -7,37 +7,18 @@ import { request1 } from '../utils/request';
 const PAGE_SIZE = 8;
 const MAX_PAGE_BUTTONS = 5;
 
-const CATEGORY_TREE = {
-    'Trái Cây Tươi': ['Trái cây nội địa', 'Trái cây đặc sản', 'Trái cây nhập khẩu'],
-    'Rau Ăn Hữu Cơ': ['Rau ăn lá', 'Rau thân mềm', 'Rau gia vị'],
-    'Củ Quả & Gia Vị': ['Gia vị khô', 'Gia vị tươi', 'Củ gia vị'],
-    'Thịt & Trứng Sạch': ['Thịt heo', 'Thịt bò', 'Gia cầm & Trứng'],
-    'Hải Sản Tươi': ['Hải sản nước mặn', 'Hải sản nước ngọt'],
-    'Thực Phẩm Khô': ['Gạo & Ngũ cốc', 'Đậu & Hạt', 'Gia vị khô'],
-};
-
-const FALLBACK_ORIGINS = ['Đà Lạt', 'Tiền Giang', 'Ninh Thuận', 'Cần Thơ', 'An Giang', 'Bình Phước'];
-const CERTIFICATION_OPTIONS = ['VietGAP', 'GlobalGAP', 'Organic', 'HACCP', 'OCOP', 'ASC'];
-const RATING_FILTERS = [
-    { label: 'Từ 5 sao', value: 5 },
-    { label: 'Từ 4 sao', value: 4 },
-    { label: 'Từ 3 sao', value: 3 },
-];
 const SORT_OPTIONS = [
     { value: 'popular', label: 'Phổ biến nhất' },
     { value: 'newest', label: 'Mới nhất' },
     { value: 'price_low_to_high', label: 'Giá: Thấp đến Cao' },
     { value: 'price_high_to_low', label: 'Giá: Cao đến Thấp' },
-    { value: 'rating', label: 'Đánh giá cao nhất' },
 ];
 
 const INITIAL_FILTERS = {
     categories: [],
-    subCategories: [],
-    origins: [],
-    certifications: [],
-    rating: null,
     onSaleOnly: false,
+    isSeasonal: false,
+    isClearance: false,
 };
 
 const normalizeFilterMeta = (payload) => {
@@ -51,15 +32,13 @@ const normalizeFilterMeta = (payload) => {
 
     return {
         categories: listToMap(payload?.categories),
-        subCategories: listToMap(payload?.subCategories),
-        origins: listToMap(payload?.origins),
-        certifications: listToMap(payload?.certifications),
-        ratings: listToMap(payload?.ratings),
         priceRange: {
             min: Number.isFinite(payload?.minPrice) ? payload.minPrice : 0,
             max: Number.isFinite(payload?.maxPrice) ? payload.maxPrice : 0,
         },
         onSaleCount: payload?.onSaleCount || 0,
+        seasonalCount: payload?.seasonalCount || 0,
+        clearanceCount: payload?.clearanceCount || 0,
     };
 };
 
@@ -74,9 +53,6 @@ const normalizeSlug = (value = '') =>
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/(^-|-$)+/g, '');
 
-const currencyFormatter = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 });
-const formatCurrency = (value) => `${currencyFormatter.format(Math.max(0, Math.round(value || 0)))} ₫`;
-
 const SearchProductItem = ({ product }) => {
     const navigate = useNavigate();
     const productId = product.id || product._id;
@@ -88,16 +64,13 @@ const SearchProductItem = ({ product }) => {
     };
 
     return (
-        <div 
+        <div
             onClick={handleClick}
             className="h-full flex flex-col cursor-pointer transition-transform hover:scale-105"
         >
             <div className="flex-1">
                 <ProductCard product={{ ...product, id: productId }} />
             </div>
-            {product.origin && (
-                <p className="text-xs text-gray-500 mt-2 px-1">Xuất xứ: {product.origin}</p>
-            )}
         </div>
     );
 };
@@ -105,7 +78,7 @@ const SearchProductItem = ({ product }) => {
 function SearchResultPage() {
     const location = useLocation();
     const params = useParams();
-    const { search, products, loading, error, categories } = useSearch();
+    const { search, products, loading, error, categories, history, fetchHistory } = useSearch();
     const [filters, setFilters] = useState(INITIAL_FILTERS);
     const [sortBy, setSortBy] = useState('popular');
     const [page, setPage] = useState(0);
@@ -148,26 +121,12 @@ function SearchResultPage() {
 
     const effectiveCategories = useMemo(() => {
         if (!categories || categories.length === 0) {
-            return Object.keys(CATEGORY_TREE).map((name) => ({
-                name,
-                subCategories: CATEGORY_TREE[name] || [],
-            }));
+            return [];
         }
         return categories.map((cat) => ({
             name: cat.name,
-            subCategories: CATEGORY_TREE[cat.name] || [],
         }));
     }, [categories]);
-
-    const originOptions = useMemo(() => {
-        const metaOrigins = Object.keys(filterMeta.origins || {});
-        return Array.from(new Set([...FALLBACK_ORIGINS, ...metaOrigins]));
-    }, [filterMeta.origins]);
-
-    const certificationOptions = useMemo(() => {
-        const metaCerts = Object.keys(filterMeta.certifications || {});
-        return Array.from(new Set([...CERTIFICATION_OPTIONS, ...metaCerts]));
-    }, [filterMeta.certifications]);
 
     const queryPayload = useMemo(() => {
         const payload = {
@@ -178,12 +137,9 @@ function SearchResultPage() {
 
         if (keyword) payload.keyword = keyword;
         if (filters.categories.length) payload.categoriesCsv = filters.categories.join(',');
-        if (filters.subCategories.length) payload.subCategoriesCsv = filters.subCategories.join(',');
-
-        if (filters.origins.length) payload.originsCsv = filters.origins.join(',');
-        if (filters.certifications.length) payload.certificationsCsv = filters.certifications.join(',');
-        if (filters.rating) payload.ratingMin = filters.rating;
         if (filters.onSaleOnly) payload.onSaleOnly = true;
+        if (filters.isSeasonal) payload.isSeasonal = true;
+        if (filters.isClearance) payload.isClearance = true;
 
         return payload;
     }, [filters, sortBy, page, keyword]);
@@ -264,41 +220,8 @@ function SearchResultPage() {
             const nextCategories = exists
                 ? prev.categories.filter((item) => item !== name)
                 : [...prev.categories, name];
-            const nextSubs = exists
-                ? prev.subCategories.filter((sub) => !(CATEGORY_TREE[name] || []).includes(sub))
-                : prev.subCategories;
-            return { ...prev, categories: nextCategories, subCategories: nextSubs };
+            return { ...prev, categories: nextCategories };
         });
-    };
-
-    const handleSubCategoryToggle = (parent, child) => {
-        applyFilterUpdate((prev) => {
-            const exists = prev.subCategories.includes(child);
-            let nextSubCategories = exists
-                ? prev.subCategories.filter((item) => item !== child)
-                : [...prev.subCategories, child];
-            let nextCategories = prev.categories;
-            if (!exists && !nextCategories.includes(parent)) {
-                nextCategories = [...nextCategories, parent];
-            }
-            return { ...prev, subCategories: nextSubCategories, categories: nextCategories };
-        });
-    };
-
-    const handleArrayToggle = (key, value) => {
-        applyFilterUpdate((prev) => {
-            const arr = prev[key];
-            const exists = arr.includes(value);
-            const next = exists ? arr.filter((item) => item !== value) : [...arr, value];
-            return { ...prev, [key]: next };
-        });
-    };
-
-    const handleRatingSelect = (value) => {
-        applyFilterUpdate((prev) => ({
-            ...prev,
-            rating: prev.rating === value ? null : value,
-        }));
     };
 
     const handleSaleToggle = () => {
@@ -306,6 +229,26 @@ function SearchResultPage() {
             ...prev,
             onSaleOnly: !prev.onSaleOnly,
         }));
+    };
+
+    const handleSeasonalToggle = () => {
+        applyFilterUpdate((prev) => ({
+            ...prev,
+            isSeasonal: !prev.isSeasonal,
+        }));
+    };
+
+    const handleClearanceToggle = () => {
+        applyFilterUpdate((prev) => ({
+            ...prev,
+            isClearance: !prev.isClearance,
+        }));
+    };
+
+    const handleHistoryClick = (term) => {
+        if (!term) return;
+        setPage(0);
+        navigate(`/search?keyword=${encodeURIComponent(term)}`);
     };
 
     const clearAllFilters = () => {
@@ -320,24 +263,16 @@ function SearchResultPage() {
             tags.push({ key: 'category', value, label: `Danh mục: ${value}` })
         );
 
-        filters.subCategories.forEach((value) =>
-            tags.push({ key: 'subCategory', value, label: `Nhóm: ${value}` })
-        );
-
-        filters.origins.forEach((value) =>
-            tags.push({ key: 'origin', value, label: `Xuất xứ: ${value}` })
-        );
-
-        filters.certifications.forEach((value) =>
-            tags.push({ key: 'certification', value, label: `Chứng nhận: ${value}` })
-        );
-
-        if (filters.rating) {
-            tags.push({ key: 'rating', value: String(filters.rating), label: `Từ ${filters.rating} sao` });
-        }
-
         if (filters.onSaleOnly) {
             tags.push({ key: 'sale', value: 'sale', label: 'Đang khuyến mãi' });
+        }
+
+        if (filters.isSeasonal) {
+            tags.push({ key: 'seasonal', value: 'seasonal', label: 'Sản phẩm theo mùa' });
+        }
+
+        if (filters.isClearance) {
+            tags.push({ key: 'clearance', value: 'clearance', label: 'Hàng thanh lý' });
         }
 
         return tags;
@@ -348,20 +283,14 @@ function SearchResultPage() {
             case 'category':
                 handleCategoryToggle(tag.value);
                 break;
-            case 'subCategory':
-                handleArrayToggle('subCategories', tag.value);
-                break;
-            case 'origin':
-                handleArrayToggle('origins', tag.value);
-                break;
-            case 'certification':
-                handleArrayToggle('certifications', tag.value);
-                break;
-            case 'rating':
-                handleRatingSelect(Number(tag.value));
-                break;
             case 'sale':
                 handleSaleToggle();
+                break;
+            case 'seasonal':
+                handleSeasonalToggle();
+                break;
+            case 'clearance':
+                handleClearanceToggle();
                 break;
             default:
                 break;
@@ -383,10 +312,11 @@ function SearchResultPage() {
 
     const renderFilters = () => (
         <div className="flex flex-col gap-5 text-sm">
-            {renderFilterSection(
+            {/* Danh mục sản phẩm */}
+            {effectiveCategories.length > 0 && renderFilterSection(
                 'Danh mục sản phẩm',
                 <div className="space-y-3">
-                    {effectiveCategories.map(({ name, subCategories }) => (
+                    {effectiveCategories.map(({ name }) => (
                         <div key={name}>
                             <label className="flex items-center gap-2 text-gray-700">
                                 <input
@@ -400,116 +330,60 @@ function SearchResultPage() {
                                     ({getCount(filterMeta.categories, name)})
                                 </span>
                             </label>
-                            {subCategories?.length > 0 && (
-                                <div className="pl-6 mt-2 space-y-2">
-                                    {subCategories.map((sub) => (
-                                        <label key={sub} className="flex items-center gap-2 text-gray-600">
-                                            <input
-                                                type="checkbox"
-                                                className="rounded border-gray-400"
-                                                checked={filters.subCategories.includes(sub)}
-                                                onChange={() => handleSubCategoryToggle(name, sub)}
-                                            />
-                                            <span className="flex-1">{sub}</span>
-                                            <span className="text-xs text-gray-400">
-                                                ({getCount(filterMeta.subCategories, sub)})
-                                            </span>
-                                        </label>
-                                    ))}
-                                </div>
-                            )}
                         </div>
                     ))}
                 </div>
             )}
 
+            {/* Trạng thái sản phẩm */}
             {renderFilterSection(
-                'Nguồn gốc / Xuất xứ',
-                <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
-                    {originOptions.map((origin) => (
-                        <label key={origin} className="flex items-center gap-2 text-gray-700">
-                            <input
-                                type="checkbox"
-                                className="rounded border-gray-400"
-                                checked={filters.origins.includes(origin)}
-                                onChange={() => handleArrayToggle('origins', origin)}
-                            />
-                            <span className="flex-1">{origin}</span>
-                            <span className="text-xs text-gray-500">
-                                ({getCount(filterMeta.origins, origin)})
-                            </span>
-                        </label>
-                    ))}
-                </div>
-            )}
+                'Trạng thái sản phẩm',
+                <div className="space-y-3">
+                    <label className="flex items-center justify-between text-gray-700">
+                        <div>
+                            <p className="font-medium">Đang giảm giá</p>
+                            <p className="text-xs text-gray-500">
+                                ({filterMeta.onSaleCount} sản phẩm)
+                            </p>
+                        </div>
+                        <input
+                            type="checkbox"
+                            className="h-5 w-5 rounded border-gray-400"
+                            checked={filters.onSaleOnly}
+                            onChange={handleSaleToggle}
+                        />
+                    </label>
 
-            {renderFilterSection(
-                'Chứng nhận chất lượng',
-                <div className="space-y-2">
-                    {certificationOptions.map((cert) => (
-                        <label key={cert} className="flex items-center gap-2 text-gray-700">
-                            <input
-                                type="checkbox"
-                                className="rounded border-gray-400"
-                                checked={filters.certifications.includes(cert)}
-                                onChange={() => handleArrayToggle('certifications', cert)}
-                            />
-                            <span className="flex-1">{cert}</span>
-                            <span className="text-xs text-gray-500">
-                                ({getCount(filterMeta.certifications, cert)})
-                            </span>
-                        </label>
-                    ))}
-                </div>
-            )}
+                    <label className="flex items-center justify-between text-gray-700">
+                        <div>
+                            <p className="font-medium">Sản phẩm theo mùa</p>
+                            <p className="text-xs text-gray-500">
+                                ({filterMeta.seasonalCount} sản phẩm)
+                            </p>
+                        </div>
+                        <input
+                            type="checkbox"
+                            className="h-5 w-5 rounded border-gray-400"
+                            checked={filters.isSeasonal}
+                            onChange={handleSeasonalToggle}
+                        />
+                    </label>
 
-            {renderFilterSection(
-                'Đánh giá người dùng',
-                <div className="space-y-2">
-                    {RATING_FILTERS.map(({ label, value }) => (
-                        <label key={value} className="flex items-center gap-2 text-gray-700">
-                            <input
-                                type="radio"
-                                name="rating"
-                                className="border-gray-400"
-                                checked={filters.rating === value}
-                                onChange={() => handleRatingSelect(value)}
-                            />
-                            <span className="flex-1">{label}</span>
-                            <span className="text-xs text-gray-500">
-                                ({getCount(filterMeta.ratings, String(value))})
-                            </span>
-                        </label>
-                    ))}
-                    {filters.rating && (
-                        <button
-                            type="button"
-                            className="text-xs text-primary mt-2"
-                            onClick={() => handleRatingSelect(filters.rating)}
-                        >
-                            Bỏ lọc đánh giá
-                        </button>
-                    )}
+                    <label className="flex items-center justify-between text-gray-700">
+                        <div>
+                            <p className="font-medium">Hàng thanh lý</p>
+                            <p className="text-xs text-gray-500">
+                                ({filterMeta.clearanceCount} sản phẩm)
+                            </p>
+                        </div>
+                        <input
+                            type="checkbox"
+                            className="h-5 w-5 rounded border-gray-400"
+                            checked={filters.isClearance}
+                            onChange={handleClearanceToggle}
+                        />
+                    </label>
                 </div>
-            )}
-
-            {renderFilterSection(
-                'Khuyến mãi',
-                <label className="flex items-center justify-between text-gray-700">
-                    <div>
-                        <p className="font-medium">Chỉ hiển thị sản phẩm đang giảm giá</p>
-                        <p className="text-xs text-gray-500">
-                            ({filterMeta.onSaleCount} sản phẩm)
-                        </p>
-                    </div>
-                    <input
-                        type="checkbox"
-                        className="h-5 w-5 rounded border-gray-400"
-                        checked={filters.onSaleOnly}
-                        onChange={handleSaleToggle}
-                        disabled={!filterMeta.onSaleCount}
-                    />
-                </label>
             )}
         </div>
     );
@@ -621,6 +495,28 @@ function SearchResultPage() {
         </div>
     );
 
+    const renderHistory = () => (
+        history && history.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap bg-white px-4 py-3 rounded-lg shadow border border-gray-200">
+                <span className="text-sm text-gray-600">Lịch sử tìm kiếm:</span>
+                {history.slice(0, 8).map((item) => (
+                    <button
+                        key={item.id || item.keyword}
+                        type="button"
+                        onClick={() => handleHistoryClick(item.keyword)}
+                        className="text-sm px-3 py-1 rounded-full bg-gray-100 hover:bg-primary hover:text-white transition"
+                    >
+                        {item.keyword}
+                    </button>
+                ))}
+            </div>
+        )
+    );
+
+    useEffect(() => {
+        fetchHistory();
+    }, [fetchHistory, keyword]);
+
     return (
         <div className="bg-gray-50 min-h-screen">
             <div className="container mx-auto px-4 py-6">
@@ -642,6 +538,8 @@ function SearchResultPage() {
                         {renderSorting()}
                     </div>
                 </div>
+
+                {renderHistory()}
 
                 {renderTagList()}
 

@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -77,14 +78,22 @@ public class AuthService {
 
     // ---------------------- LOGIN ----------------------
     public AuthResponse login(LoginRequest request) {
-        // 🔍 Chỉ tìm theo email
+        // 🔍 Tìm theo email hoặc username
         Optional<User> userOpt = userRepository.findByEmail(request.getUsername());
+        if (userOpt.isEmpty()) {
+            List<User> users = userRepository.findAllByUsername(request.getUsername());
+            if (!users.isEmpty()) {
+                userOpt = Optional.of(users.get(0));
+            }
+        }
 
-        User user = userOpt.orElseThrow(() -> new RuntimeException("Email không tồn tại"));
+        User user = userOpt.orElseThrow(() -> new RuntimeException("Tài khoản không tồn tại"));
 
-        // 🚫 Chặn người dùng chưa xác minh hoặc chưa kích hoạt
-        if (!user.isVerified() || !user.getIsActive()) {
-            throw new RuntimeException("Tài khoản chưa được xác minh hoặc chưa kích hoạt");
+        // 🚫 Chặn CUSTOMER chưa xác minh - ADMIN/STAFF không cần xác minh
+        if ("CUSTOMER".equals(user.getRole())) {
+            if (!user.isVerified() || !user.getIsActive()) {
+                throw new RuntimeException("Tài khoản chưa được xác minh hoặc chưa kích hoạt");
+            }
         }
 
         // 🔐 Kiểm tra mật khẩu

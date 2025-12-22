@@ -4,6 +4,8 @@ import { useDispatch } from 'react-redux';
 import { PublicPage, PrivatePage } from './page';
 import { LoginUser } from './redux/Actions';
 import ScrollToTop from './Component/StopScroll';
+import ChatBot from './Component/ChatBot/ChatBot';
+
 function App() {
   const dispatch=useDispatch();
   useEffect(() => {
@@ -23,6 +25,7 @@ function App() {
     <Router>
       <div className='App'>
         <ScrollToTop />
+        <ChatBot /> {/* Tích hợp Chatbot toàn trang */}
         <Routes>
         {
 

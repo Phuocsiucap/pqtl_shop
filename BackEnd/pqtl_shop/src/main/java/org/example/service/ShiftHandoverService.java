@@ -438,6 +438,8 @@ public class ShiftHandoverService {
         
         // Trạng thái và ghi chú
         order.setStatus("COMPLETED");
+        order.setChannel("POS"); // Kênh POS
+        order.setCompletedAt(LocalDateTime.now()); // Hoàn tất ngay khi tạo
         order.setNotes((String) orderData.get("notes"));
         order.setOrderTime(LocalDateTime.now());
         order.setCreatedAt(LocalDateTime.now());

@@ -32,37 +32,6 @@ public class AdminService {
     @Autowired
     private OrderRepository orderRepository;
 
-    // ==================== AUTHENTICATION ====================
-    /**
-     * Admin login - Kiểm tra username/password
-     */
-    public Map<String, Object> adminLogin(String username, String password) throws Exception {
-        Optional<User> user = userRepository.findByUsername(username);
-        
-        if (user.isEmpty()) {
-            throw new Exception("Tài khoản không tồn tại");
-        }
-        
-        User adminUser = user.get();
-        
-        // Kiểm tra password (trong thực tế nên dùng BCryptPasswordEncoder)
-        if (!adminUser.getPassword().equals(password)) {
-            throw new Exception("Mật khẩu không chính xác");
-        }
-        
-        // Kiểm tra quyền admin
-        if (adminUser.getRole() == null || !adminUser.getRole().equals("ADMIN")) {
-            throw new Exception("Người dùng không có quyền admin");
-        }
-        
-        Map<String, Object> response = new HashMap<>();
-        response.put("accessToken", "token_" + adminUser.getId());
-        response.put("refreshToken", "refresh_" + adminUser.getId());
-        response.put("user", adminUser);
-        
-        return response;
-    }
-
     // ==================== USER MANAGEMENT ====================
     /**
      * Lấy tất cả người dùng
@@ -136,10 +105,10 @@ public class AdminService {
             product.setStockQuantity(Integer.parseInt(productData.get("stockQuantity").toString()));
         }
         
+
         // Set finalPrice
-        double price = product.getPrice();
-        double discount = product.getDiscount();
-        product.setFinalPrice(price - discount);
+        // Sẽ được tính lại ở cuối hàm sau khi có đầy đủ thông tin (bao gồm clearance)
+
         
         // Set các trường ngày
         if (productData.get("manufacturingDate") != null && !productData.get("manufacturingDate").toString().isEmpty()) {
@@ -171,7 +140,10 @@ public class AdminService {
         
         // Cập nhật trạng thái hết hạn nếu có
         product.updateExpiryStatus();
-        
+
+        // Tính toán lại finalPrice
+        calculateAndSetFinalPrice(product);
+
         return productRepository.save(product);
     }
 
@@ -239,9 +211,8 @@ public class AdminService {
         }
         
         // Cập nhật finalPrice
-        double price = existingProduct.getPrice();
-        double discount = existingProduct.getDiscount();
-        existingProduct.setFinalPrice(price - discount);
+        // Sẽ được tính lại ở cuối hàm sau khi có đầy đủ thông tin
+
         
         // Cập nhật các trường ngày
         if (productData.get("manufacturingDate") != null && !productData.get("manufacturingDate").toString().isEmpty()) {
@@ -267,7 +238,10 @@ public class AdminService {
         
         // Cập nhật trạng thái hết hạn
         existingProduct.updateExpiryStatus();
-        
+
+        // Tính toán lại finalPrice
+        calculateAndSetFinalPrice(existingProduct);
+
         return productRepository.save(existingProduct);
     }
 
@@ -318,6 +292,8 @@ public class AdminService {
         
         Order order = orderOpt.get();
         order.setShipping_status(shippingStatus);
+        // Đồng bộ orderStatus với shipping_status để khách hàng cũng thấy trạng thái mới
+        order.setOrderStatus(shippingStatus);
         order.setUpdatedAt(LocalDateTime.now());
         
         return orderRepository.save(order);
@@ -360,13 +336,25 @@ public class AdminService {
     public List<Map<String, Object>> getMonthlyRevenue() {
         List<Order> allOrders = orderRepository.findAll();
         
-        // Nhóm theo tháng
-        Map<YearMonth, Double> monthlyRevenue = new HashMap<>();
+        // Nhóm theo tháng và loại (Online/POS)
+        Map<YearMonth, Map<String, Double>> monthlyRevenue = new HashMap<>();
         
         for (Order order : allOrders) {
             if (order.getOrderDate() != null) {
                 YearMonth month = YearMonth.from(order.getOrderDate());
-                monthlyRevenue.put(month, monthlyRevenue.getOrDefault(month, 0.0) + order.getFinalAmount());
+                Map<String, Double> stats = monthlyRevenue.getOrDefault(month, new HashMap<>());
+                
+                double amount = order.getFinalAmount();
+                stats.put("total", stats.getOrDefault("total", 0.0) + amount);
+                
+                String orderCode = order.getOrder_id();
+                if (orderCode != null && orderCode.startsWith("POS")) {
+                    stats.put("pos", stats.getOrDefault("pos", 0.0) + amount);
+                } else {
+                    stats.put("online", stats.getOrDefault("online", 0.0) + amount);
+                }
+                
+                monthlyRevenue.put(month, stats);
             }
         }
         
@@ -374,12 +362,14 @@ public class AdminService {
         List<Map<String, Object>> result = new ArrayList<>();
         for (int i = 11; i >= 0; i--) {
             YearMonth month = YearMonth.now().minusMonths(i);
-            double revenue = monthlyRevenue.getOrDefault(month, 0.0);
+            Map<String, Double> stats = monthlyRevenue.getOrDefault(month, new HashMap<>());
             
             Map<String, Object> monthData = new HashMap<>();
             monthData.put("month", month.getMonthValue());
             monthData.put("year", month.getYear());
-            monthData.put("revenue", revenue);
+            monthData.put("revenue", stats.getOrDefault("total", 0.0));
+            monthData.put("onlineRevenue", stats.getOrDefault("online", 0.0));
+            monthData.put("posRevenue", stats.getOrDefault("pos", 0.0));
             
             result.add(monthData);
         }
@@ -393,8 +383,8 @@ public class AdminService {
     public List<Map<String, Object>> getWeeklyRevenue() {
         List<Order> allOrders = orderRepository.findAll();
         
-        // Nhóm theo tuần
-        Map<Long, Double> weeklyRevenue = new HashMap<>();
+        // Nhóm theo tuần và loại (Online/POS)
+        Map<Long, Map<String, Double>> weeklyRevenue = new HashMap<>();
         
         for (Order order : allOrders) {
             if (order.getOrderDate() != null) {
@@ -402,7 +392,20 @@ public class AdminService {
                         LocalDate.of(2024, 1, 1),
                         order.getOrderDate().toLocalDate()
                 );
-                weeklyRevenue.put(weekNumber, weeklyRevenue.getOrDefault(weekNumber, 0.0) + order.getFinalAmount());
+                
+                Map<String, Double> stats = weeklyRevenue.getOrDefault(weekNumber, new HashMap<>());
+                
+                double amount = order.getFinalAmount();
+                stats.put("total", stats.getOrDefault("total", 0.0) + amount);
+                
+                String orderCode = order.getOrder_id();
+                if (orderCode != null && orderCode.startsWith("POS")) {
+                    stats.put("pos", stats.getOrDefault("pos", 0.0) + amount);
+                } else {
+                    stats.put("online", stats.getOrDefault("online", 0.0) + amount);
+                }
+                
+                weeklyRevenue.put(weekNumber, stats);
             }
         }
         
@@ -413,11 +416,13 @@ public class AdminService {
                     LocalDate.of(2024, 1, 1),
                     LocalDate.now()
             ) - i;
-            double revenue = weeklyRevenue.getOrDefault(weekNumber, 0.0);
+            Map<String, Double> stats = weeklyRevenue.getOrDefault(weekNumber, new HashMap<>());
             
             Map<String, Object> weekData = new HashMap<>();
             weekData.put("week", weekNumber);
-            weekData.put("revenue", revenue);
+            weekData.put("revenue", stats.getOrDefault("total", 0.0));
+            weekData.put("onlineRevenue", stats.getOrDefault("online", 0.0));
+            weekData.put("posRevenue", stats.getOrDefault("pos", 0.0));
             
             result.add(weekData);
         }
@@ -1039,7 +1044,9 @@ public class AdminService {
         Product product = productOpt.get();
         product.setIsClearance(true);
         product.setClearanceDiscount(clearanceDiscount != null ? clearanceDiscount : 30.0);
-        
+
+        calculateAndSetFinalPrice(product);
+
         return productRepository.save(product);
     }
     
@@ -1056,7 +1063,9 @@ public class AdminService {
         Product product = productOpt.get();
         product.setIsClearance(false);
         product.setClearanceDiscount(null);
-        
+
+        calculateAndSetFinalPrice(product);
+
         return productRepository.save(product);
     }
     
@@ -1080,6 +1089,7 @@ public class AdminService {
             if (product.getIsClearance() == null || !product.getIsClearance()) {
                 product.setIsClearance(true);
                 product.setClearanceDiscount(clearanceDiscount != null ? clearanceDiscount : 30.0);
+                calculateAndSetFinalPrice(product);
                 productRepository.save(product);
                 markedCount++;
             }
@@ -1165,9 +1175,9 @@ public class AdminService {
     public Map<String, Object> fixMissingImages() {
         List<Product> allProducts = productRepository.findAll();
         List<String> fixedProductIds = new ArrayList<>();
-        
+
         String placeholderImage = "https://via.placeholder.com/400x400?text=No+Image";
-        
+
         for (Product product : allProducts) {
             if (product.getImage() == null || product.getImage().isEmpty()) {
                 product.setImage(placeholderImage);
@@ -1175,12 +1185,22 @@ public class AdminService {
                 fixedProductIds.add(product.getId());
             }
         }
-        
+
         Map<String, Object> result = new HashMap<>();
         result.put("fixedCount", fixedProductIds.size());
         result.put("fixedProductIds", fixedProductIds);
         result.put("message", "Đã thêm ảnh placeholder cho " + fixedProductIds.size() + " sản phẩm");
-        
+
         return result;
+    }
+
+    private void calculateAndSetFinalPrice(Product product) {
+        if (Boolean.TRUE.equals(product.getIsClearance()) && product.getClearanceDiscount() != null) {
+            product.setFinalPrice(product.getPrice() * (1 - product.getClearanceDiscount() / 100.0));
+        } else {
+            // Đảm bảo discount không null
+            double discount = product.getDiscount() > 0 ? product.getDiscount() : 0;
+            product.setFinalPrice(product.getPrice() - discount);
+        }
     }
 }

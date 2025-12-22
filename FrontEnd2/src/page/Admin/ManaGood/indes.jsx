@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { FaEye, FaEdit, FaTrashAlt, FaTag, FaFilter, FaExclamationTriangle } from "react-icons/fa";
+import { FaEye, FaEdit, FaTrashAlt, FaTag, FaFilter, FaExclamationTriangle, FaLock } from "react-icons/fa";
 import defaultImage from "../../../assets/images/placeholder.png";
 import placeholderImg from "../../../assets/images/placeholder.png";
 import ProductDetailModal from "./ProductDetailModal ";
@@ -7,7 +7,8 @@ import ProductEditModal from "./ProductEditModal ";
 import AddProductModal from "./AddProductModal";
 import { request1, request } from "../../../utils/request";
 import { getCSRFTokenFromCookie } from "../../../Component/Token/getCSRFToken";
-const ProductList = () => {
+
+const ProductList = ({ userRole }) => {
   const [products, setProducts] = useState([]);
   const access_token = getCSRFTokenFromCookie("access_token_admin");
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -18,6 +19,14 @@ const ProductList = () => {
   const [filterStatus, setFilterStatus] = useState("all"); // all, clearance, nearExpiry, expired, normal
   const [searchTerm, setSearchTerm] = useState("");
   const productsPerPage = 10;
+
+  // Kiểm tra quyền STAFF
+  const isStaff = userRole === "STAFF";
+
+  // Hàm hiển thị thông báo cho STAFF
+  const showStaffAlert = (action) => {
+    alert(`Bạn không có quyền ${action} sản phẩm.\nVui lòng liên hệ Admin để thực hiện chức năng này.`);
+  };
 
   // Multiple selection
   const [selectedProducts, setSelectedProducts] = useState([]);
@@ -37,26 +46,78 @@ const ProductList = () => {
     return Math.ceil((new Date(expiryDate) - new Date()) / (1000 * 60 * 60 * 24));
   };
 
-  // Get status badge
-  const getStatusBadge = (product) => {
+  // Get status badges - hiển thị nhiều trạng thái
+  const getStatusBadges = (product) => {
     const days = getDaysUntilExpiry(product.expiryDate);
+    const badges = [];
 
+    // Trạng thái thanh lý
     if (product.isClearance) {
-      return <span className="px-2 py-1 bg-purple-600 text-white text-xs rounded-full">Thanh lý -{product.clearanceDiscount}%</span>;
+      badges.push(
+        <span key="clearance" className="px-2 py-1 bg-purple-600 text-white text-xs rounded-full">
+          Thanh lý -{product.clearanceDiscount}%
+        </span>
+      );
     }
+
+    // Trạng thái theo mùa
+    if (product.isSeasonal) {
+      badges.push(
+        <span key="seasonal" className="px-2 py-1 bg-blue-500 text-white text-xs rounded-full">
+          Theo mùa
+        </span>
+      );
+    }
+
+    // Trạng thái hết hạn
     if (days !== null && days < 0) {
-      return <span className="px-2 py-1 bg-red-600 text-white text-xs rounded-full">Hết hạn</span>;
+      badges.push(
+        <span key="expired" className="px-2 py-1 bg-red-600 text-white text-xs rounded-full">
+          Hết hạn
+        </span>
+      );
+    } else if (days !== null && days <= 7) {
+      badges.push(
+        <span key="nearexpiry" className="px-2 py-1 bg-red-500 text-white text-xs rounded-full">
+          Còn {days} ngày
+        </span>
+      );
+    } else if (days !== null && days <= 30) {
+      badges.push(
+        <span key="soonexpiry" className="px-2 py-1 bg-orange-500 text-white text-xs rounded-full">
+          Sắp hết hạn
+        </span>
+      );
     }
-    if (days !== null && days <= 7) {
-      return <span className="px-2 py-1 bg-red-500 text-white text-xs rounded-full">Còn {days} ngày</span>;
+
+    // Trạng thái giảm giá (không phải thanh lý)
+    if (!product.isClearance && product.discount > 0) {
+      badges.push(
+        <span key="discount" className="px-2 py-1 bg-green-500 text-white text-xs rounded-full">
+          Giảm giá
+        </span>
+      );
     }
-    if (days !== null && days <= 30) {
-      return <span className="px-2 py-1 bg-orange-500 text-white text-xs rounded-full">Sắp hết hạn</span>;
+
+    // Nếu không có trạng thái nào
+    if (badges.length === 0) {
+      badges.push(
+        <span key="normal" className="px-2 py-1 bg-gray-200 text-gray-600 text-xs rounded-full">
+          Bình thường
+        </span>
+      );
     }
-    if (product.discount > 0) {
-      return <span className="px-2 py-1 bg-green-500 text-white text-xs rounded-full">Giảm giá</span>;
-    }
-    return <span className="px-2 py-1 bg-gray-200 text-gray-600 text-xs rounded-full">Bình thường</span>;
+
+    return (
+      <div className="flex flex-wrap gap-1 justify-center">
+        {badges}
+      </div>
+    );
+  };
+
+  // Backward compatible function
+  const getStatusBadge = (product) => {
+    return getStatusBadges(product);
   };
 
   // Calculate profit margin
@@ -73,12 +134,20 @@ const ProductList = () => {
 
   // Hàm mở modal chỉnh sửa sản phẩm
   const editProduct = (product) => {
+    if (isStaff) {
+      showStaffAlert("sửa");
+      return;
+    }
     setSelectedProduct(product);
     setIsEditModalOpen(true);
   };
 
   // Hàm xóa sản phẩm
   const deleteProduct = async (id) => {
+    if (isStaff) {
+      showStaffAlert("xóa");
+      return;
+    }
     const confirmDelete = window.confirm(
       "Bạn có chắc chắn muốn xóa sản phẩm này?"
     );
@@ -144,6 +213,10 @@ const ProductList = () => {
 
   // Bulk delete products
   const deleteMultipleProducts = async () => {
+    if (isStaff) {
+      showStaffAlert("xóa");
+      return;
+    }
     if (selectedProducts.length === 0) {
       alert("Vui lòng chọn ít nhất một sản phẩm");
       return;
@@ -228,6 +301,12 @@ const ProductList = () => {
     let matchStatus = true;
 
     switch (filterStatus) {
+      case "all":
+        matchStatus = true;
+        break;
+      case "seasonal":
+        matchStatus = product.isSeasonal === true;
+        break;
       case "clearance":
         matchStatus = product.isClearance === true;
         break;
@@ -241,7 +320,7 @@ const ProductList = () => {
         matchStatus = product.discount > 0;
         break;
       case "normal":
-        matchStatus = !product.isClearance && (days === null || days > 30) && (!product.discount || product.discount === 0);
+        matchStatus = !product.isClearance && !product.isSeasonal && (days === null || days > 30) && (!product.discount || product.discount === 0);
         break;
       default:
         matchStatus = true;
@@ -266,6 +345,10 @@ const ProductList = () => {
 
   // Mark as clearance
   const markAsClearance = async (productId, discount) => {
+    if (isStaff) {
+      showStaffAlert("đánh dấu thanh lý");
+      return;
+    }
     try {
       await request1.post(`v1/admin/clearance/${productId}/?discount=${discount}`, {}, {
         headers: {
@@ -292,6 +375,10 @@ const ProductList = () => {
 
   // Unmark clearance
   const unmarkClearance = async (productId) => {
+    if (isStaff) {
+      showStaffAlert("hủy thanh lý");
+      return;
+    }
     try {
       await request1.delete(`v1/admin/clearance/${productId}/`, {
         headers: {
@@ -346,11 +433,12 @@ const ProductList = () => {
             className="px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">Tất cả</option>
-            <option value="clearance">🏷️ Đang thanh lý</option>
-            <option value="nearExpiry">⏰ Sắp hết hạn</option>
-            <option value="expired">❌ Đã hết hạn</option>
-            <option value="sale">💰 Đang giảm giá</option>
-            <option value="normal">✅ Bình thường</option>
+            <option value="seasonal">Theo mùa</option>
+            <option value="clearance">Đang thanh lý</option>
+            <option value="nearExpiry">Sắp hết hạn</option>
+            <option value="expired">Đã hết hạn</option>
+            <option value="sale">Đang giảm giá</option>
+            <option value="normal">Bình thường</option>
           </select>
 
           <button
@@ -360,7 +448,7 @@ const ProductList = () => {
             + Thêm sản phẩm
           </button>
 
-          {selectedProducts.length > 0 && (
+          {!isStaff && selectedProducts.length > 0 && (
             <button
               onClick={deleteMultipleProducts}
               className="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700 transition-colors flex items-center gap-2"
@@ -375,18 +463,20 @@ const ProductList = () => {
         <table className="min-w-full table-auto border-collapse">
           <thead className="bg-blue-500 text-white whitespace-nowrap">
             <tr>
-              <th className="px-4 py-3 text-center">
-                <div className="flex flex-col items-center gap-1">
-                  <input
-                    type="checkbox"
-                    checked={selectAll && currentProducts.length > 0}
-                    onChange={toggleSelectAll}
-                    className="w-5 h-5 cursor-pointer accent-blue-600 border-2 border-white rounded"
-                    title="Chọn tất cả"
-                  />
-                  <span className="text-xs">Chọn</span>
-                </div>
-              </th>
+              {!isStaff && (
+                <th className="px-4 py-3 text-center">
+                  <div className="flex flex-col items-center gap-1">
+                    <input
+                      type="checkbox"
+                      checked={selectAll && currentProducts.length > 0}
+                      onChange={toggleSelectAll}
+                      className="w-5 h-5 cursor-pointer accent-blue-600 border-2 border-white rounded"
+                      title="Chọn tất cả"
+                    />
+                    <span className="text-xs">Chọn</span>
+                  </div>
+                </th>
+              )}
               <th className="px-4 py-3 text-left">Hình ảnh</th>
               <th className="px-4 py-3 text-left">Tên sản phẩm</th>
               <th className="px-4 py-3 text-center">SL</th>
@@ -414,14 +504,16 @@ const ProductList = () => {
                             index % 2 === 0 ? "bg-gray-50" : "bg-white"
                     }`}
                 >
-                  <td className="px-4 py-3 text-center">
-                    <input
-                      type="checkbox"
-                      checked={selectedProducts.includes(product.id)}
-                      onChange={() => toggleSelectProduct(product.id)}
-                      className="w-5 h-5 cursor-pointer accent-blue-600 border-2 border-gray-300 rounded"
-                    />
-                  </td>
+                  {!isStaff && (
+                    <td className="px-4 py-3 text-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedProducts.includes(product.id)}
+                        onChange={() => toggleSelectProduct(product.id)}
+                        className="w-5 h-5 cursor-pointer accent-blue-600 border-2 border-gray-300 rounded"
+                      />
+                    </td>
+                  )}
                   <td className="px-4 py-3">
                     <img
                       src={product.image || defaultImage}
@@ -510,12 +602,12 @@ const ProductList = () => {
                       </button>
                       <button
                         onClick={() => editProduct(product)}
-                        className="text-yellow-500 hover:text-yellow-700 p-1"
-                        title="Chỉnh sửa"
+                        className={`p-1 ${isStaff ? "text-gray-400 cursor-not-allowed" : "text-yellow-500 hover:text-yellow-700"}`}
+                        title={isStaff ? "Liên hệ Admin để sửa" : "Chỉnh sửa"}
                       >
-                        <FaEdit />
+                        {isStaff ? <FaLock /> : <FaEdit />}
                       </button>
-                      {product.isClearance ? (
+                      {!isStaff && (product.isClearance ? (
                         <button
                           onClick={() => unmarkClearance(product.id)}
                           className="text-gray-500 hover:text-gray-700 p-1"
@@ -536,13 +628,13 @@ const ProductList = () => {
                         >
                           <FaTag />
                         </button>
-                      )}
+                      ))}
                       <button
                         onClick={() => deleteProduct(product.id)}
-                        className="text-red-500 hover:text-red-700 p-1"
-                        title="Xóa"
+                        className={`p-1 ${isStaff ? "text-gray-400 cursor-not-allowed" : "text-red-500 hover:text-red-700"}`}
+                        title={isStaff ? "Liên hệ Admin để xóa" : "Xóa"}
                       >
-                        <FaTrashAlt />
+                        {isStaff ? <FaLock /> : <FaTrashAlt />}
                       </button>
                     </div>
                   </td>

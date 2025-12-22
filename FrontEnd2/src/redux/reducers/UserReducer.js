@@ -2,7 +2,7 @@ import { Types } from "../Types";
 
 const initalState = {
   user: JSON.parse(localStorage.getItem("user")) || null,
-  status: false,
+  status: JSON.parse(localStorage.getItem("user")) ? true : false,
 };
 const UserReducer = (state = initalState, action) => {
   switch (action.type) {

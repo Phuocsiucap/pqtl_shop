@@ -104,7 +104,15 @@ function Address() {
         }
       } catch (error) {
         console.error("Lỗi khi thêm địa chỉ:", error.response?.data || error);
-        alert("Có lỗi khi thêm địa chỉ.");
+        if (error.response) {
+          if (error.response.status === 401) {
+            alert("Bạn không có quyền thêm địa chỉ.");
+          } else {
+            alert("Lỗi server khi thêm địa chỉ.");
+          }
+        } else {
+          alert("Lỗi mạng khi thêm địa chỉ.");
+        }
       }
     }
   };
@@ -134,7 +142,7 @@ function Address() {
     if (check()) {
       try {
         const response = await request1.put(
-          `user/addresses/${currentEditId}/`,
+          `user/addresses/${currentEditId}`,
           address,
           {
             headers: {
@@ -165,16 +173,30 @@ function Address() {
         }
       } catch (error) {
         console.error("Lỗi khi cập nhật địa chỉ:", error);
-        alert("Có lỗi khi cập nhật địa chỉ.");
+        if (error.response) {
+          if (error.response.status === 404) {
+            alert("Địa chỉ không tồn tại.");
+          } else if (error.response.status === 401) {
+            alert("Bạn không có quyền cập nhật địa chỉ.");
+          } else {
+            alert("Lỗi server khi cập nhật địa chỉ.");
+          }
+        } else {
+          alert("Lỗi mạng khi cập nhật địa chỉ.");
+        }
       }
     }
   };
 
   // Delete address API call
   const handleOnclickXoa = async (id) => {
+    if (!id) {
+      alert("Không thể xóa địa chỉ này.");
+      return;
+    }
     if (window.confirm("Bạn có chắc chắn muốn xóa địa chỉ này không ?")) {
       try {
-        const response = await request1.delete(`user/addresses/${id}/`, {
+        const response = await request1.delete(`user/addresses/${id}`, {
           headers: {
             Authorization: `Bearer ${access_token}`,
             "Content-Type": "application/json",
@@ -191,7 +213,17 @@ function Address() {
         }
       } catch (error) {
         console.error("Lỗi khi xóa địa chỉ:", error);
-        alert("Có lỗi khi xóa địa chỉ.");
+        if (error.response) {
+          if (error.response.status === 404) {
+            alert("Địa chỉ không tồn tại hoặc đã bị xóa.");
+          } else if (error.response.status === 401) {
+            alert("Bạn không có quyền xóa địa chỉ này.");
+          } else {
+            alert("Lỗi server khi xóa địa chỉ.");
+          }
+        } else {
+          alert("Lỗi mạng khi xóa địa chỉ.");
+        }
       }
     }
   };

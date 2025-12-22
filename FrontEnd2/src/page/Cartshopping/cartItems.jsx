@@ -2,6 +2,7 @@ import { HiPlusSm } from "react-icons/hi";
 import { RiSubtractFill } from "react-icons/ri";
 import { request1,request } from "../../utils/request";
 import { PricetoString } from "../../Component/Translate_Price";
+import { computeFinalPrice } from "../../utils/pricing";
 function CartItem({
   item,
   setCartItems,
@@ -22,7 +23,7 @@ function CartItem({
   const handleClickPlus = async () => {
     try {
       await request1.patch(
-        `cart/item.productId}`,
+        `cart/${item.productId}`,
         { "qty": item.qty + 1 },
         {
           headers: {
@@ -59,7 +60,7 @@ function CartItem({
       );
       setCartItems((prev) =>
         prev.map((i) =>
-          i.id === item.id ? { ...i, qty: i.qty - 1 } : i
+          i.productId === item.productId ? { ...i, qty: i.qty - 1 } : i
         )
       );
     } catch (error) {
@@ -108,48 +109,19 @@ function CartItem({
       <div className="basis-[60%] flex items-center text-[8px] md:text-xs lg:text-base px-2 justify-around">
         {/* /* giá cả */ }
         <div className="flex flex-col items-start">
-          {/* Kiểm tra thanh lý trước */}
-          {item.isClearance && item.clearanceDiscount > 0 ? (
-            <>
-              {/* Badge thanh lý */}
-              <span className="text-purple-600 text-[8px] md:text-xs font-medium mb-1">
-                🏷️ Thanh lý -{item.clearanceDiscount}%
-              </span>
-              {/* Giá cũ */}
-              <p className="text-gray-500 line-through text-xs md:text-sm">
-                {PricetoString(item.price.toString().split(".")[0])}
-              </p>
-              {/* Giá thanh lý */}
-              <p className="text-purple-600 font-semibold">
-                {PricetoString(
-                  Math.round(item.price * (1 - item.clearanceDiscount / 100))
-                    .toString()
-                    .split(".")[0]
-                )}
-              </p>
-            </>
-          ) : item.discount ? (
-            <>
-              {/* Giá cũ */}
-              <p className="text-gray-500 line-through text-xs md:text-sm">
-                {PricetoString(item.price.toString().split(".")[0])}
-              </p>
-              {/* Giá sau giảm */}
-              <p className="text-red-500 font-semibold">
-                {PricetoString(
-                  Math.round(
-                    item.price * (1 - (item.discount > 1 ? item.discount / 100 : item.discount))
-                  )
-                    .toString()
-                    .split(".")[0]
-                )}
-              </p>
-            </>
-          ) : (
-            <p className="text-red-500 font-semibold">
+          {item.isClearance && item.clearanceDiscount > 0 && (
+            <span className="text-purple-600 text-[8px] md:text-xs font-medium mb-1">
+              🏷️ Thanh lý -{item.clearanceDiscount}%
+            </span>
+          )}
+          {item.discount > 0 && !(item.isClearance && item.clearanceDiscount > 0) && (
+            <p className="text-gray-500 line-through text-xs md:text-sm">
               {PricetoString(item.price.toString().split(".")[0])}
             </p>
           )}
+          <p className={`${item.isClearance ? "text-purple-600" : "text-red-500"} font-semibold`}>
+            {PricetoString(Math.round(computeFinalPrice(item)).toString().split(".")[0])}
+          </p>
         </div>
         {/* /* số lượng sản phẩm */ }
         <div className="font-bold">

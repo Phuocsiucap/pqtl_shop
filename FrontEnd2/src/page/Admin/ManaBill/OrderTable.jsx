@@ -1,18 +1,20 @@
 import React from "react";
 import { PricetoString } from "../../../Component/Translate_Price/index.jsx";
+import { FaTimes } from "react-icons/fa";
+
 // Component xử lý bảng đơn hàng
-const OrderTable = ({ orders, onViewDetails, onConfirmOrder }) => {
+const OrderTable = ({ orders, onViewDetails, onConfirmOrder, onCancelOrder }) => {
   const getStatusColor = (status) => {
     switch (status) {
       case "Chờ xác nhận":
-        return "text-green-500";
+        return "text-yellow-500";
       case "Đã xác nhận":
         return "text-green-500";
       case "Đang giao":
         return "text-blue-500";
       case "Đã giao":
-        return "text-blue-500";
-      case "Đã hủy":
+        return "text-purple-500";
+      case "Hủy":
         return "text-red-500";
       default:
         return "text-gray-500"; // Màu mặc định nếu không khớp trạng thái
@@ -52,23 +54,31 @@ const OrderTable = ({ orders, onViewDetails, onConfirmOrder }) => {
               {order.shipping_status || "Chờ xác nhận"}
             </td>
             <td className="border px-4 py-2">
-              <button
-                onClick={() => onViewDetails(order)}
-                className="bg-blue-500 text-white px-4 py-2 rounded-md mr-2"
-              >
-                Xem chi tiết
-              </button>
-              {(order.shipping_status === "Chờ xác nhận" ||
-                order.shipping_status === "Đã xác nhận" ||
-                order.shipping_status === "Đang giao" ||
-                !order.shipping_status) && (
+              <div className="flex gap-2 justify-center flex-wrap">
                 <button
-                  onClick={() => onConfirmOrder(order)}
-                  className="bg-green-500 text-white px-4 py-2 rounded-md"
+                  onClick={() => onViewDetails(order)}
+                  className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
                 >
-                  Cập nhật
+                  Xem chi tiết
                 </button>
-              )}
+                {order.shipping_status !== "Đã giao" && order.shipping_status !== "Hủy" && (
+                  <button
+                    onClick={() => onConfirmOrder(order)}
+                    className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600"
+                  >
+                    Cập nhật
+                  </button>
+                )}
+                {order.shipping_status !== "Hủy" && order.shipping_status !== "Đã giao" && (
+                  <button
+                    onClick={() => onCancelOrder(order)}
+                    className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 flex items-center gap-1"
+                    title="Hủy đơn hàng"
+                  >
+                    <FaTimes /> Hủy
+                  </button>
+                )}
+              </div>
             </td>
           </tr>
         ))}

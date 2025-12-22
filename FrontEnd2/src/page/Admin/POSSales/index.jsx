@@ -13,7 +13,9 @@ import {
     FaReceipt,
     FaCheck,
     FaTimes,
-    FaBarcode
+    FaBarcode,
+    FaQrcode,
+    FaSpinner
 } from "react-icons/fa";
 import { getCSRFTokenFromCookie } from "../../../Component/Token/getCSRFToken";
 import {
@@ -22,7 +24,7 @@ import {
     getCurrentShift,
     getPOSOrdersByShift
 } from "../../../api/shift";
-import { getFullImageUrl } from "../../../utils/request";
+import { getFullImageUrl, request1 } from "../../../utils/request";
 
 const POSSales = () => {
     // States
@@ -47,6 +49,9 @@ const POSSales = () => {
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [lastOrder, setLastOrder] = useState(null);
+    const [isProcessingVNPay, setIsProcessingVNPay] = useState(false);
+    const [vnpayQRUrl, setVnpayQRUrl] = useState(null);
+    const [showVNPayModal, setShowVNPayModal] = useState(false);
 
     const searchInputRef = useRef(null);
     const access_token = getCSRFTokenFromCookie("access_token_admin");
@@ -127,7 +132,7 @@ const POSSales = () => {
 
     const updateCartItemQuantity = (productId, newQuantity) => {
         const item = cart.find(i => i.productId === productId);
-        
+
         if (newQuantity <= 0) {
             removeFromCart(productId);
             return;
@@ -196,7 +201,87 @@ const POSSales = () => {
             }
         }
 
+        // Xử lý thanh toán VNPAY
+        if (paymentMethod === "VNPAY") {
+            await handleVNPayPayment();
+            return;
+        }
+
+        await processOrder();
+    };
+
+    // Xử lý thanh toán VNPAY
+    const handleVNPayPayment = async () => {
+        setIsProcessingVNPay(true);
         try {
+            const orderId = `POS${Date.now()}`;
+            const response = await request1.post(
+                "/vn/payment",
+                {
+                    order_id: orderId,
+                    amount: Math.round(calculateTotal()),
+                    order_desc: `POS - ${customerName || 'Khách vãng lai'} - ${cart.length} sản phẩm`,
+                    bank_code: "",
+                    language: "vn",
+                    returnUrl: window.location.origin + "/admin/pos" // Redirect xác định cho POS
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${access_token}`,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+
+            if (response.data.code === "00" && response.data.payment_url) {
+                // Lưu thông tin đơn hàng tạm để xử lý sau khi thanh toán thành công
+                localStorage.setItem("pendingPOSOrder", JSON.stringify({
+                    orderId,
+                    employeeId,
+                    employeeName,
+                    customerName: customerName || "Khách vãng lai",
+                    customerPhone,
+                    items: cart.map(item => ({
+                        productId: item.productId,
+                        quantity: item.quantity,
+                        discount: item.discount
+                    })),
+                    discount,
+                    paymentMethod: "VNPAY",
+                    notes,
+                    shiftId: currentShift.id
+                }));
+
+                // Mở cửa sổ thanh toán VNPAY trong popup hoặc redirect
+                setVnpayQRUrl(response.data.payment_url);
+                setShowVNPayModal(true);
+                setShowPaymentModal(false);
+            } else {
+                alert(response.data.message || "Không thể tạo thanh toán VNPAY");
+            }
+        } catch (error) {
+            console.error("VNPAY Error:", error);
+            alert("Có lỗi xảy ra khi kết nối VNPAY");
+        } finally {
+            setIsProcessingVNPay(false);
+        }
+    };
+
+    // Xử lý hoàn thành đơn hàng (sau khi thanh toán thành công)
+    const processOrder = async (overridePaymentMethod = null) => {
+        try {
+            const currentMethod = overridePaymentMethod || paymentMethod;
+
+            // Nếu là VNPAY và gọi từ polling (đã thanh toán thành công), không cần kiểm tra lại
+            // Nếu gọi thủ công, và là tiền mặt, cần kiểm tra đủ tiền
+            if (currentMethod === "CASH") {
+                const received = parseFloat(amountReceived) || 0;
+                if (received < calculateTotal()) {
+                    alert("Số tiền khách đưa không đủ!");
+                    return;
+                }
+            }
+
             const orderData = {
                 employeeId,
                 employeeName,
@@ -208,7 +293,7 @@ const POSSales = () => {
                     discount: item.discount
                 })),
                 discount,
-                paymentMethod,
+                paymentMethod: currentMethod,
                 amountReceived: parseFloat(amountReceived) || calculateTotal(),
                 notes
             };
@@ -216,18 +301,12 @@ const POSSales = () => {
             const order = await createPOSOrder(orderData, access_token);
             setLastOrder(order);
             setShowPaymentModal(false);
+            setShowVNPayModal(false);
             setShowSuccessModal(true);
+            setVnpayQRUrl(null); // Clear QR URL to stop polling
 
             // Reset form
-            setCart([]);
-            setCustomerName("");
-            setCustomerPhone("");
-            setPaymentMethod("CASH");
-            setAmountReceived("");
-            setDiscount(0);
-            setNotes("");
-
-            // Refresh recent orders
+            resetForm();
             checkShift();
 
         } catch (error) {
@@ -235,6 +314,110 @@ const POSSales = () => {
             alert(error.response?.data?.error || "Có lỗi xảy ra khi tạo đơn hàng!");
         }
     };
+
+    const resetForm = () => {
+        setCart([]);
+        setCustomerName("");
+        setCustomerPhone("");
+        setPaymentMethod("CASH");
+        setAmountReceived("");
+        setDiscount(0);
+        setNotes("");
+        setVnpayQRUrl(null);
+        localStorage.removeItem("pendingPOSOrder");
+    };
+
+    // Polling kiểm tra trạng thái thanh toán VNPAY
+    useEffect(() => {
+        let pollingInterval;
+
+        if (showVNPayModal && vnpayQRUrl) {
+            const pendingOrderStr = localStorage.getItem("pendingPOSOrder");
+            if (pendingOrderStr) {
+                const pendingOrder = JSON.parse(pendingOrderStr);
+                const orderId = pendingOrder.orderId;
+
+                // Hàm kiểm tra trạng thái
+                const checkStatus = async () => {
+                    try {
+                        const response = await request1.get(`/vn/transaction/${orderId}`, {
+                            headers: { Authorization: `Bearer ${access_token}` }
+                        });
+
+                        if (response.data && response.data.transactionStatus === "SUCCESS") {
+                            // Thanh toán thành công!
+                            clearInterval(pollingInterval);
+                            setShowVNPayModal(false);
+                            setVnpayQRUrl(null);
+
+                            // Gọi tạo đơn hàng
+                            await processOrder("VNPAY");
+                        }
+                    } catch (error) {
+                        // Bỏ qua lỗi 404 nếu chưa có transaction hoặc lỗi mạng tạm thời
+                        console.log("Checking payment status...", error);
+                    }
+                };
+
+                // Polling mỗi 2 giây
+                pollingInterval = setInterval(checkStatus, 2000);
+            }
+        }
+
+        return () => {
+            if (pollingInterval) clearInterval(pollingInterval);
+        };
+    }, [showVNPayModal, vnpayQRUrl]);
+
+    // Kiểm tra kết quả thanh toán VNPAY (khi user quay lại từ VNPAY)
+    useEffect(() => {
+        const checkVNPayResult = async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const vnp_ResponseCode = urlParams.get('vnp_ResponseCode');
+
+            if (vnp_ResponseCode) {
+                const pendingOrder = JSON.parse(localStorage.getItem("pendingPOSOrder") || "null");
+
+                if (vnp_ResponseCode === "00" && pendingOrder) {
+                    // Thanh toán thành công, gọi backend để update transaction status
+                    try {
+                        const response = await request1.get(`/vn/payment-return${window.location.search}`, {
+                            headers: { Authorization: `Bearer ${access_token}` }
+                        });
+
+                        if (response.data.code !== "00") {
+                            alert("Lỗi xác thực thanh toán: " + response.data.message);
+                            return;
+                        }
+
+                        console.log("Transaction updated successfully");
+                        // Không tạo đơn hàng ở đây, để tab cũ polling và tạo.
+
+                    } catch (error) {
+                        console.error("Error updating transaction:", error);
+                        alert("Có lỗi xảy ra khi xác thực thanh toán");
+                        return;
+                    }
+
+                    if (window.opener) {
+                        alert("Thanh toán thành công! Cửa sổ sẽ đóng sau 5 giây.");
+                        setTimeout(() => {
+                            window.close();
+                        }, 5000);
+                        return; // Stop execution to prevent re-render issues in popup
+                    }
+                } else if (pendingOrder) {
+                    alert("Thanh toán VNPAY không thành công. Vui lòng thử lại.");
+                    localStorage.removeItem("pendingPOSOrder");
+                }
+
+                // Clear URL params
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        };
+
+        checkVNPayResult();
+    }, []);
 
     const quickCashAmounts = [50000, 100000, 200000, 500000, 1000000];
 
@@ -293,9 +476,8 @@ const POSSales = () => {
                                 <div
                                     key={product.id}
                                     onClick={() => addToCart(product)}
-                                    className={`bg-white rounded-lg shadow p-3 cursor-pointer hover:shadow-lg transition ${
-                                        product.stockQuantity < 1 ? 'opacity-50' : ''
-                                    }`}
+                                    className={`bg-white rounded-lg shadow p-3 cursor-pointer hover:shadow-lg transition ${product.stockQuantity < 1 ? 'opacity-50' : ''
+                                        }`}
                                 >
                                     <img
                                         src={getFullImageUrl(product.image)}
@@ -309,13 +491,12 @@ const POSSales = () => {
                                         <p className="text-sm font-bold text-blue-600">
                                             {formatCurrency(product.finalPrice)}
                                         </p>
-                                        <span className={`text-xs px-2 py-1 rounded ${
-                                            product.stockQuantity > 10 
-                                                ? 'bg-green-100 text-green-700'
-                                                : product.stockQuantity > 0
-                                                    ? 'bg-yellow-100 text-yellow-700'
-                                                    : 'bg-red-100 text-red-700'
-                                        }`}>
+                                        <span className={`text-xs px-2 py-1 rounded ${product.stockQuantity > 10
+                                            ? 'bg-green-100 text-green-700'
+                                            : product.stockQuantity > 0
+                                                ? 'bg-yellow-100 text-yellow-700'
+                                                : 'bg-red-100 text-red-700'
+                                            }`}>
                                             {product.stockQuantity > 0 ? `SL: ${product.stockQuantity}` : 'Hết hàng'}
                                         </span>
                                     </div>
@@ -480,40 +661,29 @@ const POSSales = () => {
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     Phương thức thanh toán
                                 </label>
-                                <div className="grid grid-cols-3 gap-2">
+                                <div className="grid grid-cols-4 gap-2">
                                     <button
                                         onClick={() => setPaymentMethod("CASH")}
-                                        className={`p-3 rounded-lg border-2 flex flex-col items-center ${
-                                            paymentMethod === "CASH"
-                                                ? "border-green-500 bg-green-50"
-                                                : "border-gray-200 hover:border-gray-300"
-                                        }`}
+                                        className={`p-3 rounded-lg border-2 flex flex-col items-center ${paymentMethod === "CASH"
+                                            ? "border-green-500 bg-green-50"
+                                            : "border-gray-200 hover:border-gray-300"
+                                            }`}
                                     >
                                         <FaMoneyBillWave className={`text-2xl ${paymentMethod === "CASH" ? "text-green-500" : "text-gray-400"}`} />
-                                        <span className="text-sm mt-1">Tiền mặt</span>
+                                        <span className="text-xs mt-1">Tiền mặt</span>
                                     </button>
+
                                     <button
-                                        onClick={() => setPaymentMethod("BANK_TRANSFER")}
-                                        className={`p-3 rounded-lg border-2 flex flex-col items-center ${
-                                            paymentMethod === "BANK_TRANSFER"
-                                                ? "border-blue-500 bg-blue-50"
-                                                : "border-gray-200 hover:border-gray-300"
-                                        }`}
+                                        onClick={() => setPaymentMethod("VNPAY")}
+                                        className={`p-3 rounded-lg border-2 flex flex-col items-center ${paymentMethod === "VNPAY"
+                                            ? "border-red-500 bg-red-50"
+                                            : "border-gray-200 hover:border-gray-300"
+                                            }`}
                                     >
-                                        <FaCreditCard className={`text-2xl ${paymentMethod === "BANK_TRANSFER" ? "text-blue-500" : "text-gray-400"}`} />
-                                        <span className="text-sm mt-1">Chuyển khoản</span>
+                                        <FaQrcode className={`text-2xl ${paymentMethod === "VNPAY" ? "text-red-500" : "text-gray-400"}`} />
+                                        <span className="text-xs mt-1">VNPAY</span>
                                     </button>
-                                    <button
-                                        onClick={() => setPaymentMethod("EWALLET")}
-                                        className={`p-3 rounded-lg border-2 flex flex-col items-center ${
-                                            paymentMethod === "EWALLET"
-                                                ? "border-purple-500 bg-purple-50"
-                                                : "border-gray-200 hover:border-gray-300"
-                                        }`}
-                                    >
-                                        <FaMobileAlt className={`text-2xl ${paymentMethod === "EWALLET" ? "text-purple-500" : "text-gray-400"}`} />
-                                        <span className="text-sm mt-1">Ví điện tử</span>
-                                    </button>
+
                                 </div>
                             </div>
 
@@ -553,6 +723,22 @@ const POSSales = () => {
                                         </div>
                                     </>
                                 )}
+
+                                {paymentMethod === "VNPAY" && (
+                                    <div className="text-center py-4">
+                                        <FaQrcode className="text-5xl text-red-500 mx-auto mb-2" />
+                                        <p className="text-gray-600 text-sm">
+                                            Nhấn "Thanh toán VNPAY" để tạo mã QR thanh toán
+                                        </p>
+                                        <p className="text-xs text-gray-400 mt-1">
+                                            Hỗ trợ: Thẻ ATM, Visa, MasterCard, JCB, QR Pay
+                                        </p>
+                                    </div>
+                                )}
+
+
+
+
                             </div>
 
                             {/* Notes */}
@@ -577,10 +763,118 @@ const POSSales = () => {
                             </button>
                             <button
                                 onClick={handlePayment}
+                                disabled={isProcessingVNPay}
+                                className={`px-6 py-2 rounded-lg flex items-center ${paymentMethod === "VNPAY"
+                                    ? "bg-red-500 hover:bg-red-600 text-white"
+                                    : "bg-green-500 hover:bg-green-600 text-white"
+                                    } disabled:opacity-50`}
+                            >
+                                {isProcessingVNPay ? (
+                                    <>
+                                        <FaSpinner className="animate-spin mr-2" />
+                                        Đang xử lý...
+                                    </>
+                                ) : paymentMethod === "VNPAY" ? (
+                                    <>
+                                        <FaQrcode className="mr-2" />
+                                        Thanh toán VNPAY
+                                    </>
+                                ) : (
+                                    <>
+                                        <FaCheck className="mr-2" />
+                                        Xác nhận thanh toán
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* VNPAY Payment Modal */}
+            {showVNPayModal && vnpayQRUrl && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg max-w-lg w-full">
+                        <div className="flex justify-between items-center p-4 border-b bg-red-500 text-white rounded-t-lg">
+                            <h2 className="text-xl font-bold flex items-center">
+                                <FaQrcode className="mr-2" />
+                                Thanh toán VNPAY
+                            </h2>
+                            <button
+                                onClick={() => {
+                                    setShowVNPayModal(false);
+                                    setVnpayQRUrl(null);
+                                }}
+                                className="text-white hover:text-gray-200"
+                            >
+                                <FaTimes className="text-xl" />
+                            </button>
+                        </div>
+
+                        <div className="p-6 text-center">
+                            <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                                <p className="text-lg font-bold text-gray-800 mb-2">
+                                    Tổng thanh toán: {formatCurrency(calculateTotal())}
+                                </p>
+                                <p className="text-sm text-gray-500">
+                                    Khách hàng: {customerName || "Khách vãng lai"}
+                                </p>
+                            </div>
+
+                            <div className="mb-4">
+                                <p className="text-gray-600 mb-3">
+                                    Chọn cách thanh toán:
+                                </p>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <a
+                                        href={vnpayQRUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="p-4 border-2 border-red-500 rounded-lg hover:bg-red-50 transition flex flex-col items-center"
+                                    >
+                                        <FaQrcode className="text-3xl text-red-500 mb-2" />
+                                        <span className="font-medium">Mở trang VNPAY</span>
+                                        <span className="text-xs text-gray-500">Quét QR hoặc nhập thẻ</span>
+                                    </a>
+                                    <button
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(vnpayQRUrl);
+                                            alert("Đã copy link thanh toán!");
+                                        }}
+                                        className="p-4 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition flex flex-col items-center"
+                                    >
+                                        <FaCreditCard className="text-3xl text-gray-500 mb-2" />
+                                        <span className="font-medium">Copy link</span>
+                                        <span className="text-xs text-gray-500">Gửi cho khách hàng</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-left">
+                                <p className="text-sm text-yellow-700">
+                                    <strong>Lưu ý:</strong> Sau khi khách hàng thanh toán thành công,
+                                    hãy nhấn "Xác nhận đã thanh toán" để hoàn tất đơn hàng.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-between p-4 border-t bg-gray-50 rounded-b-lg">
+                            <button
+                                onClick={() => {
+                                    setShowVNPayModal(false);
+                                    setVnpayQRUrl(null);
+                                    localStorage.removeItem("pendingPOSOrder");
+                                }}
+                                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                            >
+                                Hủy thanh toán
+                            </button>
+                            <button
+                                onClick={() => processOrder("VNPAY")}
                                 className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 flex items-center"
                             >
                                 <FaCheck className="mr-2" />
-                                Xác nhận thanh toán
+                                Xác nhận đã thanh toán
                             </button>
                         </div>
                     </div>
@@ -596,7 +890,7 @@ const POSSales = () => {
                         </div>
                         <h2 className="text-2xl font-bold text-green-600 mb-2">Thanh toán thành công!</h2>
                         <p className="text-gray-600 mb-4">Mã đơn hàng: <span className="font-bold">{lastOrder.posOrderCode}</span></p>
-                        
+
                         <div className="bg-gray-50 rounded-lg p-4 mb-4">
                             <div className="flex justify-between mb-2">
                                 <span>Tổng tiền:</span>
@@ -606,7 +900,7 @@ const POSSales = () => {
                                 <span>Phương thức:</span>
                                 <span className="font-medium">
                                     {lastOrder.paymentMethod === "CASH" ? "Tiền mặt" :
-                                     lastOrder.paymentMethod === "BANK_TRANSFER" ? "Chuyển khoản" : "Ví điện tử"}
+                                        lastOrder.paymentMethod === "BANK_TRANSFER" ? "Chuyển khoản" : "Ví điện tử"}
                                 </span>
                             </div>
                             {lastOrder.paymentMethod === "CASH" && (
