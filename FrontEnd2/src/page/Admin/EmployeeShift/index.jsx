@@ -25,6 +25,7 @@ const EmployeeShiftHandover = () => {
     const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}');
     const employeeId = adminUser.id || "EMP001";
     const employeeName = adminUser.fullName || adminUser.username || "Nhân viên";
+    const [currentShift, setCurrentShift] = useState(null);
     const [shiftHistory, setShiftHistory] = useState([]);
     const [posOrders, setPosOrders] = useState([]);
     const [loading, setLoading] = useState(true);

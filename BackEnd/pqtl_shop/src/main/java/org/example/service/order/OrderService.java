@@ -175,7 +175,7 @@ public class OrderService {
         });
     }
 
-    // 🔴 Xóa đơn hàng theo id (kiểm tra quyền user)
+    // 🔴 Hủy đơn hàng theo id (kiểm tra quyền user) - chỉ cập nhật trạng thái, không xóa
     public boolean deleteOrder(String id, String userId) {
         return orderRepository.findById(id).map(order -> {
             // Kiểm tra xem user có phải chủ sở hữu đơn hàng không
@@ -185,13 +185,16 @@ public class OrderService {
 
             // Lấy trạng thái từ cả orderStatus và shipping_status
             String status = order.getOrderStatus() != null ? order.getOrderStatus() : order.getShipping_status();
-            
-            // Chỉ cho phép xóa nếu đơn hàng ở trạng thái "Đã xác nhận", "Hủy" hoặc "Đã hủy"
-            if (!"Đã xác nhận".equals(status) && !"Hủy".equals(status) && !"Đã hủy".equals(status)) {
-                throw new IllegalStateException("Không thể xóa đơn hàng ở trạng thái: " + status);
+
+            // Chỉ cho phép hủy nếu đơn hàng ở trạng thái "Chờ xác nhận" hoặc "Đã xác nhận"
+            if (!"Chờ xác nhận".equals(status) && !"Đã xác nhận".equals(status)) {
+                throw new IllegalStateException("Không thể hủy đơn hàng ở trạng thái: " + status);
             }
 
-            orderRepository.deleteById(id);
+            // Cập nhật trạng thái thành "Hủy" thay vì xóa khỏi database
+            order.setOrderStatus("Hủy");
+            order.setUpdatedAt(LocalDateTime.now());
+            orderRepository.save(order);
             return true;
         }).orElse(false);
     }

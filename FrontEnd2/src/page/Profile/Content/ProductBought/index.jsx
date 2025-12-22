@@ -77,12 +77,7 @@ function ProductBought() {
       {/* sản phẩm */}
       <div>
         <ul>
-          {orders
-            .filter(order => {
-              const status = order.orderStatus || order.shipping_status || "Chưa xác định";
-              return status !== "Hủy" && status !== "Đã hủy";
-            })
-            .map((order, index) => {
+          {orders.map((order, index) => {
             // Use shipping_status if orderStatus is not available
             const status = order.orderStatus || order.shipping_status || "Chưa xác định";
             // Format date safely
