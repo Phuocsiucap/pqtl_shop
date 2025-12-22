@@ -56,9 +56,10 @@ const POSSales = () => {
     const searchInputRef = useRef(null);
     const access_token = getCSRFTokenFromCookie("access_token_admin");
 
-    // Mock employee data
-    const employeeId = "EMP001";
-    const employeeName = "Nhân viên Demo";
+    // Employee data from login
+    const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}');
+    const employeeId = adminUser.id || "EMP001";
+    const employeeName = adminUser.fullName || adminUser.username || "Nhân viên Demo";
 
     useEffect(() => {
         checkShift();

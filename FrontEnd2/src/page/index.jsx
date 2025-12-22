@@ -35,7 +35,7 @@ import PaymentReturn from "./Oder/PaymentReturn";
 import withRoleCheck from "../components/withRoleCheck";
 
 // Wrap các trang chỉ dành cho ADMIN
-const AdminOnlyHome = withRoleCheck(AdminHome, ["ADMIN"]);
+const AdminOnlyHome = withRoleCheck(AdminHome, ["ADMIN", "STAFF"]);
 const AdminOnlyManageUser = withRoleCheck(ManagementUser, ["ADMIN"]);
 const AdminOnlyFinancialReport = withRoleCheck(FinancialReport, ["ADMIN"]);
 const AdminOnlyClearance = withRoleCheck(ClearanceManager, ["ADMIN"]);

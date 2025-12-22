@@ -11,6 +11,7 @@ import org.example.repository.UserVoucherRepository;
 import org.example.repository.VoucherRepository;
 import org.example.repository.order.OrderRepository;
 import org.example.service.CartService;
+import org.example.service.VoucherService;
 import org.example.service.login.UserService;
 import org.springframework.stereotype.Service;
 
@@ -29,6 +30,7 @@ public class OrderService {
     private final UserService userService;
     private final VoucherRepository voucherRepository;
     private final UserVoucherRepository userVoucherRepository;
+    private final VoucherService voucherService;
 
     // 🟢 Tạo đơn hàng mới
     public Order createOrder(Order order) {
@@ -81,6 +83,10 @@ public class OrderService {
                     if (order.getTotalPrice() < voucher.getMinOrderValue()) {
                         throw new IllegalArgumentException("Đơn hàng không đủ giá trị tối thiểu để áp dụng voucher");
                     }
+                    // Check usage limit
+                    if (voucher.getUsageLimit() != null && voucher.getUsedCount() >= voucher.getUsageLimit()) {
+                        throw new IllegalArgumentException("Voucher đã hết lượt sử dụng");
+                    }
                     double discount = 0;
                     if ("PERCENTAGE".equals(voucher.getDiscountType())) {
                         discount = (voucher.getDiscountValue() / 100) * order.getTotalPrice();
@@ -91,9 +97,7 @@ public class OrderService {
                         discount = voucher.getDiscountValue();
                     }
                     order.setDiscount(discount);
-                    // Mark voucher as used
-                    userVoucher.setIsUsed(true);
-                    userVoucher.setUsedAt(LocalDateTime.now());
+                    // Voucher will be marked as used after order is saved
                 }
             }
         }
@@ -109,10 +113,15 @@ public class OrderService {
 
         Order savedOrder = orderRepository.save(order);
         System.out.println("Order saved with ID: " + savedOrder.getId() + ", items count: " + (savedOrder.getItems() != null ? savedOrder.getItems().size() : "null"));
+        
+        // Use voucher after order is saved
         if (userVoucher != null) {
-            userVoucher.setOrderId(savedOrder.getId());
-            userVoucherRepository.save(userVoucher);
+            Voucher voucher = voucherRepository.findById(userVoucher.getVoucherId()).orElse(null);
+            if (voucher != null) {
+                voucherService.useVoucher(order.getUserId(), voucher.getCode(), savedOrder.getId());
+            }
         }
+        
         return savedOrder;
     }
 
@@ -200,6 +209,14 @@ public class OrderService {
                 throw new IllegalArgumentException("Trạng thái không hợp lệ: " + newStatus);
             }
 
+            // Validation đặc biệt cho hủy đơn hàng
+            if ("Hủy".equals(newStatus) || "Đã hủy".equals(newStatus)) {
+                String currentStatus = order.getOrderStatus();
+                if ("Đã giao".equals(currentStatus) || "Hủy".equals(currentStatus) || "Đã hủy".equals(currentStatus)) {
+                    throw new IllegalStateException("Không thể hủy đơn hàng ở trạng thái: " + currentStatus);
+                }
+            }
+
             order.setOrderStatus(newStatus);
 
             // Nếu đơn hàng hoàn tất, ghi nhận thời gian
@@ -239,6 +256,15 @@ public class OrderService {
             if (!isValidOrderStatus(newStatus)) {
                 throw new IllegalArgumentException("Trạng thái không hợp lệ: " + newStatus);
             }
+
+            // Validation đặc biệt cho hủy đơn hàng
+            if ("Hủy".equals(newStatus) || "Đã hủy".equals(newStatus)) {
+                String currentStatus = order.getOrderStatus();
+                if ("Đã giao".equals(currentStatus) || "Hủy".equals(currentStatus) || "Đã hủy".equals(currentStatus)) {
+                    throw new IllegalStateException("Không thể hủy đơn hàng ở trạng thái: " + currentStatus);
+                }
+            }
+
             order.setOrderStatus(newStatus);
 
             // Nếu đơn hàng hoàn tất, ghi nhận thời gian

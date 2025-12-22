@@ -1,5 +1,5 @@
 // DetailModal Component
-import { request1,request } from "../../../utils/request";
+import { request1,request, getFullImageUrl } from "../../../utils/request";
 import { PricetoString } from "../../../Component/Translate_Price";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -99,6 +99,7 @@ const DetailModal = () => {
       <table className="table-auto w-full border-collapse border border-gray-300 shadow-lg rounded-xl">
         <thead>
           <tr className="bg-blue-200 text-blue-800">
+            <th className="border border-gray-300 px-4 py-3">Hình ảnh</th>
             <th className="border border-gray-300 px-4 py-3">Sản phẩm</th>
             <th className="border border-gray-300 px-4 py-3">Số lượng</th>
             <th className="border border-gray-300 px-4 py-3">Giá</th>
@@ -117,6 +118,25 @@ const DetailModal = () => {
                       index % 2 === 0 ? "bg-white" : "bg-blue-50"
                     }`}
                   >
+                    <td className="border border-gray-300 px-4 py-2">
+                      {item.image ? (
+                        <img
+                          src={getFullImageUrl(item.image)}
+                          alt={item.productName || item.name || 'Product'}
+                          className="w-16 h-16 object-cover rounded-md mx-auto"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <div 
+                        className="w-16 h-16 bg-gray-200 rounded-md flex items-center justify-center text-gray-400 text-xs mx-auto"
+                        style={{ display: item.image ? 'none' : 'flex' }}
+                      >
+                        No Image
+                      </div>
+                    </td>
                     <td className="border border-gray-300 px-4 py-2">
                       <div className="text-center">{item.productName || item.name || 'N/A'}</div>
                     </td>
@@ -137,7 +157,7 @@ const DetailModal = () => {
           
           {(!Array.isArray(order.items) || order.items.length === 0) && (
             <tr>
-              <td colSpan={4} className="border border-gray-300 px-4 py-2 text-center">
+              <td colSpan={5} className="border border-gray-300 px-4 py-2 text-center">
                 Không có sản phẩm nào
               </td>
             </tr>
@@ -145,7 +165,7 @@ const DetailModal = () => {
 
           {/* Dòng tổng tiền, giảm giá và tổng tiền cuối cùng */}
           <tr className="bg-white font-medium text-lg">
-            <td colSpan={3} className="text-left px-4 py-3">
+            <td colSpan={4} className="text-left px-4 py-3">
               Tổng tiền sản phẩm
             </td>
             <td className="px-4 py-3 text-center text-red-500">
@@ -154,7 +174,7 @@ const DetailModal = () => {
           </tr>
 {discountAmount > 0 && (
             <tr className="bg-white font-medium text-lg">
-              <td colSpan={3} className="text-left px-4 py-3 text-primary">
+              <td colSpan={4} className="text-left px-4 py-3 text-primary">
                 Giảm giá:
               </td>
               <td className="px-4 py-3 text-center">
@@ -165,7 +185,7 @@ const DetailModal = () => {
 
           {shippingFee > 0 && (
             <tr className="bg-white font-medium text-lg">
-              <td colSpan={3} className="text-left px-4 py-3">
+              <td colSpan={4} className="text-left px-4 py-3">
                 Phí vận chuyển:
               </td>
               <td className="px-4 py-3 text-center">
@@ -175,7 +195,7 @@ const DetailModal = () => {
           )}
           
           <tr className="bg-white font-medium text-lg">
-            <td colSpan={3} className="text-left px-4 py-3">
+            <td colSpan={4} className="text-left px-4 py-3">
               Tổng tiền cần thanh toán:
             </td>
             <td className="px-4 py-3 text-red-600 text-center font-bold">

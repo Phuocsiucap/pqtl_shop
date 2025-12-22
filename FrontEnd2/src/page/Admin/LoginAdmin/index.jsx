@@ -29,6 +29,18 @@ const LoginForm = () => {
         Cookies.set("access_token_admin", response.data.accessToken, { expires: 7, path: "/" });
         Cookies.set("refresh_token_admin", response.data.refreshToken, { expires: 7, path: "/" });
         
+        // Lấy thông tin user
+        try {
+          const userResponse = await request1.get("auth/me", {
+            headers: {
+              Authorization: `Bearer ${response.data.accessToken}`,
+            },
+          });
+          localStorage.setItem('adminUser', JSON.stringify(userResponse.data));
+        } catch (userError) {
+          console.log("Lỗi lấy thông tin user:", userError);
+        }
+        
         // lastLogin đã được cập nhật tự động trong backend khi login thành công
         
         alert("Đăng nhập thành công");

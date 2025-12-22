@@ -271,13 +271,15 @@ public class VoucherService {
                 .build();
     }
 
-    /**
-     * Sử dụng voucher cho đơn hàng (gọi khi đặt hàng thành công)
-     */
     @Transactional
     public void useVoucher(String userId, String voucherCode, String orderId) {
         Voucher voucher = voucherRepository.findByCode(voucherCode)
                 .orElseThrow(() -> new RuntimeException("Mã voucher không hợp lệ"));
+
+        // Check usage limit
+        if (voucher.getUsageLimit() != null && voucher.getUsedCount() >= voucher.getUsageLimit()) {
+            throw new RuntimeException("Voucher đã hết lượt sử dụng");
+        }
 
         UserVoucher userVoucher = userVoucherRepository
                 .findByUserIdAndVoucherIdAndIsUsedFalse(userId, voucher.getId())

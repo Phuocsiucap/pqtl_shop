@@ -4,6 +4,8 @@ import { request1, getFullImageUrl } from '../../utils/request'; // Import reque
 import { useDispatch } from 'react-redux';
 import { AddProduct } from '../../redux/Actions';
 import { PricetoString } from '../Translate_Price';
+import { useNavigate } from 'react-router-dom';
+import ToastNotification from '../../components/ToastNotification';
 
 const ChatBot = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -18,6 +20,8 @@ const ChatBot = () => {
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef(null);
     const dispatch = useDispatch();
+    const navigate = useNavigate();
+    const [toast, setToast] = useState({ message: '', type: 'success', isVisible: false });
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -71,7 +75,8 @@ const ChatBot = () => {
         // Logic gọi API cart/add nằm bên trong action creator đó.
         if (ingredient.productId) {
             await AddProduct({ id: ingredient.productId, number: ingredient.quantityToBuy || 1 });
-            // Có thể thêm toast thông báo ở đây nếu cần (Action đã có alert)
+            setToast({ message: `Đã thêm ${ingredient.productName} vào giỏ hàng!`, type: 'success', isVisible: true });
+            setTimeout(() => setToast({ ...toast, isVisible: false }), 3000);
         }
     };
 
@@ -86,8 +91,42 @@ const ChatBot = () => {
             }
         }
         if (count > 0) {
-            // Thông báo tổng (Action AddProduct đã alert từng cái, hơi spam, nên tối ưu Action sau)
-            // Tạm thời để vậy
+            setToast({ message: `Đã thêm ${count} sản phẩm vào giỏ hàng!`, type: 'success', isVisible: true });
+            setTimeout(() => setToast({ ...toast, isVisible: false }), 3000);
+        }
+    };
+
+    const handleOrderNow = async (suggestion) => {
+        if (!suggestion.ingredients || suggestion.ingredients.length === 0) return;
+
+        try {
+            // Chuẩn bị itemsToOrder giống như từ giỏ hàng
+            const itemsToOrder = suggestion.ingredients.map((ing) => ({
+                productId: ing.productId,
+                productName: ing.productName,
+                qty: ing.quantityToBuy || 1,
+                price: ing.unitPrice, // Đổi unitPrice thành price
+                image: ing.imageUrl, // Đổi imageUrl thành image
+                discount: 0,
+                isClearance: false,
+                clearanceDiscount: 0
+            }));
+
+            // Lưu orderData vào localStorage
+            const orderData = {
+                itemsToOrder: itemsToOrder,
+                totalPrice: suggestion.totalEstimatePrice,
+                selectedVoucher: null
+            };
+
+            localStorage.setItem("orderData", JSON.stringify(orderData));
+
+            // Navigate đến trang đặt hàng
+            navigate("/order");
+
+        } catch (error) {
+            console.error('Lỗi khi chuẩn bị đặt hàng:', error);
+            alert('Có lỗi xảy ra. Vui lòng thử lại.');
         }
     };
 
@@ -174,13 +213,20 @@ const ChatBot = () => {
                         </div>
 
                         {/* Action Footer */}
-                        <div className="p-3 border-t border-gray-100 bg-gray-50">
+                        <div className="p-3 border-t border-gray-100 bg-gray-50 space-y-2">
                             <button
                                 onClick={() => handleAddAllToCart(suggestion.ingredients)}
                                 className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-sm"
                             >
                                 <FaShoppingBasket />
-                                Mua trọn bộ ({PricetoString(suggestion.totalEstimatePrice)}đ)
+                                Thêm vào giỏ ({PricetoString(suggestion.totalEstimatePrice)}đ)
+                            </button>
+                            <button
+                                onClick={() => handleOrderNow(suggestion)}
+                                className="w-full bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-2 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-sm"
+                            >
+                                <FaPaperPlane />
+                                Đặt hàng ngay ({PricetoString(suggestion.totalEstimatePrice)}đ)
                             </button>
                         </div>
                     </div>
@@ -191,6 +237,13 @@ const ChatBot = () => {
 
     return (
         <div className="fixed bottom-6 right-6 z-[9999] font-Montserrat">
+            {/* Toast Notification */}
+            <ToastNotification
+                message={toast.message}
+                type={toast.type}
+                isVisible={toast.isVisible}
+                onClose={() => setToast({ ...toast, isVisible: false })}
+            />
             {/* Toggle Button */}
             {!isOpen && (
                 <button
@@ -205,70 +258,73 @@ const ChatBot = () => {
 
             {/* Chat Window */}
             {isOpen && (
-                <div className="w-[380px] h-[600px] bg-gray-50 rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-200 animate-slide-up">
-                    {/* Header */}
-                    <div className="bg-gradient-to-r from-blue-600 to-blue-500 p-4 flex justify-between items-center text-white shadow-md">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                                <FaRobot size={20} />
-                            </div>
-                            <div>
-                                <h3 className="font-bold text-lg leading-tight">Bếp Phó</h3>
-                                <p className="text-xs text-blue-100 flex items-center gap-1">
-                                    <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-                                    Sẵn sàng hỗ trợ
-                                </p>
-                            </div>
-                        </div>
-                        <button
-                            onClick={() => setIsOpen(false)}
-                            className="text-white/80 hover:text-white hover:bg-white/10 p-2 rounded-full transition-colors"
-                        >
-                            <FaTimes size={20} />
-                        </button>
-                    </div>
-
-                    {/* Messages Body */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-[#F0F2F5]">
-                        {messages.map((msg, idx) =>
-                            msg.type === 'text' ? renderText(msg, idx) : renderSuggestions(msg, idx)
-                        )}
-
-                        {isLoading && (
-                            <div className="flex justify-start mb-4">
-                                <div className="bg-white px-4 py-3 rounded-2xl rounded-bl-none shadow-sm flex items-center gap-2">
-                                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-75"></div>
-                                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-150"></div>
+                <div className="w-[500px] h-[700px] bg-gray-50 rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-200 animate-slide-up">
+                    <div className="bg-gray-50 rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-200 animate-slide-up w-full h-full relative">
+                        {/* Header */}
+                        <div className="bg-gradient-to-r from-blue-600 to-blue-500 p-4 flex justify-between items-center text-white shadow-md">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                                    <FaRobot size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-lg leading-tight">Bếp Phó</h3>
+                                    <p className="text-xs text-blue-100 flex items-center gap-1">
+                                        <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                                        Sẵn sàng hỗ trợ
+                                    </p>
                                 </div>
                             </div>
-                        )}
-                        <div ref={messagesEndRef} />
-                    </div>
-
-                    {/* Input Area */}
-                    <div className="p-4 bg-white border-t border-gray-100">
-                        <div className="flex gap-2 relative">
-                            <input
-                                type="text"
-                                value={input}
-                                onChange={(e) => setInput(e.target.value)}
-                                onKeyPress={handleKeyPress}
-                                placeholder="Hôm nay ăn gì?..."
-                                className="w-full pl-4 pr-12 py-3 bg-gray-100 border-none rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm"
-                                disabled={isLoading}
-                            />
                             <button
-                                onClick={handleSend}
-                                disabled={isLoading || !input.trim()}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600 transition-colors"
+                                onClick={() => setIsOpen(false)}
+                                className="text-white/80 hover:text-white hover:bg-white/10 p-2 rounded-full transition-colors"
                             >
-                                <FaPaperPlane size={14} />
+                                <FaTimes size={20} />
                             </button>
                         </div>
-                        <div className="text-center mt-2">
-                            <p className="text-[10px] text-gray-400">Powered by Gemini AI • Gợi ý từ thực phẩm sạch</p>
+
+                        {/* Messages Body */}
+                        <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-[#F0F2F5]">
+                            {messages.map((msg, idx) =>
+                                msg.type === 'text' ? renderText(msg, idx) : renderSuggestions(msg, idx)
+                            )}
+
+                            {isLoading && (
+                                <div className="flex justify-start mb-4">
+                                    <div className="bg-white px-4 py-3 rounded-2xl rounded-bl-none shadow-sm flex items-center gap-2">
+                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-75"></div>
+                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-150"></div>
+                                    </div>
+                                </div>
+                            )}
+                            <div ref={messagesEndRef} />
                         </div>
+
+                        {/* Input Area */}
+                        <div className="p-4 bg-white border-t border-gray-100">
+                            <div className="flex gap-2 relative">
+                                <input
+                                    type="text"
+                                    value={input}
+                                    onChange={(e) => setInput(e.target.value)}
+                                    onKeyPress={handleKeyPress}
+                                    placeholder="Hôm nay ăn gì?..."
+                                    className="w-full pl-4 pr-12 py-3 bg-gray-100 border-none rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm"
+                                    disabled={isLoading}
+                                />
+                                <button
+                                    onClick={handleSend}
+                                    disabled={isLoading || !input.trim()}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600 transition-colors"
+                                >
+                                    <FaPaperPlane size={14} />
+                                </button>
+                            </div>
+                            <div className="text-center mt-2">
+                                <p className="text-[10px] text-gray-400">Powered by Gemini AI • Gợi ý từ thực phẩm sạch</p>
+                            </div>
+                        </div>
+                        {/* Resize Handle */}
                     </div>
                 </div>
             )}

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FaChartLine, FaUsers, FaBoxOpen, FaFileInvoice, FaBook, FaFire, FaTicketAlt, FaMoneyBillWave, FaExclamationTriangle, FaClock, FaCashRegister, FaClipboardList, FaTags, FaComments, FaCreditCard } from "react-icons/fa";
+import { FaChartLine, FaUsers, FaBoxOpen, FaFileInvoice, FaBook, FaFire, FaTicketAlt, FaMoneyBillWave, FaExclamationTriangle, FaClock, FaCashRegister, FaClipboardList, FaTags, FaComments, FaCreditCard, FaEye } from "react-icons/fa";
 import { FaUser } from "react-icons/fa";
 import { IoLogOut } from "react-icons/io5";
 import { BiCategory } from "react-icons/bi";
@@ -17,6 +17,7 @@ const Sidebar1 = () => {
     { link: "/admin/managegood", label: "Quản lý sản phẩm", icon: <FaBoxOpen /> },
     { link: "/admin/managecategory", label: "Quản lý danh mục", icon: <FaTags /> },
     { link: "/admin/managebill", label: "Quản lý đơn hàng", icon: <FaFileInvoice /> },
+    { link: "/admin/managebill/billdetail", label: "Chi tiết đơn hàng", icon: <FaEye /> },
     { link: "/admin/managevoucher", label: "Quản lý Voucher", icon: <FaTicketAlt /> },
     { link: "/admin/reviews", label: "Quản lý đánh giá", icon: <FaComments /> },
     { link: "/admin/payments", label: "Quản lý thanh toán", icon: <FaCreditCard /> },

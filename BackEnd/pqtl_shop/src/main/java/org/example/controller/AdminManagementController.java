@@ -9,6 +9,7 @@ import org.example.service.login.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -50,6 +51,7 @@ public class AdminManagementController {
      * DELETE /api/v1/admin/users/{id}/
      */
     @DeleteMapping("/users/{id}/")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<?> deleteUser(@PathVariable String id) {
         try {
             adminService.deleteUser(id);
@@ -115,6 +117,7 @@ public class AdminManagementController {
      * DELETE /api/v1/admin/goods/{id}/
      */
     @DeleteMapping("/goods/{id}/")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<?> deleteProduct(@PathVariable String id) {
         try {
             adminService.deleteProduct(id);
@@ -441,6 +444,7 @@ public class AdminManagementController {
      * DELETE /api/v1/admin/clearance/{id}/
      */
     @DeleteMapping("/clearance/{id}/")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<?> unmarkProductAsClearance(@PathVariable String id) {
         try {
             Product product = adminService.unmarkProductAsClearance(id);

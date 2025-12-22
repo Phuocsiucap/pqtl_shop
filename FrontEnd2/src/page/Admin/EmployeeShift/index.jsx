@@ -22,7 +22,9 @@ import {
 } from "../../../api/shift";
 
 const EmployeeShiftHandover = () => {
-    const [currentShift, setCurrentShift] = useState(null);
+    const adminUser = JSON.parse(localStorage.getItem('adminUser') || '{}');
+    const employeeId = adminUser.id || "EMP001";
+    const employeeName = adminUser.fullName || adminUser.username || "Nhân viên";
     const [shiftHistory, setShiftHistory] = useState([]);
     const [posOrders, setPosOrders] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -50,10 +52,6 @@ const EmployeeShiftHandover = () => {
     const [selectedHistoryShift, setSelectedHistoryShift] = useState(null);
 
     const access_token = getCSRFTokenFromCookie("access_token_admin");
-
-    // Mock employee data - trong thực tế lấy từ context/redux
-    const employeeId = "EMP001";
-    const employeeName = "Nhân viên Demo";
 
     useEffect(() => {
         fetchData();

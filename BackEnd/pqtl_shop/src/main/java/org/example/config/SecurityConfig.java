@@ -127,8 +127,11 @@ public class SecurityConfig {
                         .requestMatchers("/api/migration/**").permitAll()
 
                         // ==================== STAFF + ADMIN ====================
-                        // Quản lý sản phẩm - STAFF và ADMIN đều được truy cập
-                        .requestMatchers("/api/v1/admin/goods/**").hasAnyAuthority("ADMIN", "STAFF")
+                        // Quản lý sản phẩm - STAFF và ADMIN đều được truy cập (GET, POST, PUT), DELETE chỉ ADMIN
+                        .requestMatchers(HttpMethod.GET, "/api/v1/admin/goods/**").hasAnyAuthority("ADMIN", "STAFF")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/admin/goods/**").hasAnyAuthority("ADMIN", "STAFF")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/admin/goods/**").hasAnyAuthority("ADMIN", "STAFF")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/admin/goods/**").hasAuthority("ADMIN")
 
                         // Quản lý đơn hàng - STAFF và ADMIN đều được truy cập
                         .requestMatchers("/api/v1/admin/orders/**").hasAnyAuthority("ADMIN", "STAFF")
@@ -138,6 +141,10 @@ public class SecurityConfig {
 
                         // Quản lý thanh toán - STAFF và ADMIN đều được truy cập
                         .requestMatchers("/api/v1/admin/payments/**").hasAnyAuthority("ADMIN", "STAFF")
+
+                        // Quản lý người dùng - STAFF và ADMIN được GET, DELETE chỉ ADMIN
+                        .requestMatchers(HttpMethod.GET, "/api/v1/admin/users/**").hasAnyAuthority("ADMIN", "STAFF")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/admin/users/**").hasAuthority("ADMIN")
 
                         // Bàn giao ca - STAFF và ADMIN đều được truy cập
                         .requestMatchers("/api/v1/shift/**").hasAnyAuthority("ADMIN", "STAFF")

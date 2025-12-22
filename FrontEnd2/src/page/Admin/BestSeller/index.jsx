@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { FaEye, FaFire, FaTrophy, FaFileExcel, FaChartLine, FaFilter, FaCalendarAlt } from "react-icons/fa";
-import { request1, request } from "../../../utils/request";
+import { request1, request, getFullImageUrl } from "../../../utils/request";
 import { getCSRFTokenFromCookie } from "../../../Component/Token/getCSRFToken";
 import { Line, Bar } from 'react-chartjs-2';
 import {
@@ -80,10 +80,13 @@ const BestSellerList = () => {
         const sortedProducts = response.data
           .map(product => ({
             ...product,
-            sold: product.sold || Math.floor(Math.random() * 1000),
-            revenue: product.revenue || (product.sold || 100) * (product.price || 10000000)
+            soldQuantity: product.soldQuantity || product.sold || Math.floor(Math.random() * 1000),
+            revenue: product.revenue || (product.soldQuantity || product.sold || 100) * (product.price || 10000000),
+            profit: product.profit || (product.revenue || 0) * 0.1, // giả sử lợi nhuận 10%
+            orderCount: product.orderCount || Math.floor(Math.random() * 50),
+            costPrice: product.costPrice || product.price * 0.8 // giả sử giá nhập 80% giá bán
           }))
-          .sort((a, b) => b.sold - a.sold)
+          .sort((a, b) => (b.soldQuantity || 0) - (a.soldQuantity || 0))
           .slice(0, productsPerPage);
         
         setProducts(sortedProducts);
@@ -442,7 +445,7 @@ const BestSellerList = () => {
                     <td className="px-6 py-4">
                       {product.productImage && product.productImage !== 'undefined' && product.productImage !== '' ? (
                         <img
-                          src={`${request}${product.productImage}`}
+                          src={getFullImageUrl(product.productImage)}
                           alt={product.productName || product.productId}
                           className="w-20 h-20 object-cover rounded-md shadow-sm"
                           onError={(e) => {
@@ -452,7 +455,7 @@ const BestSellerList = () => {
                         />
                       ) : null}
                       <div 
-                        className="w-20 h-20 bg-gray-200 rounded-md shadow-sm items-center justify-center text-gray-400 text-xs"
+                        className="w-20 h-20 bg-gray-200 rounded-md shadow-sm flex items-center justify-center text-gray-400 text-xs"
                         style={{ display: product.productImage && product.productImage !== 'undefined' && product.productImage !== '' ? 'none' : 'flex' }}
                       >
                         No Image
@@ -512,6 +515,11 @@ const BestSellerList = () => {
               })}
             </tbody>
           </table>
+          {products.length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              Không có dữ liệu sản phẩm bán chạy.
+            </div>
+          )}
         </div>
       )}
 
@@ -565,7 +573,7 @@ const BestSellerList = () => {
               <div className="space-y-4">
                 {selectedProduct.productImage && selectedProduct.productImage !== 'undefined' && selectedProduct.productImage !== '' ? (
                   <img
-                    src={`${request}${selectedProduct.productImage}`}
+                    src={getFullImageUrl(selectedProduct.productImage)}
                     alt={selectedProduct.productName || selectedProduct.productId}
                     className="w-full h-64 object-cover rounded-lg"
                     onError={(e) => {
@@ -575,7 +583,7 @@ const BestSellerList = () => {
                   />
                 ) : null}
                 <div 
-                  className="w-full h-64 bg-gray-200 rounded-lg items-center justify-center text-gray-400"
+                  className="w-full h-64 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400"
                   style={{ display: selectedProduct.productImage && selectedProduct.productImage !== 'undefined' && selectedProduct.productImage !== '' ? 'none' : 'flex' }}
                 >
                   No Image Available
