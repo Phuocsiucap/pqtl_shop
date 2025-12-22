@@ -89,13 +89,24 @@ public class ChatBotService {
                 .collect(Collectors.joining(", "));
 
         String prompt = String.format(
-            "Bạn là trợ lý ảo bán nông sản. " +
+            "Bạn là đầu bếp chuyên nghiệp, biết rất nhiều công thức nấu ăn Việt Nam và quốc tế. " +
             "User hỏi: \"%s\". " +
-            "Dưới đây là danh sách sản phẩm ĐANG CÓ tại shop: [%s]. " +
-            "Nhiệm vụ: Gợi ý 1-2 món ăn phù hợp với câu hỏi VÀ chỉ sử dụng nguyên liệu trong danh sách trên. " +
+            "Dưới đây là danh sách nguyên liệu ĐANG CÓ tại cửa hàng: [%s]. " +
+            "Nhiệm vụ: " +
+            "1. Gợi ý 1-2 công thức nấu ăn PHỔ BIẾN phù hợp với yêu cầu của user. " +
+            "2. Với mỗi công thức, liệt kê nguyên liệu cần thiết và MAP với sản phẩm có sẵn trong cửa hàng. " +
+            "3. Nếu có nguyên liệu cần nhưng cửa hàng KHÔNG CÓ, liệt kê vào missingIngredients. " +
+            "4. QUAN TRỌNG: Thêm cookingSteps - các bước nấu cơ bản (3-5 bước ngắn gọn). " +
             "Output bắt buộc là JSON theo cấu trúc sau (không markdown): " +
-            "{ \"botMessage\": \"...\", \"suggestions\": [{ \"recipeName\": \"...\", \"cookingTime\": \"...\", \"totalEstimatePrice\": 0, \"ingredients\": [{ \"productId\": \"...\", \"productName\": \"...\", \"quantityToBuy\": 1, \"unitPrice\": 0, \"total\": 0 }] }] } " +
-            "Lưu ý: botMessage thân thiện, có emoji. productId phải lấy CHÍNH XÁC từ field 'id' của sản phẩm trong danh sách.",
+            "{ \"botMessage\": \"Lời chào thân thiện...\", \"suggestions\": [{ " +
+            "\"recipeName\": \"Tên món\", " +
+            "\"cookingTime\": \"30 phút\", " +
+            "\"totalEstimatePrice\": 50000, " +
+            "\"ingredients\": [{ \"productId\": \"id từ danh sách\", \"productName\": \"tên sản phẩm\", \"quantityToBuy\": 1, \"unitPrice\": 25000, \"total\": 25000 }], " +
+            "\"missingIngredients\": [\"gia vị A\", \"nguyên liệu B\"], " +
+            "\"cookingSteps\": [\"Bước 1: Sơ chế nguyên liệu...\", \"Bước 2: Ướp gia vị...\", \"Bước 3: Nấu...\"] " +
+            "}] } " +
+            "Lưu ý: botMessage thân thiện có emoji. productId PHẢI lấy CHÍNH XÁC từ field 'id' trong danh sách. cookingSteps phải dễ hiểu cho người mới nấu.",
             userMessage, productsJson
         );
 

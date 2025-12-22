@@ -123,7 +123,7 @@ const ChatBot = () => {
                         </div>
 
                         {/* List Nguyên liệu */}
-                        <div className="p-3 max-h-[200px] overflow-y-auto">
+                        <div className="p-3 max-h-[300px] overflow-y-auto">
                             <p className="text-xs font-semibold text-gray-500 mb-2 uppercase">Nguyên liệu cần mua:</p>
                             <ul className="space-y-2">
                                 {suggestion.ingredients.map((ing, iIdx) => (
@@ -157,6 +157,18 @@ const ChatBot = () => {
                             {suggestion.missingIngredients && suggestion.missingIngredients.length > 0 && (
                                 <div className="mt-3 text-xs text-orange-600 bg-orange-50 p-2 rounded">
                                     <span className="font-bold">Thiếu:</span> {suggestion.missingIngredients.join(', ')}
+                                </div>
+                            )}
+
+                            {/* Cooking Steps */}
+                            {suggestion.cookingSteps && suggestion.cookingSteps.length > 0 && (
+                                <div className="mt-3 text-xs bg-blue-50 p-2 rounded border border-blue-100">
+                                    <p className="font-bold text-blue-700 mb-1">📝 Cách nấu:</p>
+                                    <ol className="list-decimal list-inside space-y-1 text-gray-600">
+                                        {suggestion.cookingSteps.map((step, stepIdx) => (
+                                            <li key={stepIdx} className="leading-relaxed">{step.replace(/^Bước \d+:\s*/i, '')}</li>
+                                        ))}
+                                    </ol>
                                 </div>
                             )}
                         </div>

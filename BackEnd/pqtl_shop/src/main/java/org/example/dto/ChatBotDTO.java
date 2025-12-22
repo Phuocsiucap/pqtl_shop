@@ -33,6 +33,7 @@ public class ChatBotDTO {
         private double totalEstimatePrice;
         private List<Ingredient> ingredients;
         private List<String> missingIngredients;
+        private List<String> cookingSteps; // Các bước nấu cơ bản
     }
 
     @Data
