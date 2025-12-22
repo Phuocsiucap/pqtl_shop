@@ -9,6 +9,9 @@ import java.util.List;
 
 public interface ProductRepository extends MongoRepository<Product, String> {
 
+    // Tìm kiếm đơn giản theo tên (cho Chatbot)
+    Page<Product> findByNameContainingIgnoreCase(String name, Pageable pageable);
+
     // US1.1, US1.3, US1.4: Tìm kiếm theo tên/mô tả và lọc theo danh mục (Category)
     // Lưu ý: Spring Data MongoDB không hỗ trợ kết hợp $or và $and phức tạp qua method name
     // một cách dễ dàng. Tôi sẽ sử dụng MongoTemplate trong Service cho logic phức tạp hơn

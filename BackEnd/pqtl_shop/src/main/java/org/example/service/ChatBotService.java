@@ -27,7 +27,7 @@ public class ChatBotService {
     @Value("${gemini.api.key:YOUR_API_KEY_HERE}") // Cần config trong application.properties
     private String geminiApiKey;
 
-    private static final String GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
+    private static final String GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -56,9 +56,9 @@ public class ChatBotService {
 
     private List<String> extractKeywords(String message) {
         String prompt = "Phân tích câu hỏi: \"" + message + "\". " +
-                "Liệt kê tối đa 3 nguyên liệu chính cần mua để nấu món liên quan. " +
-                "Nếu user hỏi chung chung (ăn gì), hãy trả về: [\"thịt\", \"cá\", \"rau\"]. " +
-                "Chỉ trả về JSON Array các string tiếng Việt không dấu (để search tốt hơn). Ví dụ: [\"thit heo\", \"trung\"].";
+                "Liệt kê tối đa 5 nguyên liệu chính cần mua để nấu món liên quan. " +
+                "Nếu user hỏi chung chung (ăn gì), hãy trả về: [\"thịt\", \"cá\", \"rau\", \"trứng\", \"đậu\"]. " +
+                "Trả về JSON Array các string tiếng Việt CÓ DẤU. Ví dụ: [\"thịt heo\", \"trứng\", \"cá\"].";
 
         String responseText = callGemini(prompt);
         return parseJsonArray(responseText);
@@ -69,9 +69,8 @@ public class ChatBotService {
         if (keywords == null || keywords.isEmpty()) return products;
 
         for (String kw : keywords) {
-            // Tìm kiếm tương đối, limit 5 sản phẩm mỗi keyword
-            // Lưu ý: Cần hàm search trong Repository. Tạm dùng findByNameContainingIgnoreCase
-            List<Product> found = productRepository.findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCaseAndCategory(kw, kw, null, PageRequest.of(0, 5)).getContent();
+            // Tìm kiếm theo tên sản phẩm
+            List<Product> found = productRepository.findByNameContainingIgnoreCase(kw, PageRequest.of(0, 5)).getContent();
             products.addAll(found);
         }
         // Deduplicate
@@ -79,9 +78,14 @@ public class ChatBotService {
     }
 
     private ChatBotDTO.ChatResponse generateMealSuggestion(String userMessage, List<Product> products) {
+        // Tạo map productId -> imageUrl để map lại sau
+        Map<String, String> productImageMap = products.stream()
+                .collect(Collectors.toMap(Product::getId, p -> p.getImage() != null ? p.getImage() : "", (a, b) -> a));
+
         // Chuyển list sản phẩm thành chuỗi JSON nhỏ gọn để tiết kiệm token
         String productsJson = products.stream()
-                .map(p -> String.format("{id:\"%s\", name:\"%s\", price:%s}", p.getId(), p.getName(), p.getFinalPrice()))
+                .map(p -> String.format("{id:\"%s\", name:\"%s\", price:%s}",
+                    p.getId(), p.getName(), p.getFinalPrice()))
                 .collect(Collectors.joining(", "));
 
         String prompt = String.format(
@@ -91,7 +95,7 @@ public class ChatBotService {
             "Nhiệm vụ: Gợi ý 1-2 món ăn phù hợp với câu hỏi VÀ chỉ sử dụng nguyên liệu trong danh sách trên. " +
             "Output bắt buộc là JSON theo cấu trúc sau (không markdown): " +
             "{ \"botMessage\": \"...\", \"suggestions\": [{ \"recipeName\": \"...\", \"cookingTime\": \"...\", \"totalEstimatePrice\": 0, \"ingredients\": [{ \"productId\": \"...\", \"productName\": \"...\", \"quantityToBuy\": 1, \"unitPrice\": 0, \"total\": 0 }] }] } " +
-            "Lưu ý: botMessage thân thiện, có emoji.",
+            "Lưu ý: botMessage thân thiện, có emoji. productId phải lấy CHÍNH XÁC từ field 'id' của sản phẩm trong danh sách.",
             userMessage, productsJson
         );
 
@@ -100,7 +104,21 @@ public class ChatBotService {
         jsonResponse = jsonResponse.replace("```json", "").replace("```", "").trim();
 
         try {
-            return objectMapper.readValue(jsonResponse, ChatBotDTO.ChatResponse.class);
+            ChatBotDTO.ChatResponse response = objectMapper.readValue(jsonResponse, ChatBotDTO.ChatResponse.class);
+
+            // Map lại imageUrl từ database dựa trên productId
+            if (response.getSuggestions() != null) {
+                for (ChatBotDTO.Suggestion suggestion : response.getSuggestions()) {
+                    if (suggestion.getIngredients() != null) {
+                        for (ChatBotDTO.Ingredient ingredient : suggestion.getIngredients()) {
+                            String imageUrl = productImageMap.get(ingredient.getProductId());
+                            ingredient.setImageUrl(imageUrl != null ? imageUrl : "");
+                        }
+                    }
+                }
+            }
+
+            return response;
         } catch (Exception e) {
             System.out.println("AI Response Parse Error: " + jsonResponse);
             return new ChatBotDTO.ChatResponse("Bếp Phó gợi ý món ngon nhưng đang bị líu lưỡi chút xíu. Bạn đợi lát nhé!", new ArrayList<>());

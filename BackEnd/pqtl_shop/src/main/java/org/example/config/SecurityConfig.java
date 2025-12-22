@@ -115,6 +115,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/homepage/**").permitAll()
                         .requestMatchers("/api/v1/categories/**").permitAll()
                         .requestMatchers("/api/v1/vouchers/**").permitAll()
+                        .requestMatchers("/api/v1/chatbot/**").permitAll()
 
                         // VNPAY - Cho phép public các endpoint thanh toán
                         .requestMatchers("/api/vn/payment").permitAll()

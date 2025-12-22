@@ -37,7 +37,7 @@ const ChatBot = () => {
 
         try {
             // Gọi API Chatbot
-            const response = await request1.post('chatbot/chat', {
+            const response = await request1.post('v1/chatbot/chat', {
                 message: userMessage.content
             });
 
