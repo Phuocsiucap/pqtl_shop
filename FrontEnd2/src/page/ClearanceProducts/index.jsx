@@ -15,10 +15,9 @@ const ClearanceProducts = () => {
   const fetchClearanceProducts = async () => {
     setLoading(true);
     try {
-      // Lấy tất cả sản phẩm và lọc những sản phẩm đang thanh lý
-      const response = await request1.get("v1/products/");
-      const clearanceItems = response.data.filter(p => p.isClearance === true);
-      setProducts(clearanceItems);
+      // Lấy sản phẩm thanh lý trực tiếp từ API
+      const response = await request1.get("v1/products/clearance");
+      setProducts(response.data);
     } catch (error) {
       console.error("Error fetching clearance products:", error);
     } finally {
@@ -154,7 +153,7 @@ const ClearanceProducts = () => {
                 {/* Image */}
                 <div className="relative overflow-hidden">
                   <img
-                    src={product.image ? `${request}${product.image}` : "https://via.placeholder.com/300x192?text=No+Image"}
+                    src={product.image || "https://via.placeholder.com/300x192?text=No+Image"}
                     alt={product.name || "Product"}
                     className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300 bg-gray-100"
                     onError={(e) => { 

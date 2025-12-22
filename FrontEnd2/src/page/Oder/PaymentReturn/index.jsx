@@ -11,7 +11,7 @@ function formatCurrency(amount) {
 function PaymentReturn({ setShowPaymentReturn }) {
   const [loading, setLoading] = useState(true);
   const [paymentResult, setPaymentResult] = useState(null);
-  const [countdown, setCountdown] = useState(5);
+  const [countdown, setCountdown] = useState(30);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -59,6 +59,9 @@ function PaymentReturn({ setShowPaymentReturn }) {
   }, [loading, countdown]);
 
   const handleClose = () => {
+    console.log("Payment result:", paymentResult);
+    console.log("Navigating with order_id:", paymentResult?.order_id, "code:", paymentResult?.code);
+
     if (setShowPaymentReturn) setShowPaymentReturn(false);
 
     // Clear cart/order temporary data
@@ -69,10 +72,10 @@ function PaymentReturn({ setShowPaymentReturn }) {
     localStorage.removeItem("isPaymentDataFetched");
     localStorage.removeItem("pendingPayment");
 
-    if (paymentResult?.order_id && paymentResult?.code === "00") {
-      navigate(`/buildDetail/${paymentResult.order_id}`);
+    if (paymentResult?.order_id) {
+      navigate(`/order-detail/${paymentResult.order_id}`);
     } else {
-      navigate('/');
+      navigate('/profile/orders'); // Redirect to orders page if no order_id
     }
   };
 
@@ -193,7 +196,7 @@ function PaymentReturn({ setShowPaymentReturn }) {
             <div className="w-16 h-1 bg-gray-200 rounded-full overflow-hidden">
               <div
                 className="h-full bg-blue-500 transition-all duration-1000 ease-linear"
-                style={{ width: `${(countdown / 5) * 100}%` }}
+                style={{ width: `${(countdown / 30) * 100}%` }}
               />
             </div>
           </div>

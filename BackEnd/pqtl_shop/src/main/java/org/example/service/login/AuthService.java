@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -80,7 +81,10 @@ public class AuthService {
         // 🔍 Tìm theo email hoặc username
         Optional<User> userOpt = userRepository.findByEmail(request.getUsername());
         if (userOpt.isEmpty()) {
-            userOpt = userRepository.findByUsername(request.getUsername());
+            List<User> users = userRepository.findAllByUsername(request.getUsername());
+            if (!users.isEmpty()) {
+                userOpt = Optional.of(users.get(0));
+            }
         }
 
         User user = userOpt.orElseThrow(() -> new RuntimeException("Tài khoản không tồn tại"));

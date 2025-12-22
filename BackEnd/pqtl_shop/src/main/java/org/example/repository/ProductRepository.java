@@ -38,4 +38,6 @@ public interface ProductRepository extends MongoRepository<Product, String> {
 
     // Homepage: Lấy 8 sản phẩm mới nhất (theo ID giảm dần - fallback nếu không có createdAt)
     List<Product> findTop8ByOrderByIdDesc();
+
+    List<Product> findByIsClearanceTrue();
 }

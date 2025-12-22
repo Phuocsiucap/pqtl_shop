@@ -301,6 +301,9 @@ const ProductList = ({ userRole }) => {
     let matchStatus = true;
 
     switch (filterStatus) {
+      case "all":
+        matchStatus = true;
+        break;
       case "seasonal":
         matchStatus = product.isSeasonal === true;
         break;

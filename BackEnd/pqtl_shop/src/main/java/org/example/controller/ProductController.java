@@ -20,6 +20,26 @@ public class ProductController {
     private ProductService productService;
 
     /**
+     * Lấy tất cả sản phẩm.
+     * GET /api/v1/products/
+     */
+    @GetMapping("/")
+    public ResponseEntity<List<Product>> getAllProducts() {
+        List<Product> products = productService.getAllProducts();
+        return ResponseEntity.ok(products);
+    }
+
+    /**
+     * Lấy sản phẩm thanh lý.
+     * GET /api/v1/products/clearance
+     */
+    @GetMapping("/clearance")
+    public ResponseEntity<List<Product>> getClearanceProducts() {
+        List<Product> clearanceProducts = productService.getClearanceProducts();
+        return ResponseEntity.ok(clearanceProducts);
+    }
+
+    /**
      * US2.1-2.5: Lấy chi tiết sản phẩm theo ID.
      * GET /api/v1/products/{id}
      */
